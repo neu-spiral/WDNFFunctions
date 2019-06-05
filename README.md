@@ -3,7 +3,7 @@ test example
 
 sbatch ../script.sh Toplogy_gen.py problem --graph_type abilene --query_nodes 4 --order_moment 1  
 
-sbatch ../script.sh Continuous_Greedy.py problem_erdos_renyi_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_4qnodes_1order_moment problem_erdos_renyi_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_4qnodes_1order_moment-taylor-k-1-1000-iters --samples 500 --k 1 --estimator taylor  
+sbatch ../script.sh Continuous_Greedy.py problem_abilene_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_4qnodes_1order_moment problem_abilene_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_4qnodes_1order_moment-taylor-k-1-1000-iters --samples 500 --k 1 --estimator taylor  
 
 sbatch ../script.sh random_replacement.py problem_abilene_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_4qnodes_1order_moment problem_abilene_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_4qnodes_1order_moment-service_first --assign_order service_first  
 
