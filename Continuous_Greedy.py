@@ -113,9 +113,8 @@ class ContinuousGreedy:
                     pass
 
         V,I = self.problem_size # number of nodes, number of items
-        X0=cvxopt.matrix(0.,(V,I))
+        Y = cvxopt.matrix(0.,(V,I))
         gamma = 1./ITERATIONS
-        Y = X0
 
         ro_dict = self.ro_uvr_CONT(Y)
         self.cost = self.OBJ_dict(ro_dict)
@@ -295,7 +294,7 @@ class ContGreedyPoly(ContinuousGreedy):
 
                     r_polys = rho_poly[edge][demand]
                     r = r_polys[1].evaluate(Y) # rho_e(Y) = rho^*
-                    derivative_value = dict( [(ii, self.utilityfunction(r,ii)) for ii in range(self.k+1)])
+                    derivative_value = dict( [(ii, self.utilityfunction(r,ii)) for ii in range(self.k+1)]) # derivative of cost
                     approx = taylor(derivative_value, r, self.k) # taylor coefficient 
 #                    r1 = r_polys.evaluate(Y1)
 
@@ -401,10 +400,11 @@ class DRSubmodular(ContinuousGreedy):
             for demand in dependencies[(v,i)]:
                 for edge in dependencies[(v,i)][demand]:
                     r_polys = rho_poly[edge][demand]
+                    r = r_polys[1].evaluate(Y)
                     r0 = r_polys[1].evaluate(Y0)
 #                    r1 = r_polys.evaluate(Y1)
 #                    delta = self.utilityfunction(r0,0) - self.utilityfunction(r1,0)
-                    delta = self.utilityfunction(r0,1) * r0
+                    delta = self.utilityfunction(r,1) * r0
                     grad_Y[v,i] += delta
 
         grad_Mu = {}

@@ -129,6 +129,7 @@ def main():
     parser = argparse.ArgumentParser(description='Simulate a Network of Caches',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('outputfile', help='Output file')
+    parser.add_argument('--queue_type', default='MMInfty', type=str, help='Type of queue', choices=['MMInfty', 'Info'])
     parser.add_argument('--order_moment', default='2', type=str, help='Order of moment for the expected cost', choices=['1','2','3','4'])
     parser.add_argument('--min_servicerate', default=0.1, type=float, help='Minimum service rate per edge')
     parser.add_argument('--min_capacity_servicerate', default=200.0, type=float, help='Minimum capacity of service rate per edge')
@@ -306,7 +307,7 @@ def main():
 
     logging.info('Generating capacities of service rate...')
     capacity_servicerate = dict( (x, random.uniform(args.min_capacity_servicerate, args.max_capacity_servicerate) ) for x in G.edges())
-    logging.info('...done. Generated %d caches' % len(capacity_servicerate))
+    logging.info('...done. Generated %d service rate capacities' % len(capacity_servicerate))
     logging.debug('Generated capacities of service rate:')
     for key in capacity_servicerate:
         logging.debug(pp([capacity_servicerate, ':', capacity_servicerate[key]]))
@@ -320,19 +321,29 @@ def main():
     dir = "INPUT/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-    out = dir + args.outputfile + "_" + args.graph_type + "_" + str(args.demand_size) + "demands_" + str(args.catalog_size) + "catalog_size_" + str(args.min_capacity) + "mincap_"  + str(args.max_capacity) + "maxcap_"  +  str(V) + "node_" + str(E) + "edge_" + str(args.demand_distribution) + "_" + "rate" + str(args.min_rate) + "_" + str(args.query_nodes) + "qnodes_" + args.order_moment + "order_moment"
+    out = dir + args.outputfile + "_" + args.graph_type + "_" + str(args.demand_size) + "demands_" + str(args.catalog_size) + "catalog_size_" + str(args.min_capacity) + "mincap_"  + str(args.max_capacity) + "maxcap_"  + str(args.graph_size) + "size_" + str(args.demand_distribution) + "_" + "rate" + str(args.min_rate) + "_" + str(args.query_nodes) + "qnodes_" + args.order_moment + "order_" + args.queue_type
 
-    functionchoice = 'UtilityFunction'+args.order_moment
-    if functionchoice == 'UtilityFunction1':
+    functionchoice = args.order_moment+args.queue_type
+    if functionchoice == '1MMInfty':
         utilityfunction = UtilityFunction1
-    elif functionchoice == 'UtilityFunction2':
+    elif functionchoice == '2MMInfty':
         utilityfunction = UtilityFunction2
-    elif functionchoice == 'UtilityFunction3':
+    elif functionchoice == '3MMInfty':
         utilityfunction = UtilityFunction3
-    elif functionchoice == 'UtilityFunction4':
+    elif functionchoice == '4MMInfty':
         utilityfunction = UtilityFunction4
+    elif functionchoice == '1Info':
+        utilityfunction = UtilityFunction5
+    elif functionchoice == '2Info':
+        utilityfunction = UtilityFunction6
+    elif functionchoice == '3Info':
+        utilityfunction = UtilityFunction7
+    elif functionchoice == '4Info':
+        utilityfunction = UtilityFunction8
     else:
         utilityfunction = None
+
+
     pr = Problem(capacities, demands, bandwidths, utilityfunction, capacity_servicerate, args.min_servicerate)  # pack the graph, capacity for each node, attributes of each demands(requests), service rate for each edge
 
     pr.pickle_cls(out) # can only pickle functions defined at the top level of a module

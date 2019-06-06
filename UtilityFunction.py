@@ -47,7 +47,7 @@ def UtilityFunction4(r, k):
         return 0
 
 
-def UtilityInfo1(r, k):
+def UtilityFunction5(r, k):
     '''Utility for the first moment'''
     if k == 0:
         return r
@@ -56,7 +56,7 @@ def UtilityInfo1(r, k):
     else:
         return 0
 
-def UtilityInfo2(r, k):
+def UtilityFunction6(r, k):
     '''Utility for the second moment'''
     if k == 0:
         return r + 2*r**2
@@ -67,7 +67,7 @@ def UtilityInfo2(r, k):
     else:
         return 0
 
-def UtilityInfo3(r, k):
+def UtilityFunction7(r, k):
     '''Utility for the third moment'''
     if k == 0:
         return r + 6*r**2 + 6*r**3
@@ -80,7 +80,7 @@ def UtilityInfo3(r, k):
     else:
         return 0
 
-def UtilityInfo4(r, k):
+def UtilityFunction8(r, k):
     '''Utility for the forth moment'''
     if k == 0:
         return r + 14*r**2 + 36*r**3 + 24*r**4
