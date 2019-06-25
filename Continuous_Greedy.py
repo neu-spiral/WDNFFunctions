@@ -29,7 +29,7 @@ class ContinuousGreedy:
     def OBJ_dict(self,ro_dict):
         """Given rhos as a dictionary, compute the objctive."""
         obj = 0.
-        
+
         for edge in ro_dict:
             for demand in ro_dict[edge]:
                 ro = ro_dict[edge][demand]
@@ -62,8 +62,8 @@ class ContinuousGreedy:
             else:
                 pass
         return dep
-    
-  
+
+
  # search for m?
     def find_max(self,Z):
         """Given the gradient as a matrix Z, find the argument of its top K values in each row. K is the capacity of each row."""
@@ -89,7 +89,7 @@ class ContinuousGreedy:
             if Gradient_Mu.has_key(edge):
                 list_demands = Gradient_Mu[edge].keys()
                 list_gradient = Gradient_Mu[edge].values()
-                index = list_gradient.index(max(list_gradient)) 
+                index = list_gradient.index(max(list_gradient))
                 Direction_Mu[edge] = {}
                 Direction_Mu[edge]['index']=list_demands[index]
                 Direction_Mu[edge]['value']=self.capacity_servicerate[edge] - self.min_servicerate*len(list_demands)
@@ -271,7 +271,7 @@ class ContGreedyPoly(ContinuousGreedy):
     def __init__(self, P, k):
         ContinuousGreedy.__init__(self,P)
         self.k = k
-    
+
     def Estimate_Gradient(self, Y, dependencies):
         """ Estimate the gradient using a taylor approximation of E[rho(X)]
 
@@ -295,7 +295,7 @@ class ContGreedyPoly(ContinuousGreedy):
                     r_polys = rho_poly[edge][demand]
                     r = r_polys[1].evaluate(Y) # rho_e(Y) = rho^*
                     derivative_value = dict( [(ii, self.utilityfunction(r,ii)) for ii in range(self.k+1)]) # derivative of cost
-                    approx = taylor(derivative_value, r, self.k) # taylor coefficient 
+                    approx = taylor(derivative_value, r, self.k) # taylor coefficient
 #                    r1 = r_polys.evaluate(Y1)
 
 #                    r_powers1 = dict([ (j,r1**j) for j in range(1,self.k+1) ])
@@ -370,7 +370,7 @@ class ContGreedyPower(ContinuousGreedy):
             for node in range(path_len-1):
                 edge = (path[node], path[node+1])
                 r_polys = rho_poly[edge][demand]
-                r = r_polys[1].evaluate(Y) 
+                r = r_polys[1].evaluate(Y)
                 delta = self.utilityfunction(r,1) * r / self.EDGE[edge][demand]
                 grad_Mu[edge][demand] = delta
         return grad_Y, grad_Mu
