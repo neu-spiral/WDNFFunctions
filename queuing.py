@@ -22,13 +22,14 @@ class Queue:
 
     def enqueue(self, msg):
         self.input.put(msg)
+        logging.debug(str(self.env.now) + ": push a meesage " + str(msg) )
         self.customers += 1
 
     def serve(self):
         while True:
             msg = yield self.input.get()
             yield self.env.timeout(random.expovariate(self.service_rate))
-            logging.debug("pop a message" + str(msg.payload))
+            logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload))
             self.customers -=1
             self.output.put(msg)
 
@@ -44,7 +45,7 @@ class MMInfQueue(Queue):
 
     def process_msg(self,msg):
         yield self.env.timeout(random.expovariate(self.service_rate))
-        logging.debug("pop a message " + str(msg.payload))
+        logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload))
         self.customers -= 1
         self.output.put(msg)
 
@@ -61,8 +62,10 @@ class CountQueue(Queue):
     def enqueue(self, msg):
         if self.customers == 0:
             self.input.put(msg)
+            logging.debug(str(self.env.now) + ": push a meesage " + str(msg.payload))
         else:
             self.pending_messages.extend(msg.payload)
+            logging.debug(str(self.env.now) + ": merge a meesage " + str(msg.payload))
         self.customers += msg.counter
 
     def serve(self):
@@ -72,17 +75,17 @@ class CountQueue(Queue):
 
     def process_msg(self,msg):
         yield self.env.timeout(random.expovariate(self.service_rate))
-        logging.debug("pop a message " + str(msg.payload) + " with " + str(self.customers))
         if self.customers > msg.counter:
             msg.counter = self.customers
             msg.payload.extend(self.pending_messages)
         elif self.customers < msg.counter:
-            raise Exception("message merge wrong!")
+            raise Exception("messages merge wrong!")
+        logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload) )
         self.output.put(msg)
         self.customers = 0
         # test if msg.counter == len(msg.payload)
         if msg.counter != len(msg.payload):
-            raise Exception("message merge wrong!")
+            raise Exception("messages merge wrong!")
         self.pending_messages = []
 
 
@@ -118,7 +121,6 @@ if __name__ == "__main__":
             while True:
                 msg = Message(str(message)+ " at time "+ str(env.now))
                 queue.enqueue(msg)
-                logging.debug("push a meesage "+ str(message)+ " at time "+str(env.now))
                 yield env.timeout(4)
 
     env = Environment()
@@ -129,19 +131,23 @@ if __name__ == "__main__":
     message3 = 3
 
 
-
 #    q1 = Queue(env, service_rates[1], store)
 #    env.process(sender(q1, env, message1))
 
-#    q2 = MultiQueue(env, MMInfQueue, service_rates, store)
-#    env.process(sender(q2, env, message1,1))
-#    env.process(sender(q2, env, message2,2))
-#    env.process(sender(q2, env, message3,3))
+#    q2 = MMInfQueue(env, service_rates[1], store)
+#    env.process(sender(q2, env, message1))
 
-#    q3 = MMInfQueue(env, service_rates[1], store)
-#    env.process(sender(q3, env, message1))
+#    q3 = MultiQueue(env, MMInfQueue, service_rates, store)
+#    env.process(sender(q3, env, message1,1))
+#    env.process(sender(q3, env, message2,2))
+#    env.process(sender(q3, env, message3,3))
 
-    q4 = CountQueue(env, service_rates[1], store)
-    env.process(sender(q4, env, message1))
+#    q4 = CountQueue(env, service_rates[1], store)
+#    env.process(sender(q4, env, message1))
+
+    q5 = MultiQueue(env, CountQueue, service_rates, store)
+    env.process(sender(q5, env, message1, 1))
+    env.process(sender(q5, env, message2, 2))
+    env.process(sender(q5, env, message3, 3))
 
     env.run(100)
