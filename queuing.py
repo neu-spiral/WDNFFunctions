@@ -22,19 +22,27 @@ class Queue:
 
     def enqueue(self, msg):
         self.input.put(msg)
-        logging.debug(str(self.env.now) + ": push a meesage " + str(msg) )
+ #       logging.debug(str(self.env.now) + ": push a meesage " + str(msg.payload) )
         self.customers += 1
 
     def serve(self):
         while True:
             msg = yield self.input.get()
             yield self.env.timeout(random.expovariate(self.service_rate))
-            logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload))
+#            logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload))
             self.customers -=1
             self.output.put(msg)
 
     def get_custormers(self):
         return self.customers
+
+class SimpleQueue(Queue):
+    def serve(self):
+        while True:
+            msg = yield self.input.get()
+#            logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload))
+            self.customers -=1
+            self.output.put(msg)
 
 class MMInfQueue(Queue):
     """M/M/Infinity queue"""
@@ -45,7 +53,7 @@ class MMInfQueue(Queue):
 
     def process_msg(self,msg):
         yield self.env.timeout(random.expovariate(self.service_rate))
-        logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload))
+ #       logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload))
         self.customers -= 1
         self.output.put(msg)
 
@@ -62,10 +70,10 @@ class CountQueue(Queue):
     def enqueue(self, msg):
         if self.customers == 0:
             self.input.put(msg)
-            logging.debug(str(self.env.now) + ": push a meesage " + str(msg.payload))
+#           logging.debug(str(self.env.now) + ": push a meesage " + str(msg.payload))
         else:
             self.pending_messages.extend(msg.payload)
-            logging.debug(str(self.env.now) + ": merge a meesage " + str(msg.payload))
+#            logging.debug(str(self.env.now) + ": merge a meesage " + str(msg.payload))
         self.customers += msg.counter
 
     def serve(self):
@@ -80,7 +88,7 @@ class CountQueue(Queue):
             msg.payload.extend(self.pending_messages)
         elif self.customers < msg.counter:
             raise Exception("messages merge wrong!")
-        logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload) )
+#        logging.debug(str(self.env.now) + ": pop a message " + str(msg.payload) )
         self.output.put(msg)
         self.customers = 0
         # test if msg.counter == len(msg.payload)
@@ -112,15 +120,16 @@ if __name__ == "__main__":
 
     def sender(queue, env, message, d=None):
         if d:
-            while True:
+            for i in range(8):
                 msg = Message(str(message)+ " at time "+ str(env.now))
                 queue.enqueue(msg, d)
-                logging.debug("push a meesage "+ str(d) + " :"+ str(message) + " at time "+str(env.now))
+#                logging.debug("push a meesage "+ str(d) + " : "+ str(message) + " at time "+str(env.now))
                 yield env.timeout(4)
         else:
-            while True:
+            for i in range(8):
                 msg = Message(str(message)+ " at time "+ str(env.now))
                 queue.enqueue(msg)
+#                logging.debug("push a meesage: " + str(message) + " at time " + str(env.now))
                 yield env.timeout(4)
 
     env = Environment()
@@ -145,9 +154,15 @@ if __name__ == "__main__":
 #    q4 = CountQueue(env, service_rates[1], store)
 #    env.process(sender(q4, env, message1))
 
-    q5 = MultiQueue(env, CountQueue, service_rates, store)
-    env.process(sender(q5, env, message1, 1))
-    env.process(sender(q5, env, message2, 2))
-    env.process(sender(q5, env, message3, 3))
+#    q5 = MultiQueue(env, CountQueue, service_rates, store)
+#    env.process(sender(q5, env, message1, 1))
+#    env.process(sender(q5, env, message2, 2))
+#    env.process(sender(q5, env, message3, 3))
+
+    q6 = SimpleQueue(env, service_rates, store)
+    env.process(sender(q6, env, message1))
+    env.process(sender(q6, env, message2))
+    env.process(sender(q6, env, message3))
+
 
     env.run(100)
