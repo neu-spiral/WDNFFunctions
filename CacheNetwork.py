@@ -102,7 +102,7 @@ class CacheNetwork(DiGraph):
 
     """
 
-    def __init__(self, G, cacheGenerator, demands, item_sources, capacities, weights, delays, utilityfunction_n, utilityfunction_rho ,warmup=0,
+    def __init__(self, G, cacheGenerator, demands, item_sources, capacities, weights, delays, utilityfunction_n, utilityfunction_rho, X, warmup=0,
                  monitoring_rate=1.0):
         self.env = Environment()
         self.warmup = warmup
@@ -117,7 +117,7 @@ class CacheNetwork(DiGraph):
 
         DiGraph.__init__(self, G)
         for x in self.nodes():
-            self.node[x]['cache'] = cacheGenerator(capacities[x], x)
+            self.node[x]['cache'] = cacheGenerator(capacities[x], x, X[x,:])
             self.node[x]['pipe'] = Store(self.env)
         for e in self.edges():
             x = e[0]
@@ -126,7 +126,7 @@ class CacheNetwork(DiGraph):
                 self.edge[x][y]['delay'] = delays[e].copy()
                 self.edge[x][y]['pipe_query'] = SimpleQueue(self.env, self.edge[x][y]['delay'], self.node[y]['pipe'])
                 self.edge[y][x]['delay'] = delays[e].copy()
-                self.edge[y][x]['pipe_response'] = MultiQueue(self.env, MMInfQueue, self.edge[x][y]['delay'], self.node[y]['pipe'])
+                self.edge[y][x]['pipe_response'] = MultiQueue(self.env, CountQueue, self.edge[x][y]['delay'], self.node[y]['pipe'])
 
         self.demands = {}
         self.item_set = set()
@@ -251,20 +251,6 @@ class CacheNetwork(DiGraph):
 
         return spmatrix(val, I, J, size=(n, m)) # a node*item matrix whose element = 1 if x_{IJ} = 1
 
-    def statesToMatrix(self):
-        """Constructs a matrix containing marginal information. This assumes that caches contain a state() function, capturing maginals. Only LMin implements this
-        """
-        zipped = []
-        n = len(self.nodes())
-        m = max([d.item for d in self.demands]) + 1
-        Y = matrix()
-        for x in self.nodes():
-            for item in self.node[x]['cache'].non_zero_state_items():
-                zipped.append((self.node[x]['cache'].state(item), x, item))
-
-        val, I, J = zip(*zipped)
-
-        return spmatrix(val, I, J, size=(n, m)) # a node*item matrix 
 
     def social_welfare(self):
         """ Function computing the social welfare.
@@ -307,6 +293,7 @@ class CacheNetwork(DiGraph):
                 obj = obj+self.utilityfunction_rho(ro,0)
         
         return obj
+
 
     def expected_caching_cost(self, Y):
         """ Function computing the expected caching gain under marginals Y, presuming product form. Also computes deterministic caching gain if Y is integral.
@@ -373,14 +360,6 @@ class CacheNetwork(DiGraph):
                 logging.info(pp(
                     [now, ':', 'Utility = %f' % self.sw[now], ', DEMSTATS =', self.demandstats[now],
                      'ECC = %f, TOT = %f, ECG = %f' % self.funstats[now] ]))
-                try:
-                    # if True:
-                    Y = self.statesToMatrix()
-                    secc = self.expected_caching_cost(Y)
-                    self.funstats[now] += (secc)
-                    logging.info(pp([now, ': SECC=', secc]))
-                except AttributeError:
-                    logging.debug(pp([now, ": No states in this class"]))
 
             yield self.env.timeout(random.expovariate(self.monitoring_rate))
 
@@ -536,6 +515,109 @@ class PriorityNetworkCache(NetworkedCache):
             return [(msg, e)]
 
 
+class CGCache(NetworkedCache):
+    """ A Priority Networked Cache. Supports LRU,LFU, and RR policies.
+
+    Note: the capacity of the cache does not include its permanent set; i.e., the capacity concerns only files handled through the LRU principle.
+    """
+
+    def __init__(self, capacity, _id, X):
+        self.cache = np.nonzero(X)[0]  # get the item stored in node
+        self.permanent_set = set([])
+        self._id = _id
+        self._capacity = capacity
+        self.stats = {}
+        self.stats['queries'] = 0.0
+        self.stats['hits'] = 0.0
+        self.stats['responses'] = 0.0
+
+    def __str__(self):
+        return str(self.cache) + '+' + str(self.permanent_set)
+
+    def __contains__(self, item):
+        return item in self.cache or item in self.permanent_set
+
+    def __iter__(self):
+        return itertools.chain(self.cache, self.permanent_set)
+
+    def isPermanent(self, item):
+        return item in self.permanent_set
+
+    def capacity(self):
+        return self._capacity
+
+    def perm_set(self):
+        return self.permanent_set
+
+    def makePermanent(self, item):
+        self.permanent_set.add(item)
+
+    def payload(self, contents):
+        for i in range(len(contents)) :
+            contents[i][0] = "RESPONSE"
+        return contents
+
+    def receive(self, msg, e, now):
+        label, d, query_id = msg.header
+
+        if label == "QUERY":
+            item = d.item
+            logging.debug(pp([now, ': Query message for item', item, 'received by cache', self._id]))
+            self.stats['queries'] += 1.0
+
+            inside_cache = item in self.cache
+            inside_permanent_set = item in self.permanent_set
+            # if this node caches item
+            if inside_cache or inside_permanent_set:
+                logging.debug(pp(
+                    [now, ': Item', item, 'is inside', 'permanent set' if inside_permanent_set else 'cache', 'of',
+                     self._id]))
+
+                self.stats['hits'] += 1
+                # if this node is query node
+                if self._id == d.query_source:
+                    logging.debug(pp(
+                        [now, ': Response to query', query_id, 'of', d, 'delivered to query source by cache',
+                         self._id]))
+                    pred = d  # this demand object
+                else:
+                    pred = d.pred(self._id)  # previous node in path
+                    logging.debug(pp([now, ': Response to query', query_id, 'of', d, ' generated by cache', self._id]))
+                e = (self._id, pred)
+                # a response is generate
+                payload_rmsg = self.payload(msg.payload)
+                rmsg = ResponseMessage(d, query_id, payload_rmsg, stats=msg.stats)
+                return [(rmsg, e)]
+            # if this node does not cache item
+            else:
+                logging.debug(pp([now, ': Item', item, 'is not inside', self._id, 'continue searching']))
+                succ = d.succ(self._id)
+                if succ == None:
+                    logging.error(pp([now, ':Query', query_id, 'of', d, 'reached', self._id,
+                                      'and has nowhere to go, will be dropped']))
+                    return []
+                # a tuple for this node and next node in path
+                e = (self._id, succ)
+                return [(msg, e)]
+
+        if label == "RESPONSE":
+            logging.debug(pp([now, ': Response message for', d, 'received by cache', self._id]))
+            self.stats['responses'] += 1.0
+            item = d.item
+
+            # if this node is query node
+            if d.query_source == self._id:
+                logging.debug(
+                    pp([now, ': Response to query', query_id, 'of', d, ' finally delivered by cache', self._id]))
+                pred = d  # this demand object
+            else:
+                logging.debug(pp([now, ': Response to query', query_id, 'of', d, 'passes through cache', self._id,
+                                  'moving further down path']))
+                pred = d.pred(self._id)  # previous node in path
+            e = (self._id, pred)
+            return [(msg, e)]
+
+
 def main():
     # logging.basicConfig(filename='execution.log', filemode='w', level=logging.INFO)
 
@@ -544,6 +626,7 @@ def main():
     # parser.add_argument('inputfile',help = 'Training data. This should be a tab separated file of the form: index _tab_ features _tab_ output , where index is a number, features is a json string storing the features, and output is a json string storing output (binary) variables. See data/LR-example.txt for an example.')
     parser.add_argument('Graph_instance', help='Graph instance')
     parser.add_argument('problem_instance', help='Problem instance')
+    parser.add_argument('integer_solution', help='rounding result')
     parser.add_argument('outputfile', help='Output file')
 
     parser.add_argument('--time', default=1000.0, type=float, help='Total simulation duration')
@@ -552,7 +635,7 @@ def main():
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
                         choices=['INFO', 'DEBUG', 'WARNING', 'ERROR'])
     parser.add_argument('--cache_type', default='LRU', type=str, help='Networked Cache type',
-                        choices=['LRU', 'FIFO', 'LFU', 'RR'])
+                        choices=['LRU', 'FIFO', 'LFU', 'RR', 'CG'])
     parser.add_argument('--query_message_length', default=0.0, type=float, help='Query message length')
     parser.add_argument('--response_message_length', default=0.0, type=float, help='Response message length')
     parser.add_argument('--monitoring_rate', default=1.0, type=float, help='Monitoring rate')
@@ -562,7 +645,7 @@ def main():
 
     args.debug_level = eval("logging." + args.debug_level)
     
-    def cacheGenerator(capacity, _id):
+    def cacheGenerator(capacity, _id, X):
         if args.cache_type == 'LRU':
             return PriorityNetworkCache(capacity, _id, 'LRU')
         if args.cache_type == 'LFU':
@@ -571,6 +654,8 @@ def main():
             return PriorityNetworkCache(capacity, _id, 'FIFO')
         if args.cache_type == 'RR':
             return PriorityNetworkCache(capacity, _id, 'RR')
+        if args.cache_type == 'CG':
+            return CGCache(capacity, _id, X)
 
     logging.basicConfig(level=args.debug_level)
     random.seed(args.random_seed)
@@ -581,11 +666,13 @@ def main():
 
     input_graph = "INPUT/" + args.Graph_instance
     input_problem = "INPUT_NEW/"+ args.problem_instance
+    integer_solution = "ROUNDED/" + args.integer_solution
     P = Problem.unpickle_cls(input_problem)
     with file(input_graph, 'r') as f:
         G = pickle.load(f)
-    f.close()
-    
+    l = np.load(integer_solution+'.npy')
+    X = l[1]
+
     demands = P.demands
     item_sources = P.item_sources
     capacities = P.capacities
@@ -596,7 +683,7 @@ def main():
         return x**2
 
     logging.info('Building CacheNetwork')
-    cnx = CacheNetwork(G, cacheGenerator, demands, item_sources, capacities, weights, weights, utilityfunction_n, utilityfunction_rho, args.warmup,
+    cnx = CacheNetwork(G, cacheGenerator, demands, item_sources, capacities, weights, weights, utilityfunction_n, utilityfunction_rho, X, args.warmup,
                        args.monitoring_rate)
     logging.info('...done')
 
