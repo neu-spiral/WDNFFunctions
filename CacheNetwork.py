@@ -17,6 +17,9 @@ import pickle
 from Toplogy_gen import Problem, Demand
 from queuing import *
 import os
+import matplotlib.pyplot as plt
+
+
 
 
 class CONFIG(object):
@@ -102,14 +105,13 @@ class CacheNetwork(DiGraph):
 
     """
 
-    def __init__(self, G, cacheGenerator, demands, item_sources, capacities, weights, delays, utilityfunction_n, utilityfunction_rho, X, warmup=0,
+    def __init__(self, G, cacheGenerator, demands, item_sources, capacities, weights, delays, utilityfunction_n, utilityfunction_rho, X, Queuing_type, warmup=0,
                  monitoring_rate=1.0):
         self.env = Environment()
         self.warmup = warmup
         self.demandstats = {}
         self.sw = {}
         self.funstats = {}
-        self.optstats = {}
         self.monitoring_rate = monitoring_rate
         self.delays = delays
         self.utilityfunction_n = utilityfunction_n
@@ -126,7 +128,7 @@ class CacheNetwork(DiGraph):
                 self.edge[x][y]['delay'] = delays[e].copy()
                 self.edge[x][y]['pipe_query'] = SimpleQueue(self.env, self.edge[x][y]['delay'], self.node[y]['pipe'])
                 self.edge[y][x]['delay'] = delays[e].copy()
-                self.edge[y][x]['pipe_response'] = MultiQueue(self.env, CountQueue, self.edge[x][y]['delay'], self.node[y]['pipe'])
+                self.edge[y][x]['pipe_response'] = MultiQueue(self.env, Queuing_type, self.edge[x][y]['delay'], self.node[y]['pipe'])
 
         self.demands = {}
         self.item_set = set()
@@ -628,7 +630,7 @@ def main():
     parser.add_argument('problem_instance', help='Problem instance')
     parser.add_argument('integer_solution', help='rounding result')
     parser.add_argument('outputfile', help='Output file')
-
+    parser.add_argument('--queue_type', default='MMInfQueue', type=str, help='Queue type', choices=['MMInfQueue', 'CountQueue'])
     parser.add_argument('--time', default=1000.0, type=float, help='Total simulation duration')
     parser.add_argument('--warmup', default=0.0, type=float, help='Warmup time until measurements start')
     parser.add_argument('--random_seed', default=4156910908, type=int, help='Random seed')
@@ -682,8 +684,15 @@ def main():
     def utilityfunction_n(x):
         return x**2
 
+    if args.queue_type == 'CountQueue':
+        Queuing_type = CountQueue
+    elif args.queue_type == 'MMInfQueue':
+        Queuing_type = MMInfQueue
+    else:
+        Queuing_type = None
+
     logging.info('Building CacheNetwork')
-    cnx = CacheNetwork(G, cacheGenerator, demands, item_sources, capacities, weights, weights, utilityfunction_n, utilityfunction_rho, X, args.warmup,
+    cnx = CacheNetwork(G, cacheGenerator, demands, item_sources, capacities, weights, weights, utilityfunction_n, utilityfunction_rho, X, Queuing_type, args.warmup,
                        args.monitoring_rate)
     logging.info('...done')
 
@@ -704,14 +713,35 @@ def main():
 
     network_stats['demand'] = cnx.demandstats
     network_stats['fun'] = cnx.funstats
-    network_stats['opt'] = cnx.optstats
+    network_stats['utility'] = cnx.sw
+    Time_average = sum(network_stats['utility'].values())/len(network_stats['utility'])
+    print Time_average
+
+
+    times1 = sorted(network_stats['fun'].keys())
+    times2 = sorted(network_stats['utility'].keys())
+    eccs = [network_stats['fun'][t][0] for t in times1]
+
+    tags = [network_stats['utility'][t] for t in times2]
+
+    fig, ax = plt.subplots()
+    names = ['ECC', 'TACC']
+    forms = ['k:', 'rs-', 'b^-']
+    ax.plot(times1, eccs, forms[1])
+    ax.plot(times2, tags, forms[2])
+    plt.xlabel('Time', fontsize=15)
+    plt.ylabel('Cost', fontsize=15)
+    ax.legend(names)
+    plt.title(args.cache_type)
+
+    plt.show()
 
     dir = "LRU/"
     if not os.path.exists(dir):
         os.mkdir(dir)
     out = dir + args.outputfile + "%s_%s_%ftime" % (args.graph_instance, args.cache_type, args.time)
 
-    with  open(out, 'wb') as f:
+    with open(out, 'wb') as f:
         pickle.dump([args, demand_stats, node_stats, network_stats], f)
 
 
