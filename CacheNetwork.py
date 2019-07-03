@@ -626,12 +626,18 @@ def main():
     parser = argparse.ArgumentParser(description='Simulate a Network of Caches',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # parser.add_argument('inputfile',help = 'Training data. This should be a tab separated file of the form: index _tab_ features _tab_ output , where index is a number, features is a json string storing the features, and output is a json string storing output (binary) variables. See data/LR-example.txt for an example.')
-    parser.add_argument('Graph_instance', help='Graph instance')
-    parser.add_argument('problem_instance', help='Problem instance')
-    parser.add_argument('integer_solution', help='rounding result')
-    parser.add_argument('outputfile', help='Output file')
-    parser.add_argument('--queue_type', default='MMInfQueue', type=str, help='Queue type', choices=['MMInfQueue', 'CountQueue'])
-    parser.add_argument('--time', default=1000.0, type=float, help='Total simulation duration')
+    parser.add_argument('OBJ', type=str, help='Objective function queuing type', choices=['MMInfty', 'Info'])
+    parser.add_argument('SOLUTION', type=str, help='Solution queuing type', choices=['MMInfty', 'Info'])
+    parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',
+                        choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
+                                 'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert', 'watts_strogatz',
+                                 'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
+                                 'servicenetwork'])
+    parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
+
+    parser.add_argument('--order_moment', default=2, type=int, help='Order of moment for the expected cost', choices=[1,2,3,4])
+
+    parser.add_argument('--time', default=1000, type=int, help='Total simulation duration')
     parser.add_argument('--warmup', default=0.0, type=float, help='Warmup time until measurements start')
     parser.add_argument('--random_seed', default=4156910908, type=int, help='Random seed')
     parser.add_argument('--debug_level', default='INFO', type=str, help='Debug Level',
@@ -665,10 +671,15 @@ def main():
 
     CONFIG.QUERY_MESSAGE_LENGTH = args.query_message_length
     CONFIG.RESPONSE_MESSAGE_LENGTH = args.response_message_length
-
-    input_graph = "INPUT/" + args.Graph_instance
-    input_problem = "INPUT_NEW/"+ args.problem_instance
-    integer_solution = "ROUNDED/" + args.integer_solution
+    Graph_instance = "Graph_" + args.graph_type + "_100size_" + str(args.order_moment) + "order_" + args.SOLUTION
+    problem_instance = "problem_" + args.graph_type + "_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_" + str(args.query_nodes) + "qnodes_" + str(args.order_moment) + "order_" + args.SOLUTION
+    integer_solution = problem_instance + "-taylor-k-2-1000-iters"
+    OBJ = "problem_" + args.graph_type + "_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_" + str(args.query_nodes) + "qnodes_" + str(args.order_moment) + "order_" + args.OBJ
+    input_graph = "INPUT/" + Graph_instance
+    input_problem = "INPUT_NEW/"+ problem_instance
+    integer_solution = "ROUNDED/" + integer_solution
+    obj = "INPUT/" + OBJ
+    P_obj = Problem.unpickle_cls(obj)
     P = Problem.unpickle_cls(input_problem)
     with file(input_graph, 'r') as f:
         G = pickle.load(f)
@@ -679,14 +690,14 @@ def main():
     item_sources = P.item_sources
     capacities = P.capacities
     weights = P.EDGE
-    utilityfunction_rho = P.utilityfunction
+    utilityfunction_rho = P_obj.utilityfunction
 
     def utilityfunction_n(x):
-        return x**2
+        return x**args.order_moment
 
-    if args.queue_type == 'CountQueue':
+    if args.OBJ == 'Info':
         Queuing_type = CountQueue
-    elif args.queue_type == 'MMInfQueue':
+    elif args.OBJ == 'MMInfty':
         Queuing_type = MMInfQueue
     else:
         Queuing_type = None
@@ -704,9 +715,9 @@ def main():
     network_stats = {}
 
     for d in cnx.demands:
-        demand_stats[str(d)] = cnx.demands[d]['stats']
-        demand_stats[str(d)]['queries_spawned'] = cnx.demands[d]['queries_spawned']
-        demand_stats[str(d)]['queries_satisfied'] = cnx.demands[d]['queries_satisfied']
+        demand_stats[d] = cnx.demands[d]['stats']
+        demand_stats[d]['queries_spawned'] = cnx.demands[d]['queries_spawned']
+        demand_stats[d]['queries_satisfied'] = cnx.demands[d]['queries_satisfied']
 
     for x in cnx.nodes():
         node_stats[x] = cnx.node[x]['cache'].stats
@@ -739,7 +750,12 @@ def main():
     dir = "LRU/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-    out = dir + args.outputfile + "%s_%s_%ftime" % (args.graph_instance, args.cache_type, args.time)
+
+    if args.OBJ == args.SOLUTION:
+        outputfile = OBJ + "-taylor-k-2-1000-iters"
+    else:
+        outputfile = OBJ + "2-taylor-k-2-1000-iters"
+    out = dir + outputfile + "_%s_%ftime" % (args.cache_type, args.time)
 
     with open(out, 'wb') as f:
         pickle.dump([args, demand_stats, node_stats, network_stats], f)
