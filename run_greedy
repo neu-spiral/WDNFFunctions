@@ -1,0 +1,14 @@
+#! /bin/bash
+
+for queue in Info MMInfty
+do
+    for order in 1 2 3 4
+    do
+      	for graph in erdos_renyi hypercube
+        do
+            sbatch ../script.sh GREEDY.py --graph_type $graph --query_nodes 20 --order_moment $order --queue_type $queue
+        done
+    done
+done
+
+

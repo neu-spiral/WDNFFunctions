@@ -1,0 +1,19 @@
+#! /bin/bash
+
+for cache_type in LRU FIFO LFU
+do
+    for order in 2
+    do
+        for OBJ in MMInfty Info
+        do 
+            for SOLUTION in MMInfty Info
+            do
+                for graph in erdos_renyi hypercube
+                do
+                    sbatch ../script.sh CacheNetwork.py $OBJ $SOLUTION --graph_type $graph --time 5000 --query_nodes 20 --order_moment $order --cache_type $cache_type --SE
+                done
+            done
+        done
+    done
+done
+

@@ -1,0 +1,12 @@
+
+#! /bin/bash
+
+for cache_type in LRU FIFO LFU RR
+do
+    for graph in star hypercube abilene geant 
+    do
+        sbatch ../script.sh CacheNetwork.py MMInfty MMInfty --graph_type $graph --time 5000 --query_nodes 4 --order_moment 2 --SE --cache_type $cache_type
+    done
+done
+
+

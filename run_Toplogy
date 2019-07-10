@@ -1,0 +1,12 @@
+#! /bin/bash
+
+for queue in Info MMInfty
+do
+    for order in 1 2 3 4
+    do
+      	for graph in erdos_renyi hypercube
+        do
+            sbatch ../script.sh Toplogy_gen.py problem --queue_type $queue --order_moment $order --query_node 20 --graph_type $graph
+        done
+    done
+done
