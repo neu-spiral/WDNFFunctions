@@ -22,7 +22,7 @@ class poly():
         self.sets = sets
 
     def evaluate(self,X):
-        """ Given matrix x, evaluate rho_e(x) """
+        """ Given vector x, evaluate rho_e(x) """
 
         beta = self.coefficients
         setofx = self.sets
