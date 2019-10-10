@@ -1,4 +1,4 @@
-from Toplogy_gen import Problem
+from Topology_gen import Problem
 import math
 import numpy as np
 from scipy.misc import comb
