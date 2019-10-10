@@ -11,10 +11,10 @@ def nCr(n,r):
 
 
 class poly():
-    """A class implementing a polynomial consisting of monomials with (a) negative literals and (b) integer terms """
+    """A class implementing a polynomial consisting of monomials with (a) literals and (b) integer terms """
     def __init__(self,coefficients,sets={}):
         """ Coefficients is a dictionary containing monomial indexes as keys and 
-            coefficients as values. Sets is also a dict containing monomial 
+            coefficients as values. Sets is also a dictionary containing monomial 
             terms as keys and sets as  values.
         """
         
@@ -23,7 +23,6 @@ class poly():
 
     def evaluate(self,X):
         """ Given vector x, evaluate rho_e(x) """
-
         beta = self.coefficients
         setofx = self.sets
         prod = 1.0
@@ -45,7 +44,6 @@ class poly():
     def power(self,k):
         """ Return poly (self)**k. k must be greater that or equal to 1.
         """
-       
         power_poly = self
         i = 1
         while i < k:

@@ -1,4 +1,4 @@
-# demnds is list of objec instances, edges is dictionary with (u,v) as key and mu_uv as value
+# demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
 import cvxopt
 import numpy as np
 from time import time
@@ -11,7 +11,7 @@ import os
 
 class ContinuousGreedy:
     def __init__(self, P):
-        """Construct the class, given topology(i.e., graph, demands, demands rate, bandwidths) and estimator type."""
+        """Construct the class, given topology (i.e., graph, demands, demands rate, bandwidths) and estimator type."""
         self.demands = P.demands
         dem_items=[]
         for demand in self.demands:
