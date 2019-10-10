@@ -1,38 +1,41 @@
 from Topology_gen import Problem
 import math
 import numpy as np
-from scipy.misc import comb
+from scipy.misc import comb #imports combinatorial function
 
 
 def nCr(n,r):
-    #f = math.factorial
-    #return f(n) / f(r) / f(n-r)
     return comb(n,r,True)
 
 
 class poly():
     """A class implementing a polynomial consisting of monomials with (a) literals and (b) integer terms """
     def __init__(self,coefficients,sets={}):
-        """ Coefficients is a dictionary containing monomial indexes as keys and 
-            coefficients as values. Sets is also a dictionary containing monomial 
-            terms as keys and sets as  values.
+        """ coefficients is a dictionary containing monomial indexes as keys and 
+            coefficients as values: i.e. coefficients = {monomialIndex: coefficient}
+
+            sets is also a dictionary containing monomial 
+            terms as keys and sets as values: i.e. sets = {monomialTerm: set}
         """
         
         self.coefficients = coefficients
         self.sets = sets
 
     def evaluate(self,X):
-        """ Given vector x, evaluate rho_e(x) """
+        """ Given vector x, evaluate rho_e(x) where rho_e(x) is the load on edge e in E
+            Question: Don't we need to change the data set for Kelly Cache Networks 
+            if we change x as a vector rather than a matrix?
+        """
         beta = self.coefficients
         setofx = self.sets
         prod = 1.0
-        for (v,i) in setofx:
-            if X[v,i] != 1:
-                prod = prod * (1.0-X[v,i])
+        for i in setofx:
+            if X[i] != 1:
+                prod = prod * (1.0-X[i])
             else:
                 prod = 0.0
                 break
-        return beta*prod
+        return beta*prod #dictionary x float?
 
     def product(self,p):
         """  Given a poly p, return poly self*p
@@ -54,7 +57,8 @@ class poly():
 
 
 class taylor():
-    """ A class computing the taylor expansion of a function"""
+    """ A class for computing the m^th order Taylor expansion of a function F around the point x0. 
+    """
     def __init__(self,F,x0,m):
         self.F = F # dictionary of C_e^(i)
         self.x0 = x0
@@ -62,17 +66,17 @@ class taylor():
         self.alpha = self.expand() # generate a dictionary for alpha
 
     def evaluate(self,x):
-        """ Evaluate taylor approx at x"""
-        xx = x
+        """ Evaluate Taylor approximation at x """
+        xx = x #Question: Is this assignment necessary?
         out = 0.
         for i in range(self.m+1):
-            centered_xk  = (xx-self.x0)**i
+            centered_xk  = (xx-self.x0)**i #Can't we just use x instead of xx?
             terms =  self.F[i]*centered_xk/math.factorial(i)
             out  += centered_xk*terms
         return out
 
     def expand(self):
-        """ Return the coefficients of the expanded polynomial """
+        """ Return the coefficients of the expanded polynomial. """
         alpha = {}
         for i in range(self.m+1):
             alpha[i] = 0.
@@ -99,7 +103,7 @@ class taylor():
         return out
 
 def rho_uv_dicts(demands, service_rate):
-    """Given demands and service rate as input and generate  2 dictionaries per edge, one including the coefficients of that edge
+    """Given demands and service rate as input and generate two dictionaries per edge, one including the coefficients of that edge
        and one including the sets, used to describe rho_uv as a polynomial of class poly"""
     rho_uvs_coefficients = {}
     rho_uvs_sets = {}
@@ -114,7 +118,7 @@ def rho_uv_dicts(demands, service_rate):
             edge = (path[i],path[i+1])
             nodes_so_far.append(path[i])
             rho_coefficient = 1.*rate/service_rate[edge][demand]
-            rho_set = set(  [ (v,item)  for v in nodes_so_far])
+            rho_set = set([(v,item) for v in nodes_so_far])
             if edge in rho_uvs_coefficients:
                 rho_uvs_coefficients[edge][demand] = rho_coefficient #coefficient for this term is the arrival rate divided by the mu
                 rho_uvs_sets[edge][demand] = rho_set #the set of a term contains all (v,item) pers above it in the path
