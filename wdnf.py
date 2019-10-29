@@ -7,30 +7,31 @@ from decimal import *
 from random_replacement import ro_uv,generateRandomPlacement
 
 
-def nCr(n,r):
-    return comb(n,r,True)
+def nCr(n, r):
+    return comb(n, r, True)
 
 
-class poly():
-    """A class implementing a polynomial consisting of monomials with (a) negative literals and (b) integer terms """
-    def __init__(self,coefficients={},sets={}):
+class wdnf():
+    """A class implementing a polynomial in Weighted Disjunctive Normal Form (WDNF) 
+    consisting of monomials with (a) negative literals and (b) integer terms """
+    def __init__(self, coefficients={}, sets={}):
         """ Coefficients is a dictionary containing monomial indexes as keys and 
-            coefficients as values. Sets is also a dict containing monomial 
-            terms as keys and sets as  values.
+            coefficients as values. Sets is also a dictionary containing monomial 
+            terms as keys and sets as values.
         """
         self.coefficients = coefficients
         self.sets = sets
 
 
-    def evaluate(self,X):
+    def evaluate(self, x):
         """ Given dictionary x, evaluate p(x) """
         sumsofar = 0.0
         for j in self.coefficients:
 	    beta = self.coefficients[j]
             setofx = self.sets[j]
             prod = beta
-	    for (v,i) in setofx:
-                 prod = prod * (1.0-X[v,i])
+	    for i in setofx:
+                 prod = prod * (1.0-x[i])
             sumsofar = sumsofar + prod
         return sumsofar
 
@@ -40,18 +41,24 @@ class poly():
         """       
         new_coefficients = dict([   ((key1,key2), self.coefficients[key1]*p.coefficients[key2])         for key1 in self.coefficients for key2 in p.coefficients])
         new_sets =   dict([   ((key1,key2), self.sets[key1].union(p.sets[key2])) for key1 in self.sets for key2 in p.sets])      
-        return poly(new_coefficients,new_sets)
+        return wdnf(new_coefficients, new_sets)
 
 
     def power(self,k):
         """ Return poly (self)**k. k must be greater that or equal to 1.
         """
-        power_poly = self
+        power_wdnf = self
         i = 1
         while i < k:
-            power_poly = power_poly.product(self)
+            power_wdnf = power_wdnf.product(self)
 	    i +=1
-        return power_poly
+        return power_wdnf
+
+
+    def __add__(self, another):
+        """ Add two polynomials in WDNF and return the resulting WDNF
+        """
+
 
 
 class taylor():
@@ -168,8 +175,8 @@ if __name__=="__main__":
     rho_uvs_coefficients,  rho_uvs_sets = rho_uv_dicts(P)
     print rho_uvs_coefficients[(0, 8)],rho_uvs_sets[(0,8)]
     for edge in rho_uvs_coefficients:
-        rho_poly = poly(rho_uvs_coefficients[edge], rho_uvs_sets[edge])
-        r_val= rho_poly.evaluate(X)
+        rho_wdnf = wdnf(rho_uvs_coefficients[edge], rho_uvs_sets[edge])
+        r_val= rho_wdnf.evaluate(X)
 
 
 
@@ -187,11 +194,11 @@ if __name__=="__main__":
 
         rk ={}
         i=1
-        rk[i] = rho_poly
-        #print rho_poly.coefficients,rho_poly.sets
+        rk[i] = rho_wdnf
+        #print rho_wdnf.coefficients,rho_wdnf.sets
         while i<2:
             i +=1
-            rk[i] = rk[i-1].product(rho_poly)
+            rk[i] = rk[i-1].product(rho_wdnf)
             print 'For edge',edge,'rho^'+str(i),'is',rhos[edge]**i,'calculated via poly is',rk[i].evaluate(X)
 	    
             #print rk[i].coefficients,rk[i].sets
