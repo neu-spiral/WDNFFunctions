@@ -1,5 +1,5 @@
 import cvxopt
-from Toplogy_gen import Problem
+from Topology_gen import Problem
 import math
 import numpy as np
 from scipy.misc import comb
@@ -13,7 +13,8 @@ def nCr(n, r):
 
 class wdnf():
     """A class implementing a polynomial in Weighted Disjunctive Normal Form (WDNF) 
-    consisting of monomials with (a) negative literals and (b) integer terms """
+    consisting of monomials with (a) negative literals and (b) integer terms 
+    """
     def __init__(self, coefficients={}, sets={}):
         """ Coefficients is a dictionary containing monomial indexes as keys and 
             coefficients as values. Sets is also a dictionary containing monomial 
@@ -24,7 +25,8 @@ class wdnf():
 
 
     def evaluate(self, x):
-        """ Given dictionary x, evaluate p(x) """
+        """ Given dictionary x, evaluate p(x) 
+        """
         sumsofar = 0.0
         for j in self.coefficients:
 	    beta = self.coefficients[j]
@@ -39,8 +41,8 @@ class wdnf():
     def product(self,p):
         """  Given a poly p, return poly self*p
         """       
-        new_coefficients = dict([   ((key1,key2), self.coefficients[key1]*p.coefficients[key2])         for key1 in self.coefficients for key2 in p.coefficients])
-        new_sets =   dict([   ((key1,key2), self.sets[key1].union(p.sets[key2])) for key1 in self.sets for key2 in p.sets])      
+        new_coefficients = dict([((key1,key2), self.coefficients[key1]*p.coefficients[key2]) for key1 in self.coefficients for key2 in p.coefficients])
+        new_sets =   dict([((key1,key2), self.sets[key1].union(p.sets[key2])) for key1 in self.sets for key2 in p.sets])      
         return wdnf(new_coefficients, new_sets)
 
 
@@ -55,9 +57,31 @@ class wdnf():
         return power_wdnf
 
 
-    def __add__(self, another):
+    def __add__(self, another): #new overwritten function
         """ Add two polynomials in WDNF and return the resulting WDNF
         """
+        new_coefficients = dict([((key1,key2), self.coefficients[key1] + another.coefficients[key2]) for key1 in self.coefficients for key2 in another.coefficients])
+        new_sets =   dict([((key1,key2), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])      
+        return wdnf(new_coefficients, new_sets)
+
+
+    def __mul__(self, another): #alternative version of already existing product
+        """ Multiply two polynomials in WDNF and return the resulting WDNF
+        """
+        new_coefficients = dict([((key1,key2), self.coefficients[key1] * another.coefficients[key2]) for key1 in self.coefficients for key2 in another.coefficients])
+        new_sets =   dict([((key1,key2), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])      
+        return wdnf(new_coefficients, new_sets)
+
+
+    def compose(self, k, coef_list): #new compose function, a little bit of different from the form that we have discussed in the meeting
+        """ Given a one-dimensional polynomial function f with degree k and coefficients 
+        stored in coef_list, computes f(self) and returns the result in WDNF
+        """
+        result = 0
+        for i in range(k+1):
+            result += power(self, i) * coef_list(i)
+        return result
+
 
 
 
