@@ -73,6 +73,9 @@ class wdnf():
         return wdnf(new_coefficients, new_sets)
 
 
+    ##def__lmul__ missing because python doesn't have lmul but it has rmul
+
+
     def compose(self, k, coef_list): #new compose function, a little bit of different from the form that we have discussed in the meeting
         """ Given a one-dimensional polynomial function f with degree k and coefficients 
         stored in coef_list, computes f(self) and returns the result in WDNF
