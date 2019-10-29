@@ -1,7 +1,10 @@
-from Topology_gen import Problem
+import cvxopt
+from Toplogy_gen import Problem
 import math
 import numpy as np
-from scipy.misc import comb #imports combinatorial function
+from scipy.misc import comb
+from decimal import *
+from random_replacement import ro_uv,generateRandomPlacement
 
 
 def nCr(n,r):
@@ -9,40 +12,36 @@ def nCr(n,r):
 
 
 class poly():
-    """A class implementing a polynomial consisting of monomials with (a) literals and (b) integer terms """
-    def __init__(self,coefficients,sets={}):
-        """ coefficients is a dictionary containing monomial indexes as keys and 
-            coefficients as values: i.e. coefficients = {monomialIndex: coefficient}
-
-            sets is also a dictionary containing monomial 
-            terms as keys and sets as values: i.e. sets = {monomialTerm: set}
+    """A class implementing a polynomial consisting of monomials with (a) negative literals and (b) integer terms """
+    def __init__(self,coefficients={},sets={}):
+        """ Coefficients is a dictionary containing monomial indexes as keys and 
+            coefficients as values. Sets is also a dict containing monomial 
+            terms as keys and sets as  values.
         """
-        
         self.coefficients = coefficients
         self.sets = sets
 
+
     def evaluate(self,X):
-        """ Given vector x, evaluate rho_e(x) where rho_e(x) is the load on edge e in E
-            Question: Don't we need to change the data set for Kelly Cache Networks 
-            if we change x as a vector rather than a matrix?
-        """
-        beta = self.coefficients
-        setofx = self.sets
-        prod = 1.0
-        for i in setofx:
-            if X[i] != 1:
-                prod = prod * (1.0-X[i])
-            else:
-                prod = 0.0
-                break
-        return beta*prod #dictionary x float?
+        """ Given dictionary x, evaluate p(x) """
+        sumsofar = 0.0
+        for j in self.coefficients:
+	    beta = self.coefficients[j]
+            setofx = self.sets[j]
+            prod = beta
+	    for (v,i) in setofx:
+                 prod = prod * (1.0-X[v,i])
+            sumsofar = sumsofar + prod
+        return sumsofar
+
 
     def product(self,p):
         """  Given a poly p, return poly self*p
         """       
-        new_coefficients = self.coefficients*p.coefficients
-        new_sets = self.sets.union(p.sets)
+        new_coefficients = dict([   ((key1,key2), self.coefficients[key1]*p.coefficients[key2])         for key1 in self.coefficients for key2 in p.coefficients])
+        new_sets =   dict([   ((key1,key2), self.sets[key1].union(p.sets[key2])) for key1 in self.sets for key2 in p.sets])      
         return poly(new_coefficients,new_sets)
+
 
     def power(self,k):
         """ Return poly (self)**k. k must be greater that or equal to 1.
@@ -51,81 +50,75 @@ class poly():
         i = 1
         while i < k:
             power_poly = power_poly.product(self)
-            i +=1
+	    i +=1
         return power_poly
 
 
-
 class taylor():
-    """ A class for computing the m^th order Taylor expansion of a function F around the point x0. 
-    """
+    """ A class computing the taylor expansion of a function"""
     def __init__(self,F,x0,m):
-        self.F = F # dictionary of C_e^(i)
+        self.F = F
         self.x0 = x0
         self.m = m
-        self.alpha = self.expand() # generate a dictionary for alpha
+
 
     def evaluate(self,x):
-        """ Evaluate Taylor approximation at x """
-        xx = x #Question: Is this assignment necessary?
+        """ Evaluate taylor approx at x"""
+        xx = x
         out = 0.
         for i in range(self.m+1):
-            centered_xk  = (xx-self.x0)**i #Can't we just use x instead of xx?
+            centered_xk  = (xx-self.x0)**i
             terms =  self.F[i]*centered_xk/math.factorial(i)
             out  += centered_xk*terms
         return out
 
+
     def expand(self):
-        """ Return the coefficients of the expanded polynomial. """
-        alpha = {}
+        """ Return the coefficients of the expanded polynomial """
+        self.alpha = {}
         for i in range(self.m+1):
-            alpha[i] = 0.
+            self.alpha[i] = 0.
         for i in range(self.m+1):
             for j in range(i,self.m+1):
                 if j-i >0:
-                    alpha[i] += self.F[j] *nCr(j,i)/math.factorial(j) * (-self.x0)**(j-i)
-                else:
-                    alpha[i] += self.F[j] *nCr(j,i)/math.factorial(j)
-        return alpha
+                    self.alpha[i] += self.F[j] *nCr(j,i)/math.factorial(j) * (-self.x0)**(j-i)
+		else:
+		    self.alpha[i] += self.F[j] *nCr(j,i)/math.factorial(j)
+        return self.alpha
+
 
     def evaluate_expanded(self,xk):
         """ Compute the expanded polynomial, using xk dictionary containing powers x^k
         """
-        out = self.alpha[0] # ? do not need alpha_e^(0)
+	out = self.alpha[0]
         for i in xk:
             out = out+ xk[i]*self.alpha[i]
         return out    
 
-    def evaluate_expanded_mu(self,xk):
-        out = 0.0
-        for i in xk:
-            out = out + xk[i]*self.alpha[i]*i
-        return out
 
-def rho_uv_dicts(demands, service_rate):
-    """Given demands and service rate as input and generate two dictionaries per edge, one including the coefficients of that edge
+def rho_uv_dicts(P):
+    """Given P, problem instance, as input and generate  2 dictionaries per edge, one including the coefficients of that edge
        and one including the sets, used to describe rho_uv as a polynomial of class poly"""
     rho_uvs_coefficients = {}
     rho_uvs_sets = {}
+    for edge in P.EDGE:
+        rho_uvs_coefficients[edge] = {}
+        rho_uvs_sets[edge] = {}
 
-    for demand in demands:
-        item = demand.item
-        path = demand.path
-        rate = demand.rate
+    index = 0
+    for demand in P.demands:
+        item = demand['item']
+        path = demand['path']
+        rate = demand['rate']
 
         nodes_so_far = []
         for i in range(len(path)-1):
-            edge = (path[i],path[i+1])
-            nodes_so_far.append(path[i])
-            rho_coefficient = 1.*rate/service_rate[edge][demand]
-            rho_set = set([(v,item) for v in nodes_so_far])
-            if edge in rho_uvs_coefficients:
-                rho_uvs_coefficients[edge][demand] = rho_coefficient #coefficient for this term is the arrival rate divided by the mu
-                rho_uvs_sets[edge][demand] = rho_set #the set of a term contains all (v,item) pers above it in the path
-            else:
-                rho_uvs_coefficients[edge] = {demand: rho_coefficient}
-                rho_uvs_sets[edge] = {demand: rho_set}
-
+                edge = (path[i],path[i+1])
+                nodes_so_far.append(path[i])
+                rho_uvs_coefficients[edge][index] = 1.*rate/P.EDGE[edge] #coefficient for this term is the arrival rate divided by the mu
+                rho_uvs_sets[edge][index] = set(  [ (v,item)  for v in nodes_so_far]) #the set of a term contains all (v,item) pers above it in the path
+        index += 1  #indices capture demands. note that each demand passes through an edge only once, so no need for an index per edge
+#
     return rho_uvs_coefficients, rho_uvs_sets
 #
 #def Xtodict(X):
@@ -144,3 +137,65 @@ def rho_uv_dicts(demands, service_rate):
 
 
 
+
+
+if __name__=="__main__":
+
+    for i in range(10):
+        r_val = 0.1*i
+        taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 ) 
+        taylor_approx.expand()
+        r = r_val+0.01
+        print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
+
+
+
+
+    P = Problem.unpickle_cls("problem_abilene_1000demands_300catalog_size_mincap_30maxcap_30_100_uniform")
+    # Problem class is defined in Toplogy_gen.
+
+
+
+
+
+    X = generateRandomPlacement(P)
+
+
+
+    print X
+    rhos = ro_uv(X,P)
+
+    rho_uvs_coefficients,  rho_uvs_sets = rho_uv_dicts(P)
+    print rho_uvs_coefficients[(0, 8)],rho_uvs_sets[(0,8)]
+    for edge in rho_uvs_coefficients:
+        rho_poly = poly(rho_uvs_coefficients[edge], rho_uvs_sets[edge])
+        r_val= rho_poly.evaluate(X)
+
+
+
+        print 'For edge',edge,'rho is',rhos[edge],'calculated via poly is',r_val
+
+
+        #taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 ) 
+     
+        #taylor_approx.expand()
+        #r = r_val+0.01
+        #print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
+	
+
+
+
+        rk ={}
+        i=1
+        rk[i] = rho_poly
+        #print rho_poly.coefficients,rho_poly.sets
+        while i<2:
+            i +=1
+            rk[i] = rk[i-1].product(rho_poly)
+            print 'For edge',edge,'rho^'+str(i),'is',rhos[edge]**i,'calculated via poly is',rk[i].evaluate(X)
+	    
+            #print rk[i].coefficients,rk[i].sets
+
+
+    
+        ##test taylor expansion with f(x) =np.exp(x).
