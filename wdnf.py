@@ -1,10 +1,10 @@
-import cvxopt
+#import cvxopt
 from Topology_gen import Problem
 import math
 import numpy as np
 from scipy.misc import comb
 from decimal import *
-from random_replacement import ro_uv,generateRandomPlacement
+#from random_replacement import ro_uv,generateRandomPlacement
 
 
 def nCr(n, r):
@@ -30,12 +30,15 @@ class wdnf():
         """
         sumsofar = 0.0
         for j in self.coefficients:
-	    beta = self.coefficients[j]
+            beta = self.coefficients[j]
             setofx = self.sets[j]
             prod = beta
-	    for i in setofx:
-                 prod = prod * (1.0-x[i])
-            sumsofar = sumsofar + prod
+	        for i in setofx:
+                if  self.sign == -1:
+                    prod = prod * (1.0-x[i])
+                else:
+                    prod = prod *x[i]
+                sumsofar = sumsofar + prod
         return sumsofar
 
 
@@ -200,62 +203,66 @@ def rho_uv_dicts(P):
 
 
 if __name__=="__main__":
+    wdnf1 = wdnf({1:2.0,2:10.0}, {1:set([1,3]), 2:set([2,4])})
+    print(wdnf1.evaluate(1.))
 
-    for i in range(10):
-        r_val = 0.1*i
-        taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 ) 
-        taylor_approx.expand()
-        r = r_val+0.01
-        print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
+#if __name__=="__main__":
 
-
-
-
-    P = Problem.unpickle_cls("problem_abilene_1000demands_300catalog_size_mincap_30maxcap_30_100_uniform")
-    # Problem class is defined in Toplogy_gen.
+    # for i in range(10):
+    #     r_val = 0.1*i
+    #     taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 ) 
+    #     taylor_approx.expand()
+    #     r = r_val+0.01
+    #     print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
 
 
 
 
-
-    X = generateRandomPlacement(P)
-
-
-
-    print X
-    rhos = ro_uv(X,P)
-
-    rho_uvs_coefficients,  rho_uvs_sets = rho_uv_dicts(P)
-    print rho_uvs_coefficients[(0, 8)],rho_uvs_sets[(0,8)]
-    for edge in rho_uvs_coefficients:
-        rho_wdnf = wdnf(rho_uvs_coefficients[edge], rho_uvs_sets[edge])
-        r_val= rho_wdnf.evaluate(X)
+    # P = Problem.unpickle_cls("problem_abilene_1000demands_300catalog_size_mincap_30maxcap_30_100_uniform")
+    # # Problem class is defined in Toplogy_gen.
 
 
 
-        print 'For edge',edge,'rho is',rhos[edge],'calculated via poly is',r_val
 
 
-        #taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 ) 
+    # X = generateRandomPlacement(P)
+
+
+
+    # print X
+    # rhos = ro_uv(X,P)
+
+    # rho_uvs_coefficients,  rho_uvs_sets = rho_uv_dicts(P)
+    # print rho_uvs_coefficients[(0, 8)],rho_uvs_sets[(0,8)]
+    # for edge in rho_uvs_coefficients:
+    #     rho_wdnf = wdnf(rho_uvs_coefficients[edge], rho_uvs_sets[edge])
+    #     r_val= rho_wdnf.evaluate(X)
+
+
+
+    #     print 'For edge',edge,'rho is',rhos[edge],'calculated via poly is',r_val
+
+
+    #     #taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 ) 
      
-        #taylor_approx.expand()
-        #r = r_val+0.01
-        #print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
+    #     #taylor_approx.expand()
+    #     #r = r_val+0.01
+    #     #print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
 	
 
 
 
-        rk ={}
-        i=1
-        rk[i] = rho_wdnf
-        #print rho_wdnf.coefficients,rho_wdnf.sets
-        while i<2:
-            i +=1
-            rk[i] = rk[i-1].product(rho_wdnf)
-            print 'For edge',edge,'rho^'+str(i),'is',rhos[edge]**i,'calculated via poly is',rk[i].evaluate(X)
+    #     rk ={}
+    #     i=1
+    #     rk[i] = rho_wdnf
+    #     #print rho_wdnf.coefficients,rho_wdnf.sets
+    #     while i<2:
+    #         i +=1
+    #         rk[i] = rk[i-1].product(rho_wdnf)
+    #         print 'For edge',edge,'rho^'+str(i),'is',rhos[edge]**i,'calculated via poly is',rk[i].evaluate(X)
 	    
-            #print rk[i].coefficients,rk[i].sets
+    #         #print rk[i].coefficients,rk[i].sets
 
 
     
-        ##test taylor expansion with f(x) =np.exp(x).
+    #     ##test taylor expansion with f(x) =np.exp(x).
