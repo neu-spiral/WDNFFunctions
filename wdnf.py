@@ -1,10 +1,7 @@
-#import cvxopt
-from Topology_gen import Problem
 import math
 import numpy as np
 from scipy.misc import comb
 from decimal import *
-#from random_replacement import ro_uv,generateRandomPlacement
 
 
 def nCr(n, r):
@@ -57,7 +54,7 @@ class wdnf():
         i = 1
         while i < k:
             power_wdnf = power_wdnf * self
-	        i += 1
+	    i += 1
         return power_wdnf
 
 
@@ -133,8 +130,8 @@ class taylor():
             for j in range(i, self.degree + 1):
                 if j-i >0:
                     new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j) * (-self.center)**(j-i)
-		        else:
-		            new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j)
+		else:
+		    new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j)
         self.poly_coef = new_poly_coef
         self.center = 0.0
 
@@ -142,7 +139,7 @@ class taylor():
     def evaluate_expanded(self, xk):
         """ Compute the expanded polynomial, using xk dictionary containing powers x^k
         """
-	    out = self.alpha[0]
+        out = self.alpha[0]
         for i in xk:
             out = out+ xk[i]*self.alpha[i]
         return out
@@ -176,10 +173,10 @@ def rho_uv_dicts(P):
 
         nodes_so_far = []
         for i in range(len(path)-1):
-                edge = (path[i],path[i+1])
-                nodes_so_far.append(path[i])
-                rho_uvs_coefficients[edge][index] = 1.*rate/P.EDGE[edge] #coefficient for this term is the arrival rate divided by the mu
-                rho_uvs_sets[edge][index] = set(  [ (v,item)  for v in nodes_so_far]) #the set of a term contains all (v,item) pers above it in the path
+            edge = (path[i],path[i+1])
+            nodes_so_far.append(path[i])
+            rho_uvs_coefficients[edge][index] = 1.*rate/P.EDGE[edge] #coefficient for this term is the arrival rate divided by the mu
+            rho_uvs_sets[edge][index] = set(  [ (v,item)  for v in nodes_so_far]) #the set of a term contains all (v,item) pers above it in the path
         index += 1  #indices capture demands. note that each demand passes through an edge only once, so no need for an index per edge
 #
     return rho_uvs_coefficients, rho_uvs_sets
@@ -204,7 +201,8 @@ def rho_uv_dicts(P):
 
 if __name__=="__main__":
     wdnf1 = wdnf({1:2.0,2:10.0}, {1:set([1,3]), 2:set([2,4])})
-    print(wdnf1.evaluate(1.))
+    x = {1:1.0, 2:1.0, 3:1.0, 4:1.0}
+    print(wdnf1.evaluate(x))
 
 #if __name__=="__main__":
 
