@@ -33,7 +33,7 @@ class wdnf():
             beta = self.coefficients[j]
             setofx = self.sets[j]
             prod = beta
-	        for i in setofx:
+            for i in setofx:
                 if  self.sign == -1:
                     prod = prod * (1.0-x[i])
                 else:
