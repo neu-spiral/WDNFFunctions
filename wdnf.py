@@ -13,15 +13,16 @@ def nCr(n, r):
 
 class wdnf():
     """A class implementing a polynomial in Weighted Disjunctive Normal Form (WDNF) 
-    consisting of monomials with (a) negative literals and (b) integer terms 
+    consisting of monomials with (a) negative or positive literals and (b) integer terms 
     """
-    def __init__(self, coefficients={}, sets={}):
-        """ Coefficients is a dictionary containing monomial indexes as keys and 
+    def __init__(self, coefficients={}, sets={}, sign=-1):
+        """ Coefficients is a dictionary containing monomial integer indexes as keys and 
             coefficients as values. Sets is also a dictionary containing monomial 
-            terms as keys and sets as values.
+            integer indexes as keys and sets as values.
         """
         self.coefficients = coefficients
         self.sets = sets
+        self.sign = sign
 
 
     def evaluate(self, x):
@@ -38,96 +39,121 @@ class wdnf():
         return sumsofar
 
 
-    def product(self,p):
-        """  Given a poly p, return poly self*p
-        """       
-        new_coefficients = dict([((key1,key2), self.coefficients[key1]*p.coefficients[key2]) for key1 in self.coefficients for key2 in p.coefficients])
-        new_sets =   dict([((key1,key2), self.sets[key1].union(p.sets[key2])) for key1 in self.sets for key2 in p.sets])      
-        return wdnf(new_coefficients, new_sets)
+    #def product(self,p):
+     #   """  Given a poly p, return poly self*p
+      #  """       
+       # new_coefficients = dict([((key1,key2), self.coefficients[key1]*p.coefficients[key2]) for key1 in self.coefficients for key2 in p.coefficients])
+        #new_sets =   dict([((key1,key2), self.sets[key1].union(p.sets[key2])) for key1 in self.sets for key2 in p.sets])      
+        #return wdnf(new_coefficients, new_sets)
 
 
-    def power(self,k):
+    def power(self, k):
         """ Return poly (self)**k. k must be greater that or equal to 1.
         """
         power_wdnf = self
         i = 1
         while i < k:
-            power_wdnf = power_wdnf.product(self)
-	    i +=1
+            power_wdnf = power_wdnf * self
+	        i += 1
         return power_wdnf
 
 
     def __add__(self, another): #new overwritten function
         """ Add two polynomials in WDNF and return the resulting WDNF
         """
-        new_coefficients = dict([((key1,key2), self.coefficients[key1] + another.coefficients[key2]) for key1 in self.coefficients for key2 in another.coefficients])
-        new_sets =   dict([((key1,key2), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])      
-        return wdnf(new_coefficients, new_sets)
+        if self.sign != another.sign:
+            print('Two WDNF polynomials cannot be added')
+            return
+        new_coefficients = self.coefficients
+        new_sets = self.sets
+        for key2 in another.sets:
+            if another.sets[key2] in self.sets.values:
+                new_coefficients[key2] += another.coefficients[key2]
+            else:
+                max_key = max(self.sets.keys)
+                new_sets[max_key + 1] = another.sets[key2]
+                new_coefficients[max_key + 1] = another.coefficients[key2]
+        return wdnf(new_coefficients, new_sets, self.sign)
 
 
     def __mul__(self, another): #alternative version of already existing product
         """ Multiply two polynomials in WDNF and return the resulting WDNF
         """
+        if self.sign != another.sign:
+            print('Two WDNF polynomials cannot be multiplied')
+            return
         new_coefficients = dict([((key1,key2), self.coefficients[key1] * another.coefficients[key2]) for key1 in self.coefficients for key2 in another.coefficients])
-        new_sets =   dict([((key1,key2), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])      
-        return wdnf(new_coefficients, new_sets)
+        new_sets = dict([((key1,key2), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])      
+        return wdnf(new_coefficients, new_sets, self.sign)
 
 
-    ##def__lmul__ missing because python doesn't have lmul but it has rmul
-
-
-    def compose(self, k, coef_list): #new compose function, a little bit of different from the form that we have discussed in the meeting
-        """ Given a one-dimensional polynomial function f with degree k and coefficients 
-        stored in coef_list, computes f(self) and returns the result in WDNF
+    def __rmul__(self, scalar):
+        """ Multiplies the coeff
         """
-        result = 0
-        for i in range(k+1):
-            result += power(self, i) * coef_list(i)
-        return result
-
-
+        new_coefficients = self.coefficients
+        for k in self.coefficients:
+            new_coefficients[k] = self.coefficients[k] * scalar
+        return wdnf(new_coefficients, self.sets, self.sign) 
 
 
 class taylor():
-    """ A class computing the taylor expansion of a function"""
-    def __init__(self,F,x0,m):
-        self.F = F
-        self.x0 = x0
-        self.m = m
+    """ A class computing the Taylor expansion of a function"""
 
 
-    def evaluate(self,x):
-        """ Evaluate taylor approx at x"""
+    def __init__(self, poly_coef, center, degree):
+        """
+        """
+        self.poly_coef = poly_coef
+        self.center = center
+        self.degree = degree
+
+
+    def evaluate(self, x):
+        """ Evaluates Taylor approx at x"""
         xx = x
         out = 0.
-        for i in range(self.m+1):
-            centered_xk  = (xx-self.x0)**i
-            terms =  self.F[i]*centered_xk/math.factorial(i)
+        for i in range(self.degree + 1):
+            centered_xk  = (xx-self.center)**i
+            terms =  self.poly_coef[i]*centered_xk/math.factorial(i)
             out  += centered_xk*terms
         return out
 
 
     def expand(self):
-        """ Return the coefficients of the expanded polynomial """
-        self.alpha = {}
-        for i in range(self.m+1):
-            self.alpha[i] = 0.
-        for i in range(self.m+1):
-            for j in range(i,self.m+1):
+        """ Updates the coefficients of the given function so that the Taylor expansion 
+        is centered around zero.  
+        """
+        if self.center == 0:
+            return
+        new_poly_coef = [0.0] * (self.degree + 1)
+        for i in range(self.degree + 1):
+            for j in range(i, self.degree + 1):
                 if j-i >0:
-                    self.alpha[i] += self.F[j] *nCr(j,i)/math.factorial(j) * (-self.x0)**(j-i)
-		else:
-		    self.alpha[i] += self.F[j] *nCr(j,i)/math.factorial(j)
-        return self.alpha
+                    new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j) * (-self.center)**(j-i)
+		        else:
+		            new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j)
+        self.poly_coef = new_poly_coef
+        self.center = 0.0
 
 
-    def evaluate_expanded(self,xk):
+    def evaluate_expanded(self, xk):
         """ Compute the expanded polynomial, using xk dictionary containing powers x^k
         """
-	out = self.alpha[0]
+	    out = self.alpha[0]
         for i in xk:
             out = out+ xk[i]*self.alpha[i]
-        return out    
+        return out
+
+
+    def compose(self, my_wdnf): #new compose function
+        """ Given a one-dimensional polynomial function f with degree k and coefficients 
+        stored in coef_list, computes f(self) and returns the result in WDNF
+        """
+        self.expand()
+        result = wdnf({}, {}, my_wdnf.sign)
+        for i in range(self.degree + 1):
+            result += my_wdnf.power(i) * self.poly_coef[i]
+        return result    
 
 
 def rho_uv_dicts(P):
