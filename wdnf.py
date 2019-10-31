@@ -66,12 +66,16 @@ class wdnf():
             return
         new_coefficients = self.coefficients.copy() #empty dict for empty wdnf
         new_sets = self.sets.copy() #empty dict for empty wdnf
-        if not new_sets:
+        if not another.sets:
+            return self
+        elif not self.sets:
             return another
         else:
-            for key in self.sets:
-                if self.sets[key] in another.sets.values():
-                    new_coefficients[key] += another.coefficients[key]
+            for key in another.sets:
+                if another.sets[key] in self.sets.values():
+                    for find_key in self.sets:
+                        if another.sets[key] == self.sets[find_key]:
+                            new_coefficients[find_key] += another.coefficients[key]
                 else:
                     max_key = max(new_coefficients.keys())
                     new_sets[max_key + 1] = another.sets[key]
@@ -79,14 +83,14 @@ class wdnf():
         return wdnf(new_coefficients, new_sets, self.sign)
 
 
-    def __mul__(self, another): #alternative version of already existing product
+    def __mul__(self, another): #alternative version of already existing product, this should change
         """ Multiply two polynomials in WDNF and return the resulting WDNF
         """
         if self.sign != another.sign:
             print('Two WDNF polynomials cannot be multiplied')
             return
-        new_coefficients = dict([((key1,key2), self.coefficients[key1] * another.coefficients[key2]) for key1 in self.coefficients for key2 in another.coefficients])
-        new_sets = dict([((key1,key2), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])
+        new_coefficients = dict([(hash((key1,key2)), self.coefficients[key1] * another.coefficients[key2]) for key1 in self.coefficients for key2 in another.coefficients])
+        new_sets = dict([(hash((key1,key2)), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])
         return wdnf(new_coefficients, new_sets, self.sign)
 
 
@@ -158,12 +162,7 @@ class taylor():
         self.expand()
         result = wdnf({}, {}, my_wdnf.sign)
         for i in range(self.degree + 1):
-            new = self.poly_coef[i] * my_wdnf.power(i)
-            print(new.coefficients)
-            print(new.sets)
             result += self.poly_coef[i] * my_wdnf.power(i)
-            print(result.coefficients)
-            print(result.sets)
         return result
 
 
@@ -215,22 +214,22 @@ if __name__=="__main__":
     wdnf1 = wdnf({1:2.0,2:10.0}, {1:{1,3}, 2:{2,4}})
     #print(wdnf1.coefficients)
     #print(wdnf1.sets)
-    #wdnf2 = wdnf({2:4.0,1:5.0}, {2:{1,2}, 1:{1,3}})
-    #wdnf3 = wdnf1 * wdnf2
-    #wdnf4 = wdnf1 + wdnf2
+    wdnf2 = wdnf({2:4.0,3:5.0}, {2:{1,2}, 3:{1,3}})
+    wdnf3 = wdnf1 * wdnf2
+    wdnf4 = wdnf1 + wdnf2
     #wdnf5 = 4 * wdnf1
     #wdnf6 = wdnf1.power(3)
     #wdnf7 = wdnf0 + wdnf1
     #x = {1:0.5, 2:0.5, 3:0.5, 4:0.5}
-    #print(wdnf1.coefficients)
-    #print(wdnf1.sets)
+    #print(wdnf3.coefficients)
+    #print(wdnf3.sets)
     #print(wdnf2.sets.get(2))
     #print(wdnf1.sign)
     #print(wdnf1.evaluate(x))
     #print(wdnf2.coefficients)
     #print(wdnf2.sets)
-    #print(wdnf5.coefficients)
-    #print(wdnf5.sets)
+    #print(wdnf4.coefficients)
+    #print(wdnf4.sets)
     #print(wdnf4.sign)
     #print(wdnf7.coefficients)
     #print(wdnf7.sets)
