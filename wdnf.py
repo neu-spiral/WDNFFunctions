@@ -64,15 +64,18 @@ class wdnf():
         if self.sign != another.sign:
             print('Two WDNF polynomials cannot be added')
             return
-        new_coefficients = self.coefficients
-        new_sets = self.sets
-        for key2 in another.sets:
-            if another.sets[key2] in self.sets.values:
-                new_coefficients[key2] += another.coefficients[key2]
-            else:
-                max_key = max(self.sets.keys)
-                new_sets[max_key + 1] = another.sets[key2]
-                new_coefficients[max_key + 1] = another.coefficients[key2]
+        new_coefficients = self.coefficients.copy() #empty dict for empty wdnf
+        new_sets = self.sets.copy() #empty dict for empty wdnf
+        if not new_sets:
+            return another
+        else:
+            for key in self.sets:
+                if self.sets[key] in another.sets.values():
+                    new_coefficients[key] += another.coefficients[key]
+                else:
+                    max_key = max(new_coefficients.keys())
+                    new_sets[max_key + 1] = another.sets[key]
+                    new_coefficients[max_key + 1] = another.coefficients[key]
         return wdnf(new_coefficients, new_sets, self.sign)
 
 
@@ -90,7 +93,7 @@ class wdnf():
     def __rmul__(self, scalar):
         """ Multiplies the coefficients of a WDNF function with a scalar
         """
-        new_coefficients = self.coefficients
+        new_coefficients = self.coefficients.copy()
         for k in self.coefficients:
             new_coefficients[k] = self.coefficients[k] * scalar
         return wdnf(new_coefficients, self.sets, self.sign)
@@ -103,9 +106,12 @@ class taylor():
     def __init__(self, poly_coef, center, degree):
         """
         """
-        self.poly_coef = poly_coef
-        self.center = center
-        self.degree = degree
+        if len(poly_coef) != degree + 1:
+            print('Size of the coefficients list does not match with the degree!')
+        else:
+            self.poly_coef = poly_coef
+            self.center = center
+            self.degree = degree
 
 
     def evaluate(self, x):
@@ -152,7 +158,12 @@ class taylor():
         self.expand()
         result = wdnf({}, {}, my_wdnf.sign)
         for i in range(self.degree + 1):
-            result += my_wdnf.power(i) * self.poly_coef[i]
+            new = self.poly_coef[i] * my_wdnf.power(i)
+            print(new.coefficients)
+            print(new.sets)
+            result += self.poly_coef[i] * my_wdnf.power(i)
+            print(result.coefficients)
+            print(result.sets)
         return result
 
 
@@ -200,9 +211,41 @@ def rho_uv_dicts(P):
 
 
 if __name__=="__main__":
-    wdnf1 = wdnf({1:2.0,2:10.0}, {1:set([1,3]), 2:set([2,4])})
-    x = {1:1.0, 2:1.0, 3:1.0, 4:1.0}
-    print(wdnf1.evaluate(x))
+    #wdnf0 = wdnf({}, {})
+    wdnf1 = wdnf({1:2.0,2:10.0}, {1:{1,3}, 2:{2,4}})
+    #print(wdnf1.coefficients)
+    #print(wdnf1.sets)
+    #wdnf2 = wdnf({2:4.0,1:5.0}, {2:{1,2}, 1:{1,3}})
+    #wdnf3 = wdnf1 * wdnf2
+    #wdnf4 = wdnf1 + wdnf2
+    #wdnf5 = 4 * wdnf1
+    #wdnf6 = wdnf1.power(3)
+    #wdnf7 = wdnf0 + wdnf1
+    #x = {1:0.5, 2:0.5, 3:0.5, 4:0.5}
+    #print(wdnf1.coefficients)
+    #print(wdnf1.sets)
+    #print(wdnf2.sets.get(2))
+    #print(wdnf1.sign)
+    #print(wdnf1.evaluate(x))
+    #print(wdnf2.coefficients)
+    #print(wdnf2.sets)
+    #print(wdnf5.coefficients)
+    #print(wdnf5.sets)
+    #print(wdnf4.sign)
+    #print(wdnf7.coefficients)
+    #print(wdnf7.sets)
+    #print(wdnf7.sign)
+
+    myTaylor = taylor([1, 2, 1], 1, 2)
+    #print(myTaylor.evaluate(1))
+    #myTaylor.expand()
+    #print(myTaylor.poly_coef)
+    #print(myTaylor.center)
+    #print(myTaylor.degree)
+    new_wdnf1 = myTaylor.compose(wdnf1)
+    print(new_wdnf1.coefficients)
+    print(new_wdnf1.sets)
+    print(new_wdnf1.sign)
 
 #if __name__=="__main__":
 
