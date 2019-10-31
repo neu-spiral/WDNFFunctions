@@ -9,12 +9,12 @@ def nCr(n, r):
 
 
 class wdnf():
-    """A class implementing a polynomial in Weighted Disjunctive Normal Form (WDNF) 
-    consisting of monomials with (a) negative or positive literals and (b) integer terms 
+    """A class implementing a polynomial in Weighted Disjunctive Normal Form (WDNF)
+    consisting of monomials with (a) negative or positive literals and (b) integer terms
     """
     def __init__(self, coefficients={}, sets={}, sign=-1):
-        """ Coefficients is a dictionary containing monomial integer indexes as keys and 
-            coefficients as values. Sets is also a dictionary containing monomial 
+        """ Coefficients is a dictionary containing monomial integer indexes as keys and
+            coefficients as values. Sets is also a dictionary containing monomial
             integer indexes as keys and sets as values.
         """
         self.coefficients = coefficients
@@ -23,7 +23,7 @@ class wdnf():
 
 
     def evaluate(self, x):
-        """ Given dictionary x, evaluate p(x) 
+        """ Given dictionary x, evaluate p(x)
         """
         sumsofar = 0.0
         for j in self.coefficients:
@@ -41,9 +41,9 @@ class wdnf():
 
     #def product(self,p):
      #   """  Given a poly p, return poly self*p
-      #  """       
+      #  """
        # new_coefficients = dict([((key1,key2), self.coefficients[key1]*p.coefficients[key2]) for key1 in self.coefficients for key2 in p.coefficients])
-        #new_sets =   dict([((key1,key2), self.sets[key1].union(p.sets[key2])) for key1 in self.sets for key2 in p.sets])      
+        #new_sets =   dict([((key1,key2), self.sets[key1].union(p.sets[key2])) for key1 in self.sets for key2 in p.sets])
         #return wdnf(new_coefficients, new_sets)
 
 
@@ -54,7 +54,7 @@ class wdnf():
         i = 1
         while i < k:
             power_wdnf = power_wdnf * self
-	    i += 1
+            i += 1
         return power_wdnf
 
 
@@ -83,17 +83,17 @@ class wdnf():
             print('Two WDNF polynomials cannot be multiplied')
             return
         new_coefficients = dict([((key1,key2), self.coefficients[key1] * another.coefficients[key2]) for key1 in self.coefficients for key2 in another.coefficients])
-        new_sets = dict([((key1,key2), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])      
+        new_sets = dict([((key1,key2), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])
         return wdnf(new_coefficients, new_sets, self.sign)
 
 
     def __rmul__(self, scalar):
-        """ Multiplies the coeff
+        """ Multiplies the coefficients of a WDNF function with a scalar
         """
         new_coefficients = self.coefficients
         for k in self.coefficients:
             new_coefficients[k] = self.coefficients[k] * scalar
-        return wdnf(new_coefficients, self.sets, self.sign) 
+        return wdnf(new_coefficients, self.sets, self.sign)
 
 
 class taylor():
@@ -120,8 +120,8 @@ class taylor():
 
 
     def expand(self):
-        """ Updates the coefficients of the given function so that the Taylor expansion 
-        is centered around zero.  
+        """ Updates the coefficients of the given function so that the Taylor expansion
+        is centered around zero.
         """
         if self.center == 0:
             return
@@ -130,8 +130,8 @@ class taylor():
             for j in range(i, self.degree + 1):
                 if j-i >0:
                     new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j) * (-self.center)**(j-i)
-		else:
-		    new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j)
+                else:
+                    new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j)
         self.poly_coef = new_poly_coef
         self.center = 0.0
 
@@ -146,14 +146,14 @@ class taylor():
 
 
     def compose(self, my_wdnf): #new compose function
-        """ Given a one-dimensional polynomial function f with degree k and coefficients 
+        """ Given a one-dimensional polynomial function f with degree k and coefficients
         stored in coef_list, computes f(self) and returns the result in WDNF
         """
         self.expand()
         result = wdnf({}, {}, my_wdnf.sign)
         for i in range(self.degree + 1):
             result += my_wdnf.power(i) * self.poly_coef[i]
-        return result    
+        return result
 
 
 def rho_uv_dicts(P):
@@ -185,7 +185,7 @@ def rho_uv_dicts(P):
 #    """Given binary matrix X, convert it to a dictionary of (row,column) as keys and X[row,column] as values
 #    """
 #    rows,cols = np.matrix(X).shape
-#    return dict( [ ((r,c),X[r,c]) for r in range(rows) for c in range(cols)])		
+#    return dict( [ ((r,c),X[r,c]) for r in range(rows) for c in range(cols)])
 #
 
 
@@ -208,7 +208,7 @@ if __name__=="__main__":
 
     # for i in range(10):
     #     r_val = 0.1*i
-    #     taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 ) 
+    #     taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 )
     #     taylor_approx.expand()
     #     r = r_val+0.01
     #     print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
@@ -241,12 +241,12 @@ if __name__=="__main__":
     #     print 'For edge',edge,'rho is',rhos[edge],'calculated via poly is',r_val
 
 
-    #     #taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 ) 
-     
+    #     #taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 )
+
     #     #taylor_approx.expand()
     #     #r = r_val+0.01
     #     #print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
-	
+
 
 
 
@@ -258,9 +258,9 @@ if __name__=="__main__":
     #         i +=1
     #         rk[i] = rk[i-1].product(rho_wdnf)
     #         print 'For edge',edge,'rho^'+str(i),'is',rhos[edge]**i,'calculated via poly is',rk[i].evaluate(X)
-	    
+
     #         #print rk[i].coefficients,rk[i].sets
 
 
-    
+
     #     ##test taylor expansion with f(x) =np.exp(x).
