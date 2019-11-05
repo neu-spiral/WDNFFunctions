@@ -12,75 +12,50 @@ class wdnf():
     """A class implementing a polynomial in Weighted Disjunctive Normal Form (WDNF)
     consisting of monomials with (a) negative or positive literals and (b) integer terms
     """
-    def __init__(self, coefficients={}, sets={}, sign=-1):
-        """ Coefficients is a dictionary containing monomial integer indexes as keys and
-            coefficients as values. Sets is also a dictionary containing monomial
-            integer indexes as keys and sets as values.
+    def __init__(self, coefficients={}, sign=-1): #adjusted
+        """ Coefficients is a dictionary containing tuples with indexes of the set
+            elements as keys and coefficients as values. Sign denotes whether the WDNF
+            formed with negative literals or positive literals.
         """
         self.coefficients = coefficients
-        self.sets = sets
         self.sign = sign
 
 
-    def evaluate(self, x):
-        """ Given dictionary x, evaluate p(x)
+    def evaluate(self, x): #adjusted
+        """ Given a dictionary x, evaluate wdnf(x) at the values x.
         """
         sumsofar = 0.0
-        for j in self.coefficients:
-            beta = self.coefficients[j]
-            setofx = self.sets[j]
+        for i in self.coefficients:
+            beta = self.coefficients[i]
+            setofx = i
             prod = beta
-            for i in setofx:
+            for j in setofx:
                 if  self.sign == -1:
-                    prod = prod * (1.0-x[i])
+                    prod = prod * (1.0-x[j])
                 else:
-                    prod = prod *x[i]
-                sumsofar = sumsofar + prod
+                    prod = prod * x[i]
+            sumsofar = sumsofar + prod
         return sumsofar
 
 
-    #def product(self,p):
-     #   """  Given a poly p, return poly self*p
-      #  """
-       # new_coefficients = dict([((key1,key2), self.coefficients[key1]*p.coefficients[key2]) for key1 in self.coefficients for key2 in p.coefficients])
-        #new_sets =   dict([((key1,key2), self.sets[key1].union(p.sets[key2])) for key1 in self.sets for key2 in p.sets])
-        #return wdnf(new_coefficients, new_sets)
-
-
-    def power(self, k):
-        """ Return poly (self)**k. k must be greater that or equal to 1.
-        """
-        power_wdnf = self
-        i = 1
-        while i < k:
-            power_wdnf = power_wdnf * self
-            i += 1
-        return power_wdnf
-
-
-    def __add__(self, another): #new overwritten function
+    def __add__(self, another): #adjusted
         """ Add two polynomials in WDNF and return the resulting WDNF
         """
         if self.sign != another.sign:
             print('Two WDNF polynomials cannot be added')
             return
         new_coefficients = self.coefficients.copy() #empty dict for empty wdnf
-        new_sets = self.sets.copy() #empty dict for empty wdnf
-        if not another.sets:
+        if not another.coefficients:
             return self
-        elif not self.sets:
+        elif not self.coefficients:
             return another
         else:
-            for key in another.sets:
-                if another.sets[key] in self.sets.values():
-                    for find_key in self.sets:
-                        if another.sets[key] == self.sets[find_key]:
-                            new_coefficients[find_key] += another.coefficients[key]
+            for key in another.coefficients:
+                if key in self.coefficients.keys():
+                    new_coefficients[key] += another.coefficients[key]
                 else:
-                    max_key = max(new_coefficients.keys())
-                    new_sets[max_key + 1] = another.sets[key]
-                    new_coefficients[max_key + 1] = another.coefficients[key]
-        return wdnf(new_coefficients, new_sets, self.sign)
+                    new_coefficients[key] = another.coefficients[key]
+        return wdnf(new_coefficients, self.sign)
 
 
     def __mul__(self, another): #alternative version of already existing product, this should change
@@ -94,13 +69,27 @@ class wdnf():
         return wdnf(new_coefficients, new_sets, self.sign)
 
 
-    def __rmul__(self, scalar):
+    def __rmul__(self, scalar): #adjusted
         """ Multiplies the coefficients of a WDNF function with a scalar
         """
         new_coefficients = self.coefficients.copy()
-        for k in self.coefficients:
-            new_coefficients[k] = self.coefficients[k] * scalar
-        return wdnf(new_coefficients, self.sets, self.sign)
+        for key in self.coefficients:
+            new_coefficients[key] = self.coefficients[key] * scalar
+        return wdnf(new_coefficients, self.sign)
+
+
+    def power(self, k):
+        """ Return poly (self)**k. k must be greater that or equal to 1.
+        """
+        power_wdnf = self
+        i = 1
+        while i < k:
+            power_wdnf = power_wdnf * self
+            i += 1
+        return power_wdnf
+
+
+
 
 
 class taylor():
@@ -211,40 +200,38 @@ def rho_uv_dicts(P):
 
 if __name__=="__main__":
     #wdnf0 = wdnf({}, {})
-    wdnf1 = wdnf({1:2.0,2:10.0}, {1:{1,3}, 2:{2,4}})
+    wdnf1 = wdnf({(1, 3): 2.0, (2, 4): 10.0})
     #print(wdnf1.coefficients)
     #print(wdnf1.sets)
-    wdnf2 = wdnf({2:4.0,3:5.0}, {2:{1,2}, 3:{1,3}})
-    wdnf3 = wdnf1 * wdnf2
-    wdnf4 = wdnf1 + wdnf2
-    #wdnf5 = 4 * wdnf1
+    wdnf2 = wdnf({(1, 2): 4.0, (1, 3): 5.0})
+    #wdnf3 = wdnf1 * wdnf2
+    #wdnf4 = wdnf1 + wdnf2
+    wdnf5 = 4 * wdnf1
     #wdnf6 = wdnf1.power(3)
     #wdnf7 = wdnf0 + wdnf1
     #x = {1:0.5, 2:0.5, 3:0.5, 4:0.5}
     #print(wdnf3.coefficients)
-    #print(wdnf3.sets)
     #print(wdnf2.sets.get(2))
     #print(wdnf1.sign)
     #print(wdnf1.evaluate(x))
     #print(wdnf2.coefficients)
-    #print(wdnf2.sets)
     #print(wdnf4.coefficients)
-    #print(wdnf4.sets)
     #print(wdnf4.sign)
+    print(wdnf5.coefficients)
+    print(wdnf5.sign)
     #print(wdnf7.coefficients)
-    #print(wdnf7.sets)
     #print(wdnf7.sign)
 
-    myTaylor = taylor([1, 2, 1], 1, 2)
+    #myTaylor = taylor([1, 2, 1], 1, 2)
     #print(myTaylor.evaluate(1))
     #myTaylor.expand()
     #print(myTaylor.poly_coef)
     #print(myTaylor.center)
     #print(myTaylor.degree)
-    new_wdnf1 = myTaylor.compose(wdnf1)
-    print(new_wdnf1.coefficients)
-    print(new_wdnf1.sets)
-    print(new_wdnf1.sign)
+    #new_wdnf1 = myTaylor.compose(wdnf1)
+    #print(new_wdnf1.coefficients)
+    #print(new_wdnf1.sets)
+    #print(new_wdnf1.sign)
 
 #if __name__=="__main__":
 
