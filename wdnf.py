@@ -8,6 +8,10 @@ def nCr(n, r):
     return comb(n, r, True)
 
 
+def merge(t1, t2):
+    return tuple(sorted(set(t1).union(set(t2))))
+
+
 class wdnf():
     """A class implementing a polynomial in Weighted Disjunctive Normal Form (WDNF)
     consisting of monomials with (a) negative or positive literals and (b) integer terms
@@ -58,15 +62,21 @@ class wdnf():
         return wdnf(new_coefficients, self.sign)
 
 
-    def __mul__(self, another): #alternative version of already existing product, this should change
+    def __mul__(self, another): #adjusted
         """ Multiply two polynomials in WDNF and return the resulting WDNF
         """
         if self.sign != another.sign:
             print('Two WDNF polynomials cannot be multiplied')
             return
-        new_coefficients = dict([(hash((key1,key2)), self.coefficients[key1] * another.coefficients[key2]) for key1 in self.coefficients for key2 in another.coefficients])
-        new_sets = dict([(hash((key1,key2)), self.sets[key1].union(another.sets[key2])) for key1 in self.sets for key2 in another.sets])
-        return wdnf(new_coefficients, new_sets, self.sign)
+        new_coefficients = {}
+        for key1 in self.coefficients:
+            for key2 in another.coefficients:
+                new_key = merge(key1, key2)
+                if new_key in new_coefficients:
+                    new_coefficients[new_key] += self.coefficients[key1] * another.coefficients[key2]
+                else:
+                    new_coefficients[new_key] = self.coefficients[key1] * another.coefficients[key2]
+        return wdnf(new_coefficients, self.sign)
 
 
     def __rmul__(self, scalar): #adjusted
@@ -78,7 +88,7 @@ class wdnf():
         return wdnf(new_coefficients, self.sign)
 
 
-    def power(self, k):
+    def power(self, k): #adjusted
         """ Return poly (self)**k. k must be greater that or equal to 1.
         """
         power_wdnf = self
@@ -200,25 +210,26 @@ def rho_uv_dicts(P):
 
 if __name__=="__main__":
     #wdnf0 = wdnf({}, {})
-    wdnf1 = wdnf({(1, 3): 2.0, (2, 4): 10.0})
+    wdnf1 = wdnf({(1, 3): 2.0, (2, 4): 10.0, (3, 4): 3.0})
     #print(wdnf1.coefficients)
     #print(wdnf1.sets)
     wdnf2 = wdnf({(1, 2): 4.0, (1, 3): 5.0})
-    #wdnf3 = wdnf1 * wdnf2
+    wdnf3 = wdnf1 * wdnf2
     #wdnf4 = wdnf1 + wdnf2
-    wdnf5 = 4 * wdnf1
-    #wdnf6 = wdnf1.power(3)
+    #wdnf5 = 4 * wdnf1
+    wdnf6 = wdnf1.power(2)
     #wdnf7 = wdnf0 + wdnf1
     #x = {1:0.5, 2:0.5, 3:0.5, 4:0.5}
-    #print(wdnf3.coefficients)
+    print(wdnf3.coefficients)
+    print(wdnf3.sign)
     #print(wdnf2.sets.get(2))
     #print(wdnf1.sign)
     #print(wdnf1.evaluate(x))
     #print(wdnf2.coefficients)
     #print(wdnf4.coefficients)
     #print(wdnf4.sign)
-    print(wdnf5.coefficients)
-    print(wdnf5.sign)
+    #print(wdnf5.coefficients)
+    #print(wdnf5.sign)
     #print(wdnf7.coefficients)
     #print(wdnf7.sign)
 
