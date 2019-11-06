@@ -9,6 +9,9 @@ def nCr(n, r):
 
 
 def merge(t1, t2):
+    """Merge two tuples (in this context, keys) into a sorted tuple by taking
+    the set union of them.
+    """
     return tuple(sorted(set(t1).union(set(t2))))
 
 
@@ -89,7 +92,8 @@ class wdnf():
 
 
     def power(self, k): #adjusted
-        """ Return poly (self)**k. k must be greater that or equal to 1.
+        """Calculates the kth power of a WDNF function and returns the result.
+        k must be greater that or equal to 1.
         """
         power_wdnf = self
         i = 1
@@ -97,9 +101,6 @@ class wdnf():
             power_wdnf = power_wdnf * self
             i += 1
         return power_wdnf
-
-
-
 
 
 class taylor():
