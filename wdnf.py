@@ -26,6 +26,14 @@ class wdnf():
         """
         self.coefficients = coefficients
         self.sign = sign
+        dependencies = {}
+        for key in coefficients:
+            for var in key:
+                if var in dependencies:
+                    dependencies[var].append(key)
+                else:
+                    dependencies[var] = [key]
+        self.dependencies = dependencies
 
 
     def evaluate(self, x): #adjusted
@@ -45,40 +53,40 @@ class wdnf():
         return sumsofar
 
 
-    def __add__(self, another): #adjusted
+    def __add__(self, other): #adjusted
         """ Add two polynomials in WDNF and return the resulting WDNF
         """
-        if self.sign != another.sign:
+        if self.sign != other.sign:
             print('Two WDNF polynomials cannot be added')
             return
         new_coefficients = self.coefficients.copy() #empty dict for empty wdnf
-        if not another.coefficients:
+        if not other.coefficients:
             return self
         elif not self.coefficients:
-            return another
+            return other
         else:
-            for key in another.coefficients:
+            for key in other.coefficients:
                 if key in self.coefficients.keys():
-                    new_coefficients[key] += another.coefficients[key]
+                    new_coefficients[key] += other.coefficients[key]
                 else:
-                    new_coefficients[key] = another.coefficients[key]
+                    new_coefficients[key] = other.coefficients[key]
         return wdnf(new_coefficients, self.sign)
 
 
-    def __mul__(self, another): #adjusted
+    def __mul__(self, other): #adjusted
         """ Multiply two polynomials in WDNF and return the resulting WDNF
         """
-        if self.sign != another.sign:
+        if self.sign != other.sign:
             print('Two WDNF polynomials cannot be multiplied')
             return
         new_coefficients = {}
         for key1 in self.coefficients:
-            for key2 in another.coefficients:
+            for key2 in other.coefficients:
                 new_key = merge(key1, key2)
                 if new_key in new_coefficients:
-                    new_coefficients[new_key] += self.coefficients[key1] * another.coefficients[key2]
+                    new_coefficients[new_key] += self.coefficients[key1] * other.coefficients[key2]
                 else:
-                    new_coefficients[new_key] = self.coefficients[key1] * another.coefficients[key2]
+                    new_coefficients[new_key] = self.coefficients[key1] * other.coefficients[key2]
         return wdnf(new_coefficients, self.sign)
 
 
@@ -91,7 +99,7 @@ class wdnf():
         return wdnf(new_coefficients, self.sign)
 
 
-    def power(self, k): #adjusted
+    def __pow__(self, k): #adjusted
         """Calculates the kth power of a WDNF function and returns the result.
         k must be greater that or equal to 1.
         """
@@ -103,19 +111,82 @@ class wdnf():
         return power_wdnf
 
 
-class taylor():
-    """ A class computing the Taylor expansion of a function"""
+class poly():
+    """
+    """
 
 
-    def __init__(self, poly_coef, center, degree):
+    def __init__(self, degree, poly_coef):
         """
         """
         if len(poly_coef) != degree + 1:
             print('Size of the coefficients list does not match with the degree!')
         else:
             self.poly_coef = poly_coef
-            self.center = center
             self.degree = degree
+
+
+    def __add__(self, other): #new
+        """
+        """
+        if self.degree == other.degree:
+            poly_coef = list(np.array(self.poly_coef) + np.array(other.poly_coef))
+        elif self.degree > other.degree:
+            poly_coef = list(np.array(self.poly_coef) + np.array(other.poly_coef + [0] * (self.degree - other.degree)))
+        else:
+            return other + self
+        return poly(self.degree, poly_coef)
+
+
+    def __sub__(self, other): #new
+        return self + ((-1) * other)
+
+
+    def __mul__(self, other): #new
+        degree = self.degree + other.degree
+        poly_coef = [0] * (degree + 1)
+        for i in range(len(self.poly_coef)):
+            for j in range(len(other.poly_coef)):
+                poly_coef[i + j] += self.poly_coef[i] * other.poly_coef[j]
+        return poly(degree, poly_coef)
+
+
+    def __rmul__(self, scalar): #new
+        return poly(self.degree, list(np.array(self.poly_coef) * scalar))
+
+
+    def compose(self, my_wdnf): #new compose function
+        """ Given a one-dimensional polynomial function f with degree k and coefficients
+        stored in coef_list, computes f(self) and returns the result in WDNF
+        """
+        result = wdnf({}, my_wdnf.sign)
+        for i in range(self.degree + 1):
+            result += self.poly_coef[i] * my_wdnf**i
+        return result
+
+
+    def evaluate(self, x):
+        pass
+
+
+class taylor(poly):
+    """ A class computing the Taylor expansion of a function"""
+
+
+    def __init__(self, degree, derivatives, center):
+        """
+        """
+        if center == 0:
+            poly.__init__(self, degree, derivatives)
+        else:
+            poly_coef = [0.0] * (degree + 1)
+            for i in range(degree + 1):
+                for j in range(i, degree + 1):
+                    if j-i > 0:
+                        poly_coef[i] += derivatives[j] * nCr(j,i)/math.factorial(j) * (-center)**(j-i)
+                    else:
+                        poly_coef[i] += derivatives[j] * nCr(j,i)/math.factorial(j)
+            poly.__init__(self, degree, poly_coef)
 
 
     def evaluate(self, x):
@@ -124,12 +195,12 @@ class taylor():
         out = 0.
         for i in range(self.degree + 1):
             centered_xk  = (xx-self.center)**i
-            terms =  self.poly_coef[i]*centered_xk/math.factorial(i)
+            terms =  self.derivatives[i]*centered_xk/math.factorial(i)
             out  += centered_xk*terms
         return out
 
 
-    def expand(self):
+    def expand(self): #should I delete this?
         """ Updates the coefficients of the given function so that the Taylor expansion
         is centered around zero.
         """
@@ -139,9 +210,9 @@ class taylor():
         for i in range(self.degree + 1):
             for j in range(i, self.degree + 1):
                 if j-i >0:
-                    new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j) * (-self.center)**(j-i)
+                    new_poly_coef[i] += self.derivatives[j] *nCr(j,i)/math.factorial(j) * (-self.center)**(j-i)
                 else:
-                    new_poly_coef[i] += self.poly_coef[j] *nCr(j,i)/math.factorial(j)
+                    new_poly_coef[i] += self.derivatives[j] *nCr(j,i)/math.factorial(j)
         self.poly_coef = new_poly_coef
         self.center = 0.0
 
@@ -153,17 +224,6 @@ class taylor():
         for i in xk:
             out = out+ xk[i]*self.alpha[i]
         return out
-
-
-    def compose(self, my_wdnf): #new compose function
-        """ Given a one-dimensional polynomial function f with degree k and coefficients
-        stored in coef_list, computes f(self) and returns the result in WDNF
-        """
-        self.expand()
-        result = wdnf({}, {}, my_wdnf.sign)
-        for i in range(self.degree + 1):
-            result += self.poly_coef[i] * my_wdnf.power(i)
-        return result
 
 
 def rho_uv_dicts(P):
@@ -212,17 +272,17 @@ def rho_uv_dicts(P):
 if __name__=="__main__":
     #wdnf0 = wdnf({}, {})
     wdnf1 = wdnf({(1, 3): 2.0, (2, 4): 10.0, (3, 4): 3.0})
-    #print(wdnf1.coefficients)
+    print(wdnf1.dependencies)
     #print(wdnf1.sets)
-    wdnf2 = wdnf({(1, 2): 4.0, (1, 3): 5.0})
-    wdnf3 = wdnf1 * wdnf2
+    #wdnf2 = wdnf({(1, 2): 4.0, (1, 3): 5.0})
+    #wdnf3 = wdnf1 * wdnf2
     #wdnf4 = wdnf1 + wdnf2
     #wdnf5 = 4 * wdnf1
-    wdnf6 = wdnf1.power(2)
+    #wdnf6 = wdnf1**2
     #wdnf7 = wdnf0 + wdnf1
     #x = {1:0.5, 2:0.5, 3:0.5, 4:0.5}
-    print(wdnf3.coefficients)
-    print(wdnf3.sign)
+    #print(wdnf3.coefficients)
+    #print(wdnf3.sign)
     #print(wdnf2.sets.get(2))
     #print(wdnf1.sign)
     #print(wdnf1.evaluate(x))
@@ -234,12 +294,16 @@ if __name__=="__main__":
     #print(wdnf7.coefficients)
     #print(wdnf7.sign)
 
-    #myTaylor = taylor([1, 2, 1], 1, 2)
+    #poly1 = poly(2, [3, 4, 0])
+    #poly2 = poly(3, [1, 8, 9, 3])
+    #poly3 = poly2 * poly1
+    #print(poly3.degree)
+    #print(poly3.poly_coef)
+    myTaylor = taylor(2, [1, 2, 1], 1)
     #print(myTaylor.evaluate(1))
     #myTaylor.expand()
-    #print(myTaylor.poly_coef)
-    #print(myTaylor.center)
-    #print(myTaylor.degree)
+    print(myTaylor.poly_coef)
+    print(myTaylor.degree)
     #new_wdnf1 = myTaylor.compose(wdnf1)
     #print(new_wdnf1.coefficients)
     #print(new_wdnf1.sets)
