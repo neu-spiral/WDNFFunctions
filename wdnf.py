@@ -16,13 +16,16 @@ def merge(t1, t2):
 
 
 class wdnf():
-    """A class implementing a polynomial in Weighted Disjunctive Normal Form (WDNF)
-    consisting of monomials with (a) negative or positive literals and (b) integer terms
+    """A class implementing a polynomial in Weighted Disjunctive Normal Form
+    (WDNF) consisting of monomials with (a) negative or positive literals and
+    (b) integer terms.
     """
     def __init__(self, coefficients={}, sign=-1): #adjusted
-        """ Coefficients is a dictionary containing tuples with indexes of the set
-            elements as keys and coefficients as values. Sign denotes whether the WDNF
-            formed with negative literals or positive literals.
+        """ Coefficients is a dictionary containing tuples with indexes of the
+        set elements as keys and coefficients as values. Sign denotes whether
+        the WDNF formed with negative literals or positive literals.
+        e.g: wdnf({(1, 3): 2.0, (2, 4): 10.0, (3, 4): 3.0}) =
+        2.0(1-x_1)(1-x_3) + 10.0(1-x_2)(1-x_4) + 3.0(1-x_3)(1-x_4)
         """
         self.coefficients = coefficients
         self.sign = sign
@@ -40,15 +43,15 @@ class wdnf():
         """ Given a dictionary x, evaluate wdnf(x) at the values x.
         """
         sumsofar = 0.0
-        for i in self.coefficients:
+        for key in self.coefficients:
             beta = self.coefficients[i]
-            setofx = i
+            setofx = key
             prod = beta
-            for j in setofx:
+            for var in setofx:
                 if  self.sign == -1:
-                    prod = prod * (1.0-x[j])
+                    prod = prod * (1.0-x[var])
                 else:
-                    prod = prod * x[i]
+                    prod = prod * x[var]
             sumsofar = sumsofar + prod
         return sumsofar
 
@@ -112,12 +115,15 @@ class wdnf():
 
 
 class poly():
-    """
+    """A class for defining univariate polynomials with the largest degree and
+    the coefficients list of size (largest degree + 1) where coefficients are
+    stored as [coef_0 coef_1 ... coef_n]
     """
 
 
     def __init__(self, degree, poly_coef):
-        """
+        """e.g: poly(n, [a0 a1 ... an]) defines
+        f(x) = a0 + a1*x + ... + an*(x^n)
         """
         if len(poly_coef) != degree + 1:
             print('Size of the coefficients list does not match with the degree!')
@@ -127,7 +133,8 @@ class poly():
 
 
     def __add__(self, other): #new
-        """
+        """Adds two univariate polynomials and returns the sum as another poly
+        object.
         """
         if self.degree == other.degree:
             poly_coef = list(np.array(self.poly_coef) + np.array(other.poly_coef))
@@ -139,10 +146,16 @@ class poly():
 
 
     def __sub__(self, other): #new
+        """Subtracts two univariate polynomials and returns the difference as
+        another poly object.
+        """
         return self + ((-1) * other)
 
 
     def __mul__(self, other): #new
+        """Multiplies two polynomials and return the product as another poly
+        object.
+        """
         degree = self.degree + other.degree
         poly_coef = [0] * (degree + 1)
         for i in range(len(self.poly_coef)):
@@ -152,12 +165,14 @@ class poly():
 
 
     def __rmul__(self, scalar): #new
+        """Multiplies a polynomial with a scalar.
+        """
         return poly(self.degree, list(np.array(self.poly_coef) * scalar))
 
 
     def compose(self, my_wdnf): #new compose function
         """ Given a one-dimensional polynomial function f with degree k and coefficients
-        stored in coef_list, computes f(self) and returns the result in WDNF
+        stored in coef_list, computes f(self) and returns the result in WDNF.
         """
         result = wdnf({}, my_wdnf.sign)
         for i in range(self.degree + 1):
@@ -166,7 +181,12 @@ class poly():
 
 
     def evaluate(self, x):
-        pass
+        """Calculates f(x) for a given x.
+        """
+        output = 0.0
+        for i in range(self.degree + 1):
+            output += self.poly_coef[i] * (x**i)
+        return output
 
 
 class taylor(poly):
@@ -174,7 +194,9 @@ class taylor(poly):
 
 
     def __init__(self, degree, derivatives, center):
-        """
+        """Given the calculated derivatives at the center, initializes Taylor
+        expansion of a function in the standart polynomial form by expanding the
+        terms using binomial expansion.
         """
         if center == 0:
             poly.__init__(self, degree, derivatives)
@@ -201,8 +223,8 @@ class taylor(poly):
 
 
     def expand(self): #should I delete this?
-        """ Updates the coefficients of the given function so that the Taylor expansion
-        is centered around zero.
+        """ Updates the coefficients of the given function so that the Taylor
+        expansion is centered around zero.
         """
         if self.center == 0:
             return
@@ -218,7 +240,8 @@ class taylor(poly):
 
 
     def evaluate_expanded(self, xk):
-        """ Compute the expanded polynomial, using xk dictionary containing powers x^k
+        """ Compute the expanded polynomial, using xk dictionary containing
+        powers x^k
         """
         out = self.alpha[0]
         for i in xk:
