@@ -156,11 +156,12 @@ class poly():
         """e.g: poly(n, [a0 a1 ... an]) defines
         f(x) = a0 + a1*x + ... + an*(x^n)
         """
-        if len(poly_coef) != degree + 1:
-            print('Size of the coefficients list does not match with the degree!')
-        else:
-            self.poly_coef = poly_coef
-            self.degree = degree
+        # if len(poly_coef) != degree + 1:
+        #     print('Size of the coefficients list does not match with the degree!')
+        # else:
+        assert len(poly_coef) == (degree + 1), 'Size of the coefficients list does not match with the degree!'
+        self.poly_coef = poly_coef
+        self.degree = degree
 
 
     def __add__(self, other): #edited
