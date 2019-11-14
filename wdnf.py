@@ -15,12 +15,30 @@ def merge(t1, t2):
     return tuple(sorted(set(t1).union(set(t2))))
 
 
+# class Error(Exception):
+#     """Base class for exceptions in wdnf class.
+#     """
+#     pass
+#
+#
+# class AdditionError(Error):
+#     """Raised when user tries to add two wdnf objects of different signs.
+#     """
+#     pass
+#
+#
+# class MultiplicationError(Error):
+#     """Raised when user tries to multiply two wdnf objects of different signs.
+#     """
+#     pass
+
+
 class wdnf():
     """A class implementing a polynomial in Weighted Disjunctive Normal Form
     (WDNF) consisting of monomials with (a) negative or positive literals and
     (b) integer terms.
     """
-    def __init__(self, coefficients={}, sign=-1): #adjusted
+    def __init__(self, coefficients={}, sign=-1): #edited
         """ Coefficients is a dictionary containing tuples with indexes of the
         set elements as keys and coefficients as values. Sign denotes whether
         the WDNF formed with negative literals or positive literals.
@@ -29,39 +47,47 @@ class wdnf():
         """
         self.coefficients = coefficients
         self.sign = sign
+
+
+    def findDependencies(self): #new
         dependencies = {}
-        for key in coefficients:
+        for key in self.coefficients:
             for var in key:
                 if var in dependencies:
                     dependencies[var].append(key)
                 else:
                     dependencies[var] = [key]
-        self.dependencies = dependencies
+        return dependencies
 
 
-    def evaluate(self, x): #adjusted
+    def __call__(self, x): #edited
         """ Given a dictionary x, evaluate wdnf(x) at the values x.
         """
         sumsofar = 0.0
         for key in self.coefficients:
-            beta = self.coefficients[i]
+            beta = self.coefficients[key]
             setofx = key
             prod = beta
-            for var in setofx:
-                if  self.sign == -1:
+            if  self.sign == -1:
+                for var in setofx:
                     prod = prod * (1.0-x[var])
-                else:
+            else:
+                for var in setofx:
                     prod = prod * x[var]
             sumsofar = sumsofar + prod
         return sumsofar
 
 
-    def __add__(self, other): #adjusted
+    def __add__(self, other): #edited
         """ Add two polynomials in WDNF and return the resulting WDNF
         """
-        if self.sign != other.sign:
-            print('Two WDNF polynomials cannot be added')
-            return
+        assert self.sign == other.sign, 'Two WDNF polynomials of different signs cannot be added!'
+        #try:
+        #    if self.sign != other.sign:
+        #        raise AdditionError
+        #except AdditionError:
+        #    print('Two WDNF polynomials of different signs cannot be added!')
+        #    return
         new_coefficients = self.coefficients.copy() #empty dict for empty wdnf
         if not other.coefficients:
             return self
@@ -76,12 +102,16 @@ class wdnf():
         return wdnf(new_coefficients, self.sign)
 
 
-    def __mul__(self, other): #adjusted
+    def __mul__(self, other): #edited
         """ Multiply two polynomials in WDNF and return the resulting WDNF
         """
-        if self.sign != other.sign:
-            print('Two WDNF polynomials cannot be multiplied')
-            return
+        assert self.sign == other.sign, 'Two WDNF polynomials of different signs cannot be multiplied!'
+        # try:
+        #     if self.sign != other.sign:
+        #         raise MultiplicationError
+        # except MultiplicationError:
+        #     print('Two WDNF polynomials of different signs cannot be multiplied!')
+        #     return
         new_coefficients = {}
         for key1 in self.coefficients:
             for key2 in other.coefficients:
@@ -93,7 +123,7 @@ class wdnf():
         return wdnf(new_coefficients, self.sign)
 
 
-    def __rmul__(self, scalar): #adjusted
+    def __rmul__(self, scalar):
         """ Multiplies the coefficients of a WDNF function with a scalar
         """
         new_coefficients = self.coefficients.copy()
@@ -102,16 +132,17 @@ class wdnf():
         return wdnf(new_coefficients, self.sign)
 
 
-    def __pow__(self, k): #adjusted
+    def __pow__(self, k): #edited
         """Calculates the kth power of a WDNF function and returns the result.
-        k must be greater that or equal to 1.
+        k must be greater than or equal to 0.
         """
-        power_wdnf = self
-        i = 1
-        while i < k:
-            power_wdnf = power_wdnf * self
-            i += 1
-        return power_wdnf
+        if k==0:
+            return wdnf({(): 1}, self.sign)
+        else:
+            power_wdnf = self
+            for i in range(2, k + 1):
+                power_wdnf *= self
+            return power_wdnf
 
 
 class poly():
@@ -170,17 +201,19 @@ class poly():
         return poly(self.degree, list(np.array(self.poly_coef) * scalar))
 
 
-    def compose(self, my_wdnf): #new compose function
+    def compose(self, my_wdnf): #edited
         """ Given a one-dimensional polynomial function f with degree k and coefficients
         stored in coef_list, computes f(self) and returns the result in WDNF.
         """
-        result = wdnf({}, my_wdnf.sign)
-        for i in range(self.degree + 1):
-            result += self.poly_coef[i] * my_wdnf**i
+        wdnfSoFar = wdnf({(): 1})
+        result = self.poly_coef[0] * wdnfSoFar
+        for i in range(1, self.degree + 1):
+            wdnfSoFar *= my_wdnf
+            result += self.poly_coef[i] * wdnfSoFar
         return result
 
 
-    def evaluate(self, x):
+    def __call__(self, x):
         """Calculates f(x) for a given x.
         """
         output = 0.0
@@ -211,68 +244,68 @@ class taylor(poly):
             poly.__init__(self, degree, poly_coef)
 
 
-    def evaluate(self, x):
-        """ Evaluates Taylor approx at x"""
-        xx = x
-        out = 0.
-        for i in range(self.degree + 1):
-            centered_xk  = (xx-self.center)**i
-            terms =  self.derivatives[i]*centered_xk/math.factorial(i)
-            out  += centered_xk*terms
-        return out
-
-
-    def expand(self): #should I delete this?
-        """ Updates the coefficients of the given function so that the Taylor
-        expansion is centered around zero.
-        """
-        if self.center == 0:
-            return
-        new_poly_coef = [0.0] * (self.degree + 1)
-        for i in range(self.degree + 1):
-            for j in range(i, self.degree + 1):
-                if j-i >0:
-                    new_poly_coef[i] += self.derivatives[j] *nCr(j,i)/math.factorial(j) * (-self.center)**(j-i)
-                else:
-                    new_poly_coef[i] += self.derivatives[j] *nCr(j,i)/math.factorial(j)
-        self.poly_coef = new_poly_coef
-        self.center = 0.0
-
-
-    def evaluate_expanded(self, xk):
-        """ Compute the expanded polynomial, using xk dictionary containing
-        powers x^k
-        """
-        out = self.alpha[0]
-        for i in xk:
-            out = out+ xk[i]*self.alpha[i]
-        return out
-
-
-def rho_uv_dicts(P):
-    """Given P, problem instance, as input and generate  2 dictionaries per edge, one including the coefficients of that edge
-       and one including the sets, used to describe rho_uv as a polynomial of class poly"""
-    rho_uvs_coefficients = {}
-    rho_uvs_sets = {}
-    for edge in P.EDGE:
-        rho_uvs_coefficients[edge] = {}
-        rho_uvs_sets[edge] = {}
-
-    index = 0
-    for demand in P.demands:
-        item = demand['item']
-        path = demand['path']
-        rate = demand['rate']
-
-        nodes_so_far = []
-        for i in range(len(path)-1):
-            edge = (path[i],path[i+1])
-            nodes_so_far.append(path[i])
-            rho_uvs_coefficients[edge][index] = 1.*rate/P.EDGE[edge] #coefficient for this term is the arrival rate divided by the mu
-            rho_uvs_sets[edge][index] = set(  [ (v,item)  for v in nodes_so_far]) #the set of a term contains all (v,item) pers above it in the path
-        index += 1  #indices capture demands. note that each demand passes through an edge only once, so no need for an index per edge
+#     def evaluate(self, x):
+#         """ Evaluates Taylor approx at x"""
+#         xx = x
+#         out = 0.
+#         for i in range(self.degree + 1):
+#             centered_xk  = (xx-self.center)**i
+#             terms =  self.derivatives[i]*centered_xk/math.factorial(i)
+#             out  += centered_xk*terms
+#         return out
 #
-    return rho_uvs_coefficients, rho_uvs_sets
+#
+#     def expand(self): #should I delete this?
+#         """ Updates the coefficients of the given function so that the Taylor
+#         expansion is centered around zero.
+#         """
+#         if self.center == 0:
+#             return
+#         new_poly_coef = [0.0] * (self.degree + 1)
+#         for i in range(self.degree + 1):
+#             for j in range(i, self.degree + 1):
+#                 if j-i >0:
+#                     new_poly_coef[i] += self.derivatives[j] *nCr(j,i)/math.factorial(j) * (-self.center)**(j-i)
+#                 else:
+#                     new_poly_coef[i] += self.derivatives[j] *nCr(j,i)/math.factorial(j)
+#         self.poly_coef = new_poly_coef
+#         self.center = 0.0
+#
+#
+#     def evaluate_expanded(self, xk):
+#         """ Compute the expanded polynomial, using xk dictionary containing
+#         powers x^k
+#         """
+#         out = self.alpha[0]
+#         for i in xk:
+#             out = out+ xk[i]*self.alpha[i]
+#         return out
+#
+#
+# def rho_uv_dicts(P):
+#     """Given P, problem instance, as input and generate  2 dictionaries per edge, one including the coefficients of that edge
+#        and one including the sets, used to describe rho_uv as a polynomial of class poly"""
+#     rho_uvs_coefficients = {}
+#     rho_uvs_sets = {}
+#     for edge in P.EDGE:
+#         rho_uvs_coefficients[edge] = {}
+#         rho_uvs_sets[edge] = {}
+#
+#     index = 0
+#     for demand in P.demands:
+#         item = demand['item']
+#         path = demand['path']
+#         rate = demand['rate']
+#
+#         nodes_so_far = []
+#         for i in range(len(path)-1):
+#             edge = (path[i],path[i+1])
+#             nodes_so_far.append(path[i])
+#             rho_uvs_coefficients[edge][index] = 1.*rate/P.EDGE[edge] #coefficient for this term is the arrival rate divided by the mu
+#             rho_uvs_sets[edge][index] = set(  [ (v,item)  for v in nodes_so_far]) #the set of a term contains all (v,item) pers above it in the path
+#         index += 1  #indices capture demands. note that each demand passes through an edge only once, so no need for an index per edge
+# #
+#     return rho_uvs_coefficients, rho_uvs_sets
 #
 #def Xtodict(X):
 #    """Given binary matrix X, convert it to a dictionary of (row,column) as keys and X[row,column] as values
@@ -289,44 +322,42 @@ def rho_uv_dicts(P):
 #        return poly.evaluate(self,x)
 
 
-
-
-
 if __name__=="__main__":
     #wdnf0 = wdnf({}, {})
     wdnf1 = wdnf({(1, 3): 2.0, (2, 4): 10.0, (3, 4): 3.0})
-    print(wdnf1.dependencies)
+    #print(wdnf1.findDependencies())
     #print(wdnf1.sets)
-    #wdnf2 = wdnf({(1, 2): 4.0, (1, 3): 5.0})
+    wdnf2 = wdnf({(1, 2): 4.0, (1, 3): 5.0})
     #wdnf3 = wdnf1 * wdnf2
-    #wdnf4 = wdnf1 + wdnf2
+    wdnf4 = wdnf1 + wdnf2
     #wdnf5 = 4 * wdnf1
-    #wdnf6 = wdnf1**2
+    wdnf6 = wdnf1**2
     #wdnf7 = wdnf0 + wdnf1
-    #x = {1:0.5, 2:0.5, 3:0.5, 4:0.5}
+    x = {1:0.5, 2:0.5, 3:0.5, 4:0.5}
     #print(wdnf3.coefficients)
     #print(wdnf3.sign)
     #print(wdnf2.sets.get(2))
     #print(wdnf1.sign)
-    #print(wdnf1.evaluate(x))
+    #print(wdnf1(x))
     #print(wdnf2.coefficients)
     #print(wdnf4.coefficients)
     #print(wdnf4.sign)
     #print(wdnf5.coefficients)
     #print(wdnf5.sign)
-    #print(wdnf7.coefficients)
-    #print(wdnf7.sign)
+    print(wdnf6.coefficients)
+    #print(wdnf6.sign)
 
     #poly1 = poly(2, [3, 4, 0])
-    #poly2 = poly(3, [1, 8, 9, 3])
+    poly2 = poly(2, [8, 1, 1])
     #poly3 = poly2 * poly1
-    #print(poly3.degree)
-    #print(poly3.poly_coef)
-    myTaylor = taylor(2, [1, 2, 1], 1)
+    wdnf4 = poly2.compose(wdnf1)
+    print(wdnf4.coefficients)
+    #print(poly4.poly_coef)
+    #myTaylor = taylor(2, [1, 2, 1], 1)
     #print(myTaylor.evaluate(1))
     #myTaylor.expand()
-    print(myTaylor.poly_coef)
-    print(myTaylor.degree)
+    #print(myTaylor.poly_coef)
+    #print(myTaylor.degree)
     #new_wdnf1 = myTaylor.compose(wdnf1)
     #print(new_wdnf1.coefficients)
     #print(new_wdnf1.sets)
