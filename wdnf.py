@@ -163,13 +163,11 @@ class poly():
             self.degree = degree
 
 
-    def __add__(self, other): #new
+    def __add__(self, other): #edited
         """Adds two univariate polynomials and returns the sum as another poly
         object.
         """
-        if self.degree == other.degree:
-            poly_coef = list(np.array(self.poly_coef) + np.array(other.poly_coef))
-        elif self.degree > other.degree:
+        if self.degree >= other.degree:
             poly_coef = list(np.array(self.poly_coef) + np.array(other.poly_coef + [0] * (self.degree - other.degree)))
         else:
             return other + self
@@ -347,12 +345,12 @@ if __name__=="__main__":
     print(wdnf6.coefficients)
     #print(wdnf6.sign)
 
-    #poly1 = poly(2, [3, 4, 0])
+    poly1 = poly(2, [3, 4, 0])
     poly2 = poly(2, [8, 1, 1])
-    #poly3 = poly2 * poly1
+    poly3 = poly2 + poly1
     wdnf4 = poly2.compose(wdnf1)
-    print(wdnf4.coefficients)
-    #print(poly4.poly_coef)
+    #print(wdnf4.coefficients)
+    print(poly3.poly_coef)
     #myTaylor = taylor(2, [1, 2, 1], 1)
     #print(myTaylor.evaluate(1))
     #myTaylor.expand()
