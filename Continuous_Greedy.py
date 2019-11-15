@@ -1,7 +1,7 @@
 # # demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
 # import cvxopt
 import numpy as np
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3 or higher
 # from time import time
 # from poly import taylor,rho_uv_dicts,poly
 # from helpers import write
@@ -9,25 +9,18 @@ from abc import ABC, abstractmethod
 # from Toplogy_gen import Problem, Demand
 # import os
 # #from UtilityFunction import UtilityFunction
-#
 
 
-class LinearSolver(ABC):
+class LinearSolver(object): #For Python 3, replace object with ABCMeta
     """Abstract class to parent solver classes with different constraints.
     """
+    __metaclass__ = ABCMeta #Remove this line for Python 3
 
 
-    def __init__(self):
-        """Abstract method. Not sure whether it is necessary or not yet.
-        """
-        super().__init__()
-
-
-    def solve(groundSet, k):
-        """Abstract method to solve submodular maximization problems with
+    def solve(self, sets, constraints):
+        """Abstract method to solve submodular maximization problems
         according to given constraints.
         """
-
         pass
 
 
@@ -36,12 +29,13 @@ class UniformMatroidSolver(LinearSolver):
     """
 
 
-    def __init__(self):
-        pass
-
-
-    def solve(self):
-        pass
+    def solve(self, groundSet, k):
+        result = {}
+        for i in range(k):
+            keyWithMaxValue = max(groundSet, key=groundSet.get)
+            result[keyWithMaxValue] = groundSet[keyWithMaxValue]
+            del groundSet[keyWithMaxValue]
+        return result
 
 
 class PartitionMatroidSolver(LinearSolver):
@@ -49,13 +43,29 @@ class PartitionMatroidSolver(LinearSolver):
     """
 
 
-    def __init__(self):
-        pass
+    def solve(self, partitionedSet, k_list):
+        """Partitioned set is a dictionary of dictionaries, k_list is a
+        dictionary of cardinalities.
+        """
+        UniformSolver = UniformMatroidSolver()
+        result = {}
+        for key in partitionedSet:
+            result[key] = UniformSolver.solve(partitionedSet[key], k_list[key])
+        return result
 
 
-    def solve(self):
-        pass
+if __name__ == "__main__":
+    actors = {'act1': 1000, 'act2': 300, 'act3': 400, 'act4': 500, 'act5': 700}
+    directors = {'dir1': 1500, 'dir2': 1200, 'dir3': 250}
+    figurants = {'fig1': 10, 'fig2': 20, 'fig3': 35, 'fig4': 5, 'fig5': 6, 'fig6': 2, 'fig7': 13}
+    candidates = {'actors': actors, 'directors': directors, 'figurants': figurants}
 
+    #print(max(actors, key=actors.get))
+    #NewUniSolver = UniformMatroidSolver()
+    #print(NewUniSolver.solve(actors, 3))
+    NewPartSolver = PartitionMatroidSolver()
+    k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
+    print(NewPartSolver.solve(candidates, k_list))
 
 # class ContinuousGreedy:
 #     def __init__(self, P):
@@ -477,11 +487,7 @@ class PartitionMatroidSolver(LinearSolver):
 #         return grad_Y, grad_Mu
 #
 #
-if __name__=="__main__":
-    actors = {'act1': 1000, 'act2': 300, 'act3': 400, 'act4': 500, 'act5': 700}
-    max(actors, key=actors.get)
-
-
+#if __name__=="__main__":
 #     np.random.seed(1993)
 #     parser = argparse.ArgumentParser(description = 'Simulate the Continuous Greedy Alg.',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 #     parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',

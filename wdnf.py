@@ -60,7 +60,7 @@ class wdnf():
         return dependencies
 
 
-    def __call__(self, x): #edited
+    def __call__(self, x): #edited (old evaluate(x) function)
         """ Given a dictionary x, evaluate wdnf(x) at the values x.
         """
         sumsofar = 0.0
@@ -78,7 +78,7 @@ class wdnf():
         return sumsofar
 
 
-    def __add__(self, other): #edited
+    def __add__(self, other): #edited 
         """ Add two polynomials in WDNF and return the resulting WDNF
         """
         assert self.sign == other.sign, 'Two WDNF polynomials of different signs cannot be added!'
