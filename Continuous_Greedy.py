@@ -2,6 +2,7 @@
 # import cvxopt
 import numpy as np
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3 or higher
+from heapq import nlargest
 # from time import time
 # from poly import taylor,rho_uv_dicts,poly
 # from helpers import write
@@ -30,12 +31,12 @@ class UniformMatroidSolver(LinearSolver):
 
 
     def solve(self, groundSet, k):
-        result = {}
-        for i in range(k):
-            keyWithMaxValue = max(groundSet, key=groundSet.get)
-            result[keyWithMaxValue] = groundSet[keyWithMaxValue]
-            del groundSet[keyWithMaxValue]
-        return result
+        # result = {}
+        # for i in range(k):
+        #     keyWithMaxValue = max(groundSet, key=groundSet.get)
+        #     result[keyWithMaxValue] = groundSet[keyWithMaxValue]
+        #     del groundSet[keyWithMaxValue]
+        return nlargest(k, groundSet, key = groundSet.get) #result
 
 
 class PartitionMatroidSolver(LinearSolver):
@@ -49,8 +50,12 @@ class PartitionMatroidSolver(LinearSolver):
         """
         UniformSolver = UniformMatroidSolver()
         result = {}
+        selection = []
         for key in partitionedSet:
-            result[key] = UniformSolver.solve(partitionedSet[key], k_list[key])
+            for item in selection:
+                partitionedSet[key].pop(item, None)
+            selection = UniformSolver.solve(partitionedSet[key], k_list[key])
+            result[key] = selection
         return result
 
 
@@ -60,12 +65,42 @@ if __name__ == "__main__":
     figurants = {'fig1': 10, 'fig2': 20, 'fig3': 35, 'fig4': 5, 'fig5': 6, 'fig6': 2, 'fig7': 13}
     candidates = {'actors': actors, 'directors': directors, 'figurants': figurants}
 
-    #print(max(actors, key=actors.get))
-    #NewUniSolver = UniformMatroidSolver()
+    NewUniSolver = UniformMatroidSolver()
     #print(NewUniSolver.solve(actors, 3))
     NewPartSolver = PartitionMatroidSolver()
     k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
     print(NewPartSolver.solve(candidates, k_list))
+
+    kids = {'kid1': {'goalkeeper': 100, 'defender': 50, 'forward': 25},
+            'kid2': {'goalkeeper': 80, 'defender': 150, 'forward': 30},
+            'kid3': {'goalkeeper': 10, 'defender': 35, 'forward': 250},
+            'kid4': {'goalkeeper': 300, 'defender': 5, 'forward': 125},
+            'kid5': {'goalkeeper': 20, 'defender': 50, 'forward': 75},
+            'kid6': {'goalkeeper': 50, 'defender': 28, 'forward': 36},
+            'kid7': {'goalkeeper': 60, 'defender': 90, 'forward': 12},
+            'kid8': {'goalkeeper': 70, 'defender': 90, 'forward': 450},
+            'kid9': {'goalkeeper': 45, 'defender': 350, 'forward': 30},
+            'kid10': {'goalkeeper': 40, 'defender': 48, 'forward': 45},
+            'kid11': {'goalkeeper': 175, 'defender': 12, 'forward': 120}}
+
+    goalkeepers = {}
+    for kid in kids:
+        goalkeepers[kid] = kids[kid]['goalkeeper']
+    #print(goalkeepers)
+
+    defenders = {}
+    for kid in kids:
+        defenders[kid] = kids[kid]['defender']
+    #print(defenders)
+
+    forwards = {}
+    for kid in kids:
+        forwards[kid] = kids[kid]['forward']
+    #print(forwards)
+
+    players = {'goalkeepers': goalkeepers, 'defenders': defenders, 'forwards': forwards}
+    player_list = {'goalkeepers': 1, 'defenders': 5, 'forwards': 5}
+    print(NewPartSolver.solve(players, player_list))
 
 # class ContinuousGreedy:
 #     def __init__(self, P):
