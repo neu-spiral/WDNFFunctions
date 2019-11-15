@@ -66,7 +66,7 @@ if __name__ == "__main__":
     candidates = {'actors': actors, 'directors': directors, 'figurants': figurants}
 
     NewUniSolver = UniformMatroidSolver()
-    #print(NewUniSolver.solve(actors, 3))
+    print(NewUniSolver.solve(actors, 3))
     NewPartSolver = PartitionMatroidSolver()
     k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
     print(NewPartSolver.solve(candidates, k_list))
@@ -83,20 +83,15 @@ if __name__ == "__main__":
             'kid10': {'goalkeeper': 40, 'defender': 48, 'forward': 45},
             'kid11': {'goalkeeper': 175, 'defender': 12, 'forward': 120}}
 
-    goalkeepers = {}
-    for kid in kids:
-        goalkeepers[kid] = kids[kid]['goalkeeper']
-    #print(goalkeepers)
+    def findRole(people, role):
+        result = {}
+        for person in people:
+            result[person] = people[person][role]
+        return result
 
-    defenders = {}
-    for kid in kids:
-        defenders[kid] = kids[kid]['defender']
-    #print(defenders)
-
-    forwards = {}
-    for kid in kids:
-        forwards[kid] = kids[kid]['forward']
-    #print(forwards)
+    goalkeepers = findRole(kids, 'goalkeeper')
+    defenders = findRole(kids, 'defender')
+    forwards = findRole(kids, 'forward')
 
     players = {'goalkeepers': goalkeepers, 'defenders': defenders, 'forwards': forwards}
     player_list = {'goalkeepers': 1, 'defenders': 5, 'forwards': 5}
