@@ -23,10 +23,11 @@ class LinearSolver(ABC):
         super().__init__()
 
 
-    def solve(self):
+    def solve(groundSet, k):
         """Abstract method to solve submodular maximization problems with
         according to given constraints.
         """
+
         pass
 
 
@@ -55,7 +56,7 @@ class PartitionMatroidSolver(LinearSolver):
     def solve(self):
         pass
 
-        
+
 # class ContinuousGreedy:
 #     def __init__(self, P):
 #         """Construct the class, given topology (i.e., graph, demands, demands rate, bandwidths) and estimator type."""
@@ -476,7 +477,11 @@ class PartitionMatroidSolver(LinearSolver):
 #         return grad_Y, grad_Mu
 #
 #
-# if __name__=="__main__":
+if __name__=="__main__":
+    actors = {'act1': 1000, 'act2': 300, 'act3': 400, 'act4': 500, 'act5': 700}
+    max(actors, key=actors.get)
+
+
 #     np.random.seed(1993)
 #     parser = argparse.ArgumentParser(description = 'Simulate the Continuous Greedy Alg.',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 #     parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',
