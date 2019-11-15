@@ -1,7 +1,7 @@
 # # demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
 # import cvxopt
 import numpy as np
-from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3 or higher
+from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
 # from time import time
 # from poly import taylor,rho_uv_dicts,poly
@@ -15,7 +15,7 @@ from heapq import nlargest
 class LinearSolver(object): #For Python 3, replace object with ABCMeta
     """Abstract class to parent solver classes with different constraints.
     """
-    __metaclass__ = ABCMeta #Remove this line for Python 3
+    __metaclass__ = ABCMeta #Comment this line for Python 3
 
 
     def solve(self, sets, constraints):
@@ -83,15 +83,15 @@ if __name__ == "__main__":
             'kid10': {'goalkeeper': 40, 'defender': 48, 'forward': 45},
             'kid11': {'goalkeeper': 175, 'defender': 12, 'forward': 120}}
 
-    def findRole(people, role):
+    def findPartition(items, partition):
         result = {}
-        for person in people:
-            result[person] = people[person][role]
+        for item in items:
+            result[item] = items[item][partition]
         return result
 
-    goalkeepers = findRole(kids, 'goalkeeper')
-    defenders = findRole(kids, 'defender')
-    forwards = findRole(kids, 'forward')
+    goalkeepers = findPartition(kids, 'goalkeeper')
+    defenders = findPartition(kids, 'defender')
+    forwards = findPartition(kids, 'forward')
 
     players = {'goalkeepers': goalkeepers, 'defenders': defenders, 'forwards': forwards}
     player_list = {'goalkeepers': 1, 'defenders': 5, 'forwards': 5}
