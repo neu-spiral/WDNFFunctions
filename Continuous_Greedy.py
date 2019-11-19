@@ -1,6 +1,7 @@
 # # demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
 # import cvxopt
 import numpy as np
+import itertools
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
 # from time import time
@@ -17,8 +18,12 @@ class LinearSolver(object): #For Python 3, replace object with ABCMeta
     """
     __metaclass__ = ABCMeta #Comment this line for Python 3
 
+    @abstractmethod
+    def __init__(self, sets, constraints):
+        pass
 
-    def solve(self, sets, constraints):
+
+    def solve(gradient):
         """Abstract method to solve submodular maximization problems
         according to given constraints.
         """
@@ -29,14 +34,25 @@ class UniformMatroidSolver(LinearSolver):
     """
     """
 
+    def __init__(groundSet, k):
+        self.k_subsets = itertools.combinations(groundSet, k)
 
-    def solve(self, groundSet, k):
+
+    def solve(self, gradient):
         # result = {}
         # for i in range(k):
         #     keyWithMaxValue = max(groundSet, key=groundSet.get)
         #     result[keyWithMaxValue] = groundSet[keyWithMaxValue]
         #     del groundSet[keyWithMaxValue]
-        return nlargest(k, groundSet, key = groundSet.get) #result
+        #result #Old Method 1
+        #return nlargest(k, groundSet, key = groundSet.get) #Old Method 2
+        products = {}
+        for subset in self.k_subsets:
+            product = 0
+            for element in subset:
+                product += gradient[element]
+            products[subset] = product
+        return max(products, key = products.get)
 
 
 class PartitionMatroidSolver(LinearSolver):
@@ -59,43 +75,83 @@ class PartitionMatroidSolver(LinearSolver):
         return result
 
 
+class GradientEstimator(object): #For Python 3, replace object with ABCMeta
+    """Abstract class to ...
+    """
+    __metaclass__ = ABCMeta #Comment out this line for Python 3
+
+    @abstractmethod
+    def __init__():
+        pass
+
+
+class SamplerEstimator(GradientEstimator):
+    """
+    """
+
+    def __init__():
+        """
+        """
+        pass
+
+
+class PolynomialEstimator(GradientEstimator):
+    """
+    """
+
+    def __init__():
+        """
+        """
+        pass
+
+
+class ContinuousGreedy():
+    """
+    """
+
+    def __init__(solver, gradient):
+        """
+        """
+        pass
+
+
 if __name__ == "__main__":
-    actors = {'act1': 1000, 'act2': 300, 'act3': 400, 'act4': 500, 'act5': 700}
-    directors = {'dir1': 1500, 'dir2': 1200, 'dir3': 250}
-    figurants = {'fig1': 10, 'fig2': 20, 'fig3': 35, 'fig4': 5, 'fig5': 6, 'fig6': 2, 'fig7': 13}
-    candidates = {'actors': actors, 'directors': directors, 'figurants': figurants}
-
-    NewUniSolver = UniformMatroidSolver()
-    print(NewUniSolver.solve(actors, 3))
-    NewPartSolver = PartitionMatroidSolver()
-    k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
-    print(NewPartSolver.solve(candidates, k_list))
-
-    kids = {'kid1': {'goalkeeper': 100, 'defender': 50, 'forward': 25},
-            'kid2': {'goalkeeper': 80, 'defender': 150, 'forward': 30},
-            'kid3': {'goalkeeper': 10, 'defender': 35, 'forward': 250},
-            'kid4': {'goalkeeper': 300, 'defender': 5, 'forward': 125},
-            'kid5': {'goalkeeper': 20, 'defender': 50, 'forward': 75},
-            'kid6': {'goalkeeper': 50, 'defender': 28, 'forward': 36},
-            'kid7': {'goalkeeper': 60, 'defender': 90, 'forward': 12},
-            'kid8': {'goalkeeper': 70, 'defender': 90, 'forward': 450},
-            'kid9': {'goalkeeper': 45, 'defender': 350, 'forward': 30},
-            'kid10': {'goalkeeper': 40, 'defender': 48, 'forward': 45},
-            'kid11': {'goalkeeper': 175, 'defender': 12, 'forward': 120}}
-
-    def findPartition(items, partition):
-        result = {}
-        for item in items:
-            result[item] = items[item][partition]
-        return result
-
-    goalkeepers = findPartition(kids, 'goalkeeper')
-    defenders = findPartition(kids, 'defender')
-    forwards = findPartition(kids, 'forward')
-
-    players = {'goalkeepers': goalkeepers, 'defenders': defenders, 'forwards': forwards}
-    player_list = {'goalkeepers': 1, 'defenders': 5, 'forwards': 5}
-    print(NewPartSolver.solve(players, player_list))
+    # actors = {'act1': 1000, 'act2': 300, 'act3': 400, 'act4': 500, 'act5': 700}
+    # directors = {'dir1': 1500, 'dir2': 1200, 'dir3': 250}
+    # figurants = {'fig1': 10, 'fig2': 20, 'fig3': 35, 'fig4': 5, 'fig5': 6, 'fig6': 2, 'fig7': 13}
+    # candidates = {'actors': actors, 'directors': directors, 'figurants': figurants}
+    #
+    # NewUniSolver = UniformMatroidSolver()
+    # print(NewUniSolver.solve(actors, 3))
+    # NewPartSolver = PartitionMatroidSolver()
+    # k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
+    # print(NewPartSolver.solve(candidates, k_list))
+    #
+    # kids = {'kid1': {'goalkeeper': 100, 'defender': 50, 'forward': 25},
+    #         'kid2': {'goalkeeper': 80, 'defender': 150, 'forward': 30},
+    #         'kid3': {'goalkeeper': 10, 'defender': 35, 'forward': 250},
+    #         'kid4': {'goalkeeper': 300, 'defender': 5, 'forward': 125},
+    #         'kid5': {'goalkeeper': 20, 'defender': 50, 'forward': 75},
+    #         'kid6': {'goalkeeper': 50, 'defender': 28, 'forward': 36},
+    #         'kid7': {'goalkeeper': 60, 'defender': 90, 'forward': 12},
+    #         'kid8': {'goalkeeper': 70, 'defender': 90, 'forward': 450},
+    #         'kid9': {'goalkeeper': 45, 'defender': 350, 'forward': 30},
+    #         'kid10': {'goalkeeper': 40, 'defender': 48, 'forward': 45},
+    #         'kid11': {'goalkeeper': 175, 'defender': 12, 'forward': 120}}
+    #
+    # def findPartition(items, partition):
+    #     result = {}
+    #     for item in items:
+    #         result[item] = items[item][partition]
+    #     return result
+    #
+    # goalkeepers = findPartition(kids, 'goalkeeper')
+    # defenders = findPartition(kids, 'defender')
+    # forwards = findPartition(kids, 'forward')
+    #
+    # players = {'goalkeepers': goalkeepers, 'defenders': defenders, 'forwards': forwards}
+    # player_list = {'goalkeepers': 1, 'defenders': 5, 'forwards': 5}
+    # print(NewPartSolver.solve(players, player_list))
 
 # class ContinuousGreedy:
 #     def __init__(self, P):
