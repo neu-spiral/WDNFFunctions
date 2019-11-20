@@ -1,7 +1,7 @@
 # # demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
 # import cvxopt
 import numpy as np
-import itertools
+#import itertools
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
 # from time import time
@@ -17,6 +17,7 @@ class LinearSolver(object): #For Python 3, replace object with ABCMeta
     """Abstract class to parent solver classes with different constraints.
     """
     __metaclass__ = ABCMeta #Comment this line for Python 3
+
 
     @abstractmethod
     def __init__(self, sets, constraints):
@@ -34,25 +35,18 @@ class UniformMatroidSolver(LinearSolver):
     """
     """
 
-    def __init__(groundSet, k):
-        self.k_subsets = itertools.combinations(groundSet, k)
+
+    def __init__(self, groundSet, k):
+        """
+        """
+        self.groundSet = groundSet
+        self.k = k
 
 
     def solve(self, gradient):
-        # result = {}
-        # for i in range(k):
-        #     keyWithMaxValue = max(groundSet, key=groundSet.get)
-        #     result[keyWithMaxValue] = groundSet[keyWithMaxValue]
-        #     del groundSet[keyWithMaxValue]
-        #result #Old Method 1
-        #return nlargest(k, groundSet, key = groundSet.get) #Old Method 2
-        products = {}
-        for subset in self.k_subsets:
-            product = 0
-            for element in subset:
-                product += gradient[element]
-            products[subset] = product
-        return max(products, key = products.get)
+        """
+        """
+        return set(nlargest(self.k, gradient, key = gradient.get))
 
 
 class PartitionMatroidSolver(LinearSolver):
@@ -60,18 +54,26 @@ class PartitionMatroidSolver(LinearSolver):
     """
 
 
-    def solve(self, partitionedSet, k_list):
+    def __init__(self, partitionedSet, k_list):
         """Partitioned set is a dictionary of dictionaries, k_list is a
         dictionary of cardinalities.
         """
-        UniformSolver = UniformMatroidSolver()
+        self.partitionedSet = partitionedSet
+        self.k_list = k_list
+
+
+    def solve(self, gradient):
+        """
+        """
         result = {}
         selection = []
-        for key in partitionedSet:
-            for item in selection:
-                partitionedSet[key].pop(item, None)
-            selection = UniformSolver.solve(partitionedSet[key], k_list[key])
-            result[key] = selection
+        for partition in self.partitionedSet:
+            #for item in selection:
+            #    (self.partitionedSet[partition]).pop(item, None)
+            UniformSolver = UniformMatroidSolver(self.partitionedSet[partition], self.k_list[partition])
+            filtered_gradient = {key: gradient[key] for key in self.partitionedSet[partition]}
+            selection = UniformSolver.solve(filtered_gradient)
+            result[partition] = selection
         return result
 
 
@@ -80,8 +82,9 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
     """
     __metaclass__ = ABCMeta #Comment out this line for Python 3
 
+
     @abstractmethod
-    def __init__():
+    def __init__(self, wdnf, func):
         pass
 
 
@@ -109,23 +112,38 @@ class ContinuousGreedy():
     """
     """
 
-    def __init__(solver, gradient):
+    def __init__(MatroidSolver):
+        """
+        """
+        self.MatroidSolver = MatroidSolver
+        #if isinstance(MatroidSolver, UniformMatroidSolver)
+
+
+    def getGradient():
         """
         """
         pass
 
 
 if __name__ == "__main__":
-    # actors = {'act1': 1000, 'act2': 300, 'act3': 400, 'act4': 500, 'act5': 700}
-    # directors = {'dir1': 1500, 'dir2': 1200, 'dir3': 250}
-    # figurants = {'fig1': 10, 'fig2': 20, 'fig3': 35, 'fig4': 5, 'fig5': 6, 'fig6': 2, 'fig7': 13}
-    # candidates = {'actors': actors, 'directors': directors, 'figurants': figurants}
-    #
-    # NewUniSolver = UniformMatroidSolver()
-    # print(NewUniSolver.solve(actors, 3))
-    # NewPartSolver = PartitionMatroidSolver()
-    # k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
-    # print(NewPartSolver.solve(candidates, k_list))
+    actors = {'act1', 'act2', 'act3', 'act4', 'act5'}
+    actors_gradient = {'act1': 1000, 'act2': 300, 'act3': 400, 'act4': 500, 'act5': 700}
+    NewUniSolver = UniformMatroidSolver(actors, 3)
+    print(NewUniSolver.solve(actors_gradient))
+    print(isinstance(NewUniSolver, UniformMatroidSolver))
+
+    directors = {'dir1', 'dir2', 'dir3'}
+    directors_gradient = {'dir1': 1500, 'dir2': 1200, 'dir3': 250}
+    figurants = {'fig1', 'fig2', 'fig3', 'fig4', 'fig5', 'fig6', 'fig7'}
+    figurants_gradient = {'fig1': 10, 'fig2': 20, 'fig3': 35, 'fig4': 5, 'fig5': 6, 'fig6': 2, 'fig7': 13}
+    candidates = {'actors': actors, 'directors': directors, 'figurants': figurants}
+    candidates_gradient = {}
+    candidates_gradient.update(actors_gradient)
+    candidates_gradient.update(directors_gradient)
+    candidates_gradient.update(figurants_gradient)
+    k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
+    NewPartSolver = PartitionMatroidSolver(candidates, k_list)
+    print(NewPartSolver.solve(candidates_gradient))
     #
     # kids = {'kid1': {'goalkeeper': 100, 'defender': 50, 'forward': 25},
     #         'kid2': {'goalkeeper': 80, 'defender': 150, 'forward': 30},
