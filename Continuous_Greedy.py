@@ -92,9 +92,10 @@ class SamplerEstimator(GradientEstimator):
     """
     """
 
-    def __init__():
+    def __init__(self, wdnf, func):
         """
         """
+        self.wdnf
         pass
 
 
@@ -102,7 +103,7 @@ class PolynomialEstimator(GradientEstimator):
     """
     """
 
-    def __init__():
+    def __init__(self, wdnf, func):
         """
         """
         pass
@@ -112,10 +113,11 @@ class ContinuousGreedy():
     """
     """
 
-    def __init__(MatroidSolver):
+    def __init__(matroidSolver, estimator):
         """
         """
-        self.MatroidSolver = MatroidSolver
+        self.matroidSolver = matroidSolver
+        self.estimator = estimator
         #if isinstance(MatroidSolver, UniformMatroidSolver)
 
 
