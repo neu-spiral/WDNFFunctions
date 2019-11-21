@@ -31,7 +31,7 @@ class LinearSolver(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-class UniformMatroidSolver(LinearSolver):
+class UniformMatroidSolver(LinearSolver): #tested, works
     """
     """
 
@@ -49,7 +49,7 @@ class UniformMatroidSolver(LinearSolver):
         return set(nlargest(self.k, gradient, key = gradient.get))
 
 
-class PartitionMatroidSolver(LinearSolver):
+class PartitionMatroidSolver(LinearSolver): #tested for distinct partititons, works -should be revised for overlapping partitions
     """
     """
 
@@ -78,13 +78,16 @@ class PartitionMatroidSolver(LinearSolver):
 
 
 class GradientEstimator(object): #For Python 3, replace object with ABCMeta
-    """Abstract class to ...
+    """Abstract class to parent classes of different gradient estimators.
     """
     __metaclass__ = ABCMeta #Comment out this line for Python 3
 
 
     @abstractmethod
-    def __init__(self, wdnf, func):
+    def __init__(self, wdnf, func, numOfSamples = 0):
+        pass
+
+    def estimate(self):
         pass
 
 
@@ -92,10 +95,17 @@ class SamplerEstimator(GradientEstimator):
     """
     """
 
-    def __init__(self, wdnf, func):
+    def __init__(self, my_wdnf, func, numOfSamples):
+        """my_wdnf is a wdnf object and func is a function of that wdnf object
+        such as func(my_wdnf) = log(my_wdnf) or
+        func(my_wdnf) = my_wdnf/(1 - my_wdnf)
         """
-        """
-        self.wdnf
+        self.my_wdnf = my_wdnf
+        self.func = func
+        self.numOfSamples = numOfSamples
+
+
+    def estimate(self):
         pass
 
 
@@ -103,9 +113,16 @@ class PolynomialEstimator(GradientEstimator):
     """
     """
 
-    def __init__(self, wdnf, func):
+    def __init__(self, my_wdnf, func):
+        """my_wdnf is a wdnf object and func is a function of that wdnf object
+        such as func(my_wdnf) = log(my_wdnf) or
+        func(my_wdnf) = my_wdnf/(1 - my_wdnf)
         """
-        """
+        self.my_wdnf = my_wdnf
+        self.func = func
+
+
+    def estimate(self):
         pass
 
 
@@ -118,13 +135,12 @@ class ContinuousGreedy():
         """
         self.matroidSolver = matroidSolver
         self.estimator = estimator
+        self.gradient = self.estimator.estimate()
         #if isinstance(MatroidSolver, UniformMatroidSolver)
 
 
-    def getGradient():
-        """
-        """
-        pass
+    def find_max(self):
+        mk = (self.matroidSolver).solve(self.gradient)
 
 
 if __name__ == "__main__":
@@ -343,11 +359,9 @@ if __name__ == "__main__":
 #                     rho_poly[edge][demand][i] = rho_poly[edge][demand][1].power(i)
 #         return rho_poly
 #
-#     def Estimate_Gradient(self,Y,dependencies):
-#         pass
 #
 #
-# class ContinuousGreedy_sampling(ContinuousGreedy):
+#class ContinuousGreedy_sampling(ContinuousGreedy):
 #     def __init__(self, P, num_samples):
 #         ContinuousGreedy.__init__(self,P=P)
 #         self.num_samples = num_samples
@@ -591,66 +605,3 @@ if __name__ == "__main__":
 #                 delta = self.utilityfunction(r,1) * r / self.EDGE[edge][demand]
 #                 grad_Mu[edge][demand] = delta
 #         return grad_Y, grad_Mu
-#
-#
-#if __name__=="__main__":
-#     np.random.seed(1993)
-#     parser = argparse.ArgumentParser(description = 'Simulate the Continuous Greedy Alg.',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-#     parser.add_argument('--graph_type', default="erdos_renyi", type=str, help='Graph type',
-#                         choices=['erdos_renyi', 'balanced_tree', 'hypercube', "cicular_ladder", "cycle", "grid_2d",
-#                                  'lollipop', 'expander', 'hypercube', 'star', 'barabasi_albert', 'watts_strogatz',
-#                                  'regular', 'powerlaw_tree', 'small_world', 'geant', 'abilene', 'dtelekom',
-#                                  'servicenetwork'])
-#     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
-#
-#     parser.add_argument('--order_moment', default=2, type=int, help='Order of moment for the expected cost', choices=[1,2,3,4])
-#     parser.add_argument('--queue_type', default='MMInfty', type=str, help='Type of queue', choices=['MMInfty', 'Info'])
-#
-#     parser.add_argument('--iterations', default=1000, help='Number of iterations in the alg.')
-#     parser.add_argument('--samples',type=int, default=10,help='number of samples')
-#     parser.add_argument('--debug',action="store_true")
-#     parser.add_argument('--estimator',default='sample',choices=['sample','taylor','power','DR'],help='Type of estimator')
-#     parser.add_argument('--k',type=int, default=1,help="Order of taylor expansion")
-#     args  = parser.parse_args()
-#     problem_instance = "problem_" + args.graph_type + "_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_" + str(args.query_nodes) + "qnodes_" + str(args.order_moment) + "order_" + args.queue_type
-#     input = "INPUT/"+ problem_instance
-#     P = Problem.unpickle_cls(input)
-#     if args.estimator == 'sample':
-#         contgreedy = ContinuousGreedy_sampling(P,args.samples)
-#     elif args.estimator == 'power':
-#         contgreedy = ContGreedyPower(P)
-#     elif args.estimator == 'taylor':
-#         contgreedy = ContGreedyPoly(P,args.k)
-#     elif args.estimator == 'DR':
-#         contgreedy = DRSubmodular(P)
-#
-# # no use?
-# #    V,I = contgreedy.problem_size
-# #    print V,I
-# #    Y= cvxopt.matrix(0,(V,I))
-#
-#     Y_out, track, bases = contgreedy.FW(int(args.iterations),args.debug)
-#     P.cost = track[0]
-#     dir_output = "OUTPUT/"
-#     dir_base = "BASE/"
-#     dir_inputnew = "INPUT_NEW/"
-#     if not os.path.exists(dir_output):
-#         os.mkdir(dir_output)
-#     if not os.path.exists(dir_base):
-#         os.mkdir(dir_base)
-#     if not os.path.exists(dir_inputnew):
-#         os.mkdir(dir_inputnew)
-#
-#     if args.estimator == "sample":
-#         output = problem_instance + "-500-samples-1000-iters"
-#     elif args.estimotor == "taylor":
-#         output = problem_instance + "-taylor-k-" + str(args.k)+ "-1000-iters"
-#     else:
-#         output = problem_instance
-#
-#     output = dir_output+output
-#     base = dir_base+output
-#     inputnew = dir_inputnew+problem_instance
-#     write(output,track)
-#     write(base,bases)
-#     P.pickle_cls(inputnew)
