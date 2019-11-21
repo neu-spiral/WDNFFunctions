@@ -136,7 +136,6 @@ class ContinuousGreedy():
         self.matroidSolver = matroidSolver
         self.estimator = estimator
         self.gradient = self.estimator.estimate()
-        #if isinstance(MatroidSolver, UniformMatroidSolver)
 
 
     def find_max(self):
