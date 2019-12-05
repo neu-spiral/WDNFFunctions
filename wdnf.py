@@ -78,7 +78,7 @@ class wdnf():
         return sumsofar
 
 
-    def __add__(self, other): #edited 
+    def __add__(self, other): #edited
         """ Add two polynomials in WDNF and return the resulting WDNF
         """
         assert self.sign == other.sign, 'Two WDNF polynomials of different signs cannot be added!'
@@ -156,9 +156,6 @@ class poly():
         """e.g: poly(n, [a0 a1 ... an]) defines
         f(x) = a0 + a1*x + ... + an*(x^n)
         """
-        # if len(poly_coef) != degree + 1:
-        #     print('Size of the coefficients list does not match with the degree!')
-        # else:
         assert len(poly_coef) == (degree + 1), 'Size of the coefficients list does not match with the degree!'
         self.poly_coef = poly_coef
         self.degree = degree
@@ -243,88 +240,10 @@ class taylor(poly):
             poly.__init__(self, degree, poly_coef)
 
 
-#     def evaluate(self, x):
-#         """ Evaluates Taylor approx at x"""
-#         xx = x
-#         out = 0.
-#         for i in range(self.degree + 1):
-#             centered_xk  = (xx-self.center)**i
-#             terms =  self.derivatives[i]*centered_xk/math.factorial(i)
-#             out  += centered_xk*terms
-#         return out
-#
-#
-#     def expand(self): #should I delete this?
-#         """ Updates the coefficients of the given function so that the Taylor
-#         expansion is centered around zero.
-#         """
-#         if self.center == 0:
-#             return
-#         new_poly_coef = [0.0] * (self.degree + 1)
-#         for i in range(self.degree + 1):
-#             for j in range(i, self.degree + 1):
-#                 if j-i >0:
-#                     new_poly_coef[i] += self.derivatives[j] *nCr(j,i)/math.factorial(j) * (-self.center)**(j-i)
-#                 else:
-#                     new_poly_coef[i] += self.derivatives[j] *nCr(j,i)/math.factorial(j)
-#         self.poly_coef = new_poly_coef
-#         self.center = 0.0
-#
-#
-#     def evaluate_expanded(self, xk):
-#         """ Compute the expanded polynomial, using xk dictionary containing
-#         powers x^k
-#         """
-#         out = self.alpha[0]
-#         for i in xk:
-#             out = out+ xk[i]*self.alpha[i]
-#         return out
-#
-#
-# def rho_uv_dicts(P):
-#     """Given P, problem instance, as input and generate  2 dictionaries per edge, one including the coefficients of that edge
-#        and one including the sets, used to describe rho_uv as a polynomial of class poly"""
-#     rho_uvs_coefficients = {}
-#     rho_uvs_sets = {}
-#     for edge in P.EDGE:
-#         rho_uvs_coefficients[edge] = {}
-#         rho_uvs_sets[edge] = {}
-#
-#     index = 0
-#     for demand in P.demands:
-#         item = demand['item']
-#         path = demand['path']
-#         rate = demand['rate']
-#
-#         nodes_so_far = []
-#         for i in range(len(path)-1):
-#             edge = (path[i],path[i+1])
-#             nodes_so_far.append(path[i])
-#             rho_uvs_coefficients[edge][index] = 1.*rate/P.EDGE[edge] #coefficient for this term is the arrival rate divided by the mu
-#             rho_uvs_sets[edge][index] = set(  [ (v,item)  for v in nodes_so_far]) #the set of a term contains all (v,item) pers above it in the path
-#         index += 1  #indices capture demands. note that each demand passes through an edge only once, so no need for an index per edge
-# #
-#     return rho_uvs_coefficients, rho_uvs_sets
-#
-#def Xtodict(X):
-#    """Given binary matrix X, convert it to a dictionary of (row,column) as keys and X[row,column] as values
-#    """
-#    rows,cols = np.matrix(X).shape
-#    return dict( [ ((r,c),X[r,c]) for r in range(rows) for c in range(cols)])
-#
-
-
-#class rho(poly):
-#    def evaluate(self,X):
-#        """ Take as input a matrix, list of items corresponding to index j, and evaluate rho """
-#        x= Xtodict(X)
-#        return poly.evaluate(self,x)
-
-
 if __name__=="__main__":
     #wdnf0 = wdnf({}, {})
-    wdnf1 = wdnf({(1, 3): 2.0, (2, 4): 10.0, (3, 4): 3.0})
-    #print(wdnf1.findDependencies())
+    wdnf1 = wdnf({(2, 3): 2.0, (2, 4): 10.0, (3, 4): 3.0})
+    print(wdnf1.findDependencies())
     #print(wdnf1.sets)
     wdnf2 = wdnf({(1, 2): 4.0, (1, 3): 5.0})
     #wdnf3 = wdnf1 * wdnf2
@@ -343,7 +262,7 @@ if __name__=="__main__":
     #print(wdnf4.sign)
     #print(wdnf5.coefficients)
     #print(wdnf5.sign)
-    print(wdnf6.coefficients)
+    #print(wdnf6.coefficients)
     #print(wdnf6.sign)
 
     poly1 = poly(2, [3, 4, 0])
@@ -351,7 +270,7 @@ if __name__=="__main__":
     poly3 = poly2 + poly1
     wdnf4 = poly2.compose(wdnf1)
     #print(wdnf4.coefficients)
-    print(poly3.poly_coef)
+    #print(poly3.poly_coef)
     #myTaylor = taylor(2, [1, 2, 1], 1)
     #print(myTaylor.evaluate(1))
     #myTaylor.expand()
