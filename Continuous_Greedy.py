@@ -8,9 +8,137 @@ from heapq import nlargest
 # from poly import taylor,rho_uv_dicts,poly
 # from helpers import write
 # import argparse
-# from Toplogy_gen import Problem, Demand
 # import os
-# #from UtilityFunction import UtilityFunction
+
+
+def generateSamples(y, dependencies):
+    samples = [0] * len(y)
+    p = np.random.rand(len(y))
+    for element in dependencies:
+        if y[element] > p[element]:
+            samples[element] = 1
+    return samples
+
+#         (V,I) = np.matrix(Y).shape
+#         grad_Y = cvxopt.matrix(0.,(V,I))
+#
+#         grad_Mu = {}
+#         for edge in self.EDGE:
+#             grad_Mu[edge] = {}
+#             for demand in self.EDGE[edge]:
+#                 grad_Mu[edge][demand] = 0.0
+#
+#         rho_poly = self.RhoPoly() # Update rho for each iteration of FW
+#         for k in range(self.num_samples):
+#
+#             X_sampled = gen_samp(Y,dependencies)
+#             '''Calculate gradient w.r.t. Y'''
+#             for (v,i) in dependencies:
+# #                Y1 = +X_sampled
+# #                Y1[v,i] = 1
+#                 Y0 = +X_sampled
+#                 Y0[v,i] = 0
+#
+#                 for demand in dependencies[(v,i)]:
+#                     for edge in dependencies[(v,i)][demand]:
+#                         r_polys = rho_poly[edge][demand]
+#                         r0 = r_polys[1].evaluate(Y0)
+# #                        r1 = r_polys[1].evaluate(X_sampled)
+# #                        if r0 != r1:
+# #                            print r1
+# #                        r1 = r_polys[1].evaluate(Y1)
+# #                        delta = self.utilityfunction(r0, 0) - self.utilityfunction(r1, 0)
+#                         delta = self.utilityfunction(r0, 0)
+#                         grad_Y[v, i] += delta
+#             '''
+#             for (v,i) in dependencies:
+#                 Y1 = +X_sampled
+#                 Y1[v,i] = 1
+#                 Y0 = +X_sampled
+#                 Y0[v, i] = 0
+#                 ro_dict1 = self.ro_uvr_CONT(Y1)
+#                 obj1 = self.OBJ_dict(ro_dict1)
+#                 ro_dict0 = self.ro_uvr_CONT(Y0)
+#                 obj0 = self.OBJ_dict(ro_dict0)
+#                 grad_Y[v,i] += obj0 - obj1
+#             '''
+#
+#
+#             '''Calculate gradient w.r.t. Mu'''
+#             for demand in self.demands:
+#                 path = demand.path
+#                 path_len = len(path)
+#                 for node in range(path_len - 1):
+#                     edge = (path[node], path[node + 1])
+#                     r_polys = rho_poly[edge][demand]
+#                     r = r_polys[1].evaluate(X_sampled)
+#                     delta = self.utilityfunction(r, 1) * r / self.EDGE[edge][demand]
+#                     grad_Mu[edge][demand] += delta
+#
+#         '''Average gradient w.r.t. Y'''
+#         grad_Y = grad_Y / self.num_samples
+#         '''Average gradient w.r.t. Mu'''
+#         for edge in grad_Mu:
+#             for demand in grad_Mu[edge]:
+#                 grad_Mu[edge][demand] = grad_Mu[edge][demand]/self.num_samples
+#
+#         return grad_Y, grad_Mu
+
+
+class GradientEstimator(object): #For Python 3, replace object with ABCMeta
+    """Abstract class to parent classes of different gradient estimators.
+    """
+    __metaclass__ = ABCMeta #Comment out this line for Python 3
+
+
+    @abstractmethod
+    def __init__(self, wdnf, func, numOfSamples = 0):
+        pass
+
+
+    def estimate(self):
+        pass
+
+
+class SamplerEstimator(GradientEstimator):
+    """
+    """
+
+
+    def __init__(self, func, numOfSamples):
+        """my_wdnf is a wdnf object and func is a function of that wdnf object
+        such as func(my_wdnf) = log(my_wdnf) or
+        func(my_wdnf) = my_wdnf/(1 - my_wdnf)
+        """
+        self.my_wdnf = my_wdnf
+        self.func = func
+        self.numOfSamples = numOfSamples
+
+
+    def estimate(self):
+        grad = [0.0] * len(y)
+        for i in range(self.numOfSamples):
+            x = generateSamples(y, dependencies)
+
+        pass
+
+
+class PolynomialEstimator(GradientEstimator):
+    """
+    """
+
+
+    def __init__(self, my_wdnf, func):
+        """my_wdnf is a wdnf object and func is a function of that wdnf object
+        such as func(my_wdnf) = log(my_wdnf) or
+        func(my_wdnf) = my_wdnf/(1 - my_wdnf)
+        """
+        self.my_wdnf = my_wdnf
+        self.func = func
+
+
+    def estimate(self):
+        pass
 
 
 class LinearSolver(object): #For Python 3, replace object with ABCMeta
@@ -26,7 +154,8 @@ class LinearSolver(object): #For Python 3, replace object with ABCMeta
 
     def solve(gradient):
         """Abstract method to solve submodular maximization problems
-        according to given constraints.
+        according to given constraints where gradient is a GradientEstimator
+        object.
         """
         pass
 
@@ -75,55 +204,6 @@ class PartitionMatroidSolver(LinearSolver): #tested for distinct partititons, wo
             selection = UniformSolver.solve(filtered_gradient)
             result[partition] = selection
         return result
-
-
-class GradientEstimator(object): #For Python 3, replace object with ABCMeta
-    """Abstract class to parent classes of different gradient estimators.
-    """
-    __metaclass__ = ABCMeta #Comment out this line for Python 3
-
-
-    @abstractmethod
-    def __init__(self, wdnf, func, numOfSamples = 0):
-        pass
-
-    def estimate(self):
-        pass
-
-
-class SamplerEstimator(GradientEstimator):
-    """
-    """
-
-    def __init__(self, my_wdnf, func, numOfSamples):
-        """my_wdnf is a wdnf object and func is a function of that wdnf object
-        such as func(my_wdnf) = log(my_wdnf) or
-        func(my_wdnf) = my_wdnf/(1 - my_wdnf)
-        """
-        self.my_wdnf = my_wdnf
-        self.func = func
-        self.numOfSamples = numOfSamples
-
-
-    def estimate(self):
-        pass
-
-
-class PolynomialEstimator(GradientEstimator):
-    """
-    """
-
-    def __init__(self, my_wdnf, func):
-        """my_wdnf is a wdnf object and func is a function of that wdnf object
-        such as func(my_wdnf) = log(my_wdnf) or
-        func(my_wdnf) = my_wdnf/(1 - my_wdnf)
-        """
-        self.my_wdnf = my_wdnf
-        self.func = func
-
-
-    def estimate(self):
-        pass
 
 
 class ContinuousGreedy():
