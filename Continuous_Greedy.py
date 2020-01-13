@@ -1,5 +1,5 @@
 # # demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
-# import cvxopt
+import cvxopt
 import numpy as np
 #import itertools
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
@@ -10,7 +10,8 @@ from heapq import nlargest
 # import argparse
 # import os
 
-
+Y = cvxopt.matrix(0,(3,5))
+print Y
 def generateSamples(y, dependencies):
     samples = [0] * len(y)
     p = np.random.rand(len(y))
@@ -105,7 +106,7 @@ class SamplerEstimator(GradientEstimator):
     """
 
 
-    def __init__(self, func, numOfSamples):
+    def __init__(self, my_wdnf, func, numOfSamples):
         """my_wdnf is a wdnf object and func is a function of that wdnf object
         such as func(my_wdnf) = log(my_wdnf) or
         func(my_wdnf) = my_wdnf/(1 - my_wdnf)
