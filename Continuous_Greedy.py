@@ -1,5 +1,5 @@
 # # demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
-import cvxopt
+#import cvxopt
 import numpy as np
 #import itertools
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
@@ -10,9 +10,10 @@ from heapq import nlargest
 # import argparse
 # import os
 
-Y = cvxopt.matrix(0,(3,5))
-print Y
+
 def generateSamples(y, dependencies):
+    """ Generates random samples x for e in dependencies P(x_e = 1) = y_e
+    """
     samples = [0] * len(y)
     p = np.random.rand(len(y))
     for element in dependencies:
@@ -20,7 +21,7 @@ def generateSamples(y, dependencies):
             samples[element] = 1
     return samples
 
-#         (V,I) = np.matrix(Y).shape
+
 #         grad_Y = cvxopt.matrix(0.,(V,I))
 #
 #         grad_Mu = {}
@@ -93,35 +94,40 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
 
 
     @abstractmethod
-    def __init__(self, wdnf, func, numOfSamples = 0):
+    def __init__(self, my_wdnf, func):
         pass
 
 
-    def estimate(self):
+    def estimate(self): #Should the estimate's take y as an input?
         pass
 
 
-class SamplerEstimator(GradientEstimator):
+class SamplerEstimator(GradientEstimator): #needs to be tested
     """
     """
 
 
-    def __init__(self, my_wdnf, func, numOfSamples):
+    def __init__(self, my_wdnf, func): #, numOfSamples):
         """my_wdnf is a wdnf object and func is a function of that wdnf object
         such as func(my_wdnf) = log(my_wdnf) or
         func(my_wdnf) = my_wdnf/(1 - my_wdnf)
         """
         self.my_wdnf = my_wdnf
         self.func = func
-        self.numOfSamples = numOfSamples
+        #self.numOfSamples = numOfSamples
 
 
     def estimate(self):
         grad = [0.0] * len(y)
-        for i in range(self.numOfSamples):
-            x = generateSamples(y, dependencies)
-
-        pass
+        x = generateSamples(y, self.my_wdnf.findDependencies())
+        for i in range(len(y)):
+            x1 = x
+            x1[i] = 1
+            x0 = x
+            x0[i] = 0
+            grad[i] += self.func(x1) - self.func(x0)
+        grad = grad / len(y)
+        return grad
 
 
 class PolynomialEstimator(GradientEstimator):
@@ -139,7 +145,8 @@ class PolynomialEstimator(GradientEstimator):
 
 
     def estimate(self):
-        pass
+        grad = self.func(y)
+        return grad
 
 
 class LinearSolver(object): #For Python 3, replace object with ABCMeta
@@ -153,7 +160,7 @@ class LinearSolver(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-    def solve(gradient):
+    def solve(self, gradient):
         """Abstract method to solve submodular maximization problems
         according to given constraints where gradient is a GradientEstimator
         object.
@@ -210,6 +217,7 @@ class PartitionMatroidSolver(LinearSolver): #tested for distinct partititons, wo
 class ContinuousGreedy():
     """
     """
+
 
     def __init__(matroidSolver, estimator):
         """
