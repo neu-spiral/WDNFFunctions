@@ -1,6 +1,7 @@
 # # demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
 #import cvxopt
 import numpy as np
+import math
 #import itertools
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
@@ -22,6 +23,22 @@ def generateSamples(y, dependencies):
     return samples
 
 
+def derive(type, x, degree):
+    if type == 'ln':
+        if degree == 0:
+            return math.log1p(x) #log1p(x) is ln(x+1)
+        else:
+            return (((-1.0)**degree) * math.factorial(degree)) / ((1.0 + x)**(degree + 1))
+    if type == 'queueSize':
+        if degree == 0:
+            return 1.0 / (1.0 - x)
+        else:
+            return math.factorial(degree) / ((1.0 - x)**(degree + 1))
+
+def findDerivatives():
+    pass
+
+    
 class GradientEstimator(object): #For Python 3, replace object with ABCMeta
     """Abstract class to parent classes of different gradient estimators.
     """
