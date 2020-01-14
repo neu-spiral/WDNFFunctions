@@ -17,7 +17,7 @@ def generateSamples(y, dependencies):
     """
     samples = [0.0] * len(y)
     p = np.random.rand(len(y))
-    for element in dependencies:
+    for element in dependencies.keys():
         if y[element] > p[element]:
             samples[element] = 1
     return samples
@@ -35,10 +35,14 @@ def derive(type, x, degree):
         else:
             return math.factorial(degree) / ((1.0 - x)**(degree + 1))
 
-def findDerivatives():
-    pass
 
-    
+def findDerivatives(type, center, degree):
+    derivatives = []
+    for i in range(degree + 1):
+        derivatives.append(derive(type, center, i))
+    return derivatives
+
+
 class GradientEstimator(object): #For Python 3, replace object with ABCMeta
     """Abstract class to parent classes of different gradient estimators.
     """
@@ -47,6 +51,8 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
 
     @abstractmethod
     def __init__(self, my_wdnf, func):
+        """func is an instance of the class taylor.
+        """
         pass
 
 
@@ -87,17 +93,29 @@ class PolynomialEstimator(GradientEstimator):
     """
 
 
-    def __init__(self, my_wdnf, func):
+    def __init__(self, my_wdnf, func, degree):
         """my_wdnf is a wdnf object and func is a function of that wdnf object
         such as func(my_wdnf) = log(my_wdnf) or
         func(my_wdnf) = my_wdnf/(1 - my_wdnf)
         """
         self.my_wdnf = my_wdnf
         self.func = func
+        self.degree = degree
 
 
     def estimate(self, y):
-        grad = self.func(y)
+        grad = [0.0] * len(y)
+        for key in self.my_wdnf.findDependencies().keys():
+            y1 = y
+            y1[key] = 1
+            grad1 = func(y1)
+
+            y0 = y
+            y0[key] = 0
+            grad0 = func(y0)
+
+            delta = grad1 - grad0
+            grad += delta
         return grad
 
 
@@ -218,6 +236,7 @@ if __name__ == "__main__":
     k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
     NewPartSolver = PartitionMatroidSolver(candidates, k_list)
     print(NewPartSolver.solve(candidates_gradient))
+    print(findDerivatives('queueSize', 3, 5))
     #
     # kids = {'kid1': {'goalkeeper': 100, 'defender': 50, 'forward': 25},
     #         'kid2': {'goalkeeper': 80, 'defender': 150, 'forward': 30},
