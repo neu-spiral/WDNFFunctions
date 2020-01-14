@@ -4,8 +4,8 @@ import numpy as np
 #import itertools
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
+from wdnf import wdnf, poly, taylor
 # from time import time
-# from poly import taylor,rho_uv_dicts,poly
 # from helpers import write
 # import argparse
 # import os
@@ -14,77 +14,12 @@ from heapq import nlargest
 def generateSamples(y, dependencies):
     """ Generates random samples x for e in dependencies P(x_e = 1) = y_e
     """
-    samples = [0] * len(y)
+    samples = [0.0] * len(y)
     p = np.random.rand(len(y))
     for element in dependencies:
         if y[element] > p[element]:
             samples[element] = 1
     return samples
-
-
-#         grad_Y = cvxopt.matrix(0.,(V,I))
-#
-#         grad_Mu = {}
-#         for edge in self.EDGE:
-#             grad_Mu[edge] = {}
-#             for demand in self.EDGE[edge]:
-#                 grad_Mu[edge][demand] = 0.0
-#
-#         rho_poly = self.RhoPoly() # Update rho for each iteration of FW
-#         for k in range(self.num_samples):
-#
-#             X_sampled = gen_samp(Y,dependencies)
-#             '''Calculate gradient w.r.t. Y'''
-#             for (v,i) in dependencies:
-# #                Y1 = +X_sampled
-# #                Y1[v,i] = 1
-#                 Y0 = +X_sampled
-#                 Y0[v,i] = 0
-#
-#                 for demand in dependencies[(v,i)]:
-#                     for edge in dependencies[(v,i)][demand]:
-#                         r_polys = rho_poly[edge][demand]
-#                         r0 = r_polys[1].evaluate(Y0)
-# #                        r1 = r_polys[1].evaluate(X_sampled)
-# #                        if r0 != r1:
-# #                            print r1
-# #                        r1 = r_polys[1].evaluate(Y1)
-# #                        delta = self.utilityfunction(r0, 0) - self.utilityfunction(r1, 0)
-#                         delta = self.utilityfunction(r0, 0)
-#                         grad_Y[v, i] += delta
-#             '''
-#             for (v,i) in dependencies:
-#                 Y1 = +X_sampled
-#                 Y1[v,i] = 1
-#                 Y0 = +X_sampled
-#                 Y0[v, i] = 0
-#                 ro_dict1 = self.ro_uvr_CONT(Y1)
-#                 obj1 = self.OBJ_dict(ro_dict1)
-#                 ro_dict0 = self.ro_uvr_CONT(Y0)
-#                 obj0 = self.OBJ_dict(ro_dict0)
-#                 grad_Y[v,i] += obj0 - obj1
-#             '''
-#
-#
-#             '''Calculate gradient w.r.t. Mu'''
-#             for demand in self.demands:
-#                 path = demand.path
-#                 path_len = len(path)
-#                 for node in range(path_len - 1):
-#                     edge = (path[node], path[node + 1])
-#                     r_polys = rho_poly[edge][demand]
-#                     r = r_polys[1].evaluate(X_sampled)
-#                     delta = self.utilityfunction(r, 1) * r / self.EDGE[edge][demand]
-#                     grad_Mu[edge][demand] += delta
-#
-#         '''Average gradient w.r.t. Y'''
-#         grad_Y = grad_Y / self.num_samples
-#         '''Average gradient w.r.t. Mu'''
-#         for edge in grad_Mu:
-#             for demand in grad_Mu[edge]:
-#                 grad_Mu[edge][demand] = grad_Mu[edge][demand]/self.num_samples
-#
-#         return grad_Y, grad_Mu
 
 
 class GradientEstimator(object): #For Python 3, replace object with ABCMeta
@@ -98,35 +33,35 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-    def estimate(self): #Should the estimate's take y as an input?
+    def estimate(self, y): #Should the estimate's take y as an input?
         pass
 
 
-class SamplerEstimator(GradientEstimator): #needs to be tested
+class SamplerEstimator(GradientEstimator): #
     """
     """
 
 
-    def __init__(self, my_wdnf, func): #, numOfSamples):
+    def __init__(self, my_wdnf, func, numOfSamples):
         """my_wdnf is a wdnf object and func is a function of that wdnf object
         such as func(my_wdnf) = log(my_wdnf) or
         func(my_wdnf) = my_wdnf/(1 - my_wdnf)
         """
         self.my_wdnf = my_wdnf
         self.func = func
-        #self.numOfSamples = numOfSamples
+        self.numOfSamples = numOfSamples
 
 
-    def estimate(self):
+    def estimate(self, y):
         grad = [0.0] * len(y)
         x = generateSamples(y, self.my_wdnf.findDependencies())
-        for i in range(len(y)):
+        for i in range(self.numOfSamples):
             x1 = x
             x1[i] = 1
             x0 = x
             x0[i] = 0
             grad[i] += self.func(x1) - self.func(x0)
-        grad = grad / len(y)
+        grad = grad / self.numOfSamples
         return grad
 
 
@@ -144,7 +79,7 @@ class PolynomialEstimator(GradientEstimator):
         self.func = func
 
 
-    def estimate(self):
+    def estimate(self, y):
         grad = self.func(y)
         return grad
 
@@ -224,11 +159,27 @@ class ContinuousGreedy():
         """
         self.matroidSolver = matroidSolver
         self.estimator = estimator
-        self.gradient = self.estimator.estimate()
 
 
-    def find_max(self):
-        mk = (self.matroidSolver).solve(self.gradient)
+    def find_max(self, gradient):
+        mk = (self.matroidSolver).solve(gradient)
+        return mk
+
+
+    def adapt(y, mk, gamma):
+        for i in mk:
+            y[i] += gamma
+
+
+    def FW(self, iterations):
+        x0 = [0.0] * len(self.y) ##How to keep the size information?
+        gamma = 1.0 / iterations
+        y = x0
+        for t in range(iterations):
+            gradient = self.estimator.estimate(y)
+            mk = self.find_max(gradient)
+            adapt(y, mk, gamma)
+        return y
 
 
 if __name__ == "__main__":
