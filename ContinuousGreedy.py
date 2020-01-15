@@ -55,7 +55,7 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
 
     @abstractmethod
     def __init__(self):
-        """func is an instance of the class taylor.
+        """
         """
         pass
 
