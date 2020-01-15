@@ -1,4 +1,6 @@
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
+from wdnf import wdnf
+from ContinuousGreedy import LinearSolver, PartitionMatroidSolver
 
 
 class Problem(object): #For Python 3, replace object with ABCMeta
@@ -19,10 +21,21 @@ class DiversityReward(Problem):
     """
 
 
-    def __init__(self, rewards, givenPartitions, constraintPartitions):
+    def __init__(self, rewards, givenPartitions, types):
         """ rewards is a dictionary containing {word: reward} pairs,
         givenPartitions is a dictionary containing {partition: word tuples},
-        constraintPartitions is a dictionary containing {word: type} pairs.
+        types is a dictionary containing {word: type} pairs.
         """
-
-        return partitionMatroid, wdnf_list
+        wdnf_list = []
+        partitionedSet = {}
+        for i in givenPartitions:
+            coefficients = {}
+            for j in givenPartitions[i]:
+                coefficients[j] = rewards[j]
+                if partitionedSet.has_key(types[j]):
+                    partitionedSet[types[j]].add(j)
+                else:
+                    partitionedSet[types[j]] = {j}
+            new_wdnf = wdnf(coefficients, 1)
+            wdnf_list.append(new_wdnf)
+        return wdnf_list, partitionedSet

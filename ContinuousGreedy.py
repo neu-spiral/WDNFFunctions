@@ -189,7 +189,7 @@ class PartitionMatroidSolver(LinearSolver): #tested for distinct partititons, wo
 
 
     def __init__(self, partitionedSet, k_list):
-        """Partitioned set is a dictionary of dictionaries, k_list is a
+        """partitionedSet is a dictionary of sets, k_list is a
         dictionary of cardinalities.
         """
         self.partitionedSet = partitionedSet
