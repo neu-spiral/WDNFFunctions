@@ -4,10 +4,6 @@ from scipy.misc import comb
 from decimal import *
 
 
-def nCr(n, r):
-    return comb(n, r, True)
-
-
 def merge(t1, t2):
     """Merge two tuples (in this context, keys) into a sorted tuple by taking
     the set union of them.
@@ -15,30 +11,12 @@ def merge(t1, t2):
     return tuple(sorted(set(t1).union(set(t2))))
 
 
-# class Error(Exception):
-#     """Base class for exceptions in wdnf class.
-#     """
-#     pass
-#
-#
-# class AdditionError(Error):
-#     """Raised when user tries to add two wdnf objects of different signs.
-#     """
-#     pass
-#
-#
-# class MultiplicationError(Error):
-#     """Raised when user tries to multiply two wdnf objects of different signs.
-#     """
-#     pass
-
-
 class wdnf():
     """A class implementing a polynomial in Weighted Disjunctive Normal Form
     (WDNF) consisting of monomials with (a) negative or positive literals and
     (b) integer terms.
     """
-    def __init__(self, coefficients={}, sign=-1): #edited
+    def __init__(self, coefficients={}, sign=-1):
         """ Coefficients is a dictionary containing tuples with indexes of the
         set elements as keys and coefficients as values. Sign denotes whether
         the WDNF formed with negative literals or positive literals.
@@ -49,7 +27,7 @@ class wdnf():
         self.sign = sign
 
 
-    def findDependencies(self): #new
+    def findDependencies(self):
         dependencies = {}
         for key in self.coefficients:
             for var in key:
@@ -60,7 +38,7 @@ class wdnf():
         return dependencies
 
 
-    def __call__(self, x): #edited (old evaluate(x) function)
+    def __call__(self, x): #(old evaluate(x) function)
         """ Given a dictionary x, evaluate wdnf(x) at the values x.
         """
         sumsofar = 0.0
@@ -78,16 +56,10 @@ class wdnf():
         return sumsofar
 
 
-    def __add__(self, other): #edited
+    def __add__(self, other):
         """ Add two polynomials in WDNF and return the resulting WDNF
         """
         assert self.sign == other.sign, 'Two WDNF polynomials of different signs cannot be added!'
-        #try:
-        #    if self.sign != other.sign:
-        #        raise AdditionError
-        #except AdditionError:
-        #    print('Two WDNF polynomials of different signs cannot be added!')
-        #    return
         new_coefficients = self.coefficients.copy() #empty dict for empty wdnf
         if not other.coefficients:
             return self
@@ -102,16 +74,10 @@ class wdnf():
         return wdnf(new_coefficients, self.sign)
 
 
-    def __mul__(self, other): #edited
+    def __mul__(self, other):
         """ Multiply two polynomials in WDNF and return the resulting WDNF
         """
         assert self.sign == other.sign, 'Two WDNF polynomials of different signs cannot be multiplied!'
-        # try:
-        #     if self.sign != other.sign:
-        #         raise MultiplicationError
-        # except MultiplicationError:
-        #     print('Two WDNF polynomials of different signs cannot be multiplied!')
-        #     return
         new_coefficients = {}
         for key1 in self.coefficients:
             for key2 in other.coefficients:
@@ -132,7 +98,7 @@ class wdnf():
         return wdnf(new_coefficients, self.sign)
 
 
-    def __pow__(self, k): #edited
+    def __pow__(self, k):
         """Calculates the kth power of a WDNF function and returns the result.
         k must be greater than or equal to 0.
         """
@@ -161,7 +127,7 @@ class poly():
         self.degree = degree
 
 
-    def __add__(self, other): #edited
+    def __add__(self, other):
         """Adds two univariate polynomials and returns the sum as another poly
         object.
         """
@@ -172,14 +138,14 @@ class poly():
         return poly(self.degree, poly_coef)
 
 
-    def __sub__(self, other): #new
+    def __sub__(self, other):
         """Subtracts two univariate polynomials and returns the difference as
         another poly object.
         """
         return self + ((-1) * other)
 
 
-    def __mul__(self, other): #new
+    def __mul__(self, other):
         """Multiplies two polynomials and return the product as another poly
         object.
         """
@@ -191,13 +157,13 @@ class poly():
         return poly(degree, poly_coef)
 
 
-    def __rmul__(self, scalar): #new
+    def __rmul__(self, scalar):
         """Multiplies a polynomial with a scalar.
         """
         return poly(self.degree, list(np.array(self.poly_coef) * scalar))
 
 
-    def compose(self, my_wdnf): #edited
+    def compose(self, my_wdnf): 
         """ Given a one-dimensional polynomial function f with degree k and coefficients
         stored in coef_list, computes f(self) and returns the result in WDNF.
         """
@@ -234,9 +200,9 @@ class taylor(poly):
             for i in range(degree + 1):
                 for j in range(i, degree + 1):
                     if j-i > 0:
-                        poly_coef[i] += derivatives[j] * nCr(j,i)/math.factorial(j) * (-center)**(j-i)
+                        poly_coef[i] += derivatives[j] * comb(j, i, True)/math.factorial(j) * (-center)**(j-i)
                     else:
-                        poly_coef[i] += derivatives[j] * nCr(j,i)/math.factorial(j)
+                        poly_coef[i] += derivatives[j] * comb(j, i, True)/math.factorial(j)
             poly.__init__(self, degree, poly_coef)
 
 
