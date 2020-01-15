@@ -1,5 +1,4 @@
 # # demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
-#import cvxopt
 import numpy as np
 import math
 #import itertools
@@ -65,7 +64,7 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-class SamplerEstimator(GradientEstimator): #
+class SamplerEstimator(GradientEstimator):
     """
     """
 
