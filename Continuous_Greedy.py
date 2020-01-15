@@ -135,11 +135,11 @@ class PolynomialEstimator(GradientEstimator):
         for key in self.my_wdnf.findDependencies().keys():
             y1 = y
             y1[key] = 1
-            grad1 = func(y1) ##!!!
+            grad1 = self.my_wdnf(y1)
 
             y0 = y
             y0[key] = 0
-            grad0 = func(y0) ##!!!
+            grad0 = self.my_wdnf(y0)
 
             delta = grad1 - grad0
             grad += delta
