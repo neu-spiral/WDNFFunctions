@@ -111,6 +111,10 @@ class wdnf():
             return power_wdnf
 
 
+    def evaluate(self, x, func):
+        return func(self(x))
+
+
 class poly():
     """A class for defining univariate polynomials with the largest degree and
     the coefficients list of size (largest degree + 1) where coefficients are

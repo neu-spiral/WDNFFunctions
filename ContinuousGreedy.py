@@ -30,7 +30,7 @@ def generateSamples(y, dependencies = {}):
 def derive(type, x, degree):
     if type == 'ln':
         if degree == 0:
-            return math.log1p(x) #log1p(x) is ln(x+1)
+            return np.log1p(x) #log1p(x) is ln(x+1)
         else:
             return (((-1.0)**degree) * math.factorial(degree)) / ((1.0 + x)**(degree + 1))
     if type == 'queueSize':
@@ -64,14 +64,35 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
         pass
 
 
+def log(x):
+    """
+    """
+    output = 0.0
+    for wdnf_object in wdnf_list:
+        output += wdnf_object.evaluate(x, np.log1p)
+    return output
+
+
+def qs(x):
+    return x / (1.0 - x)
+
+
+def queueSize(x):
+    """
+    """
+    output = 0.0
+    for wdnf_object in wdnf_list:
+        output += wdnf_object.evaluate(x, qs)
+    return output
+
+
 class SamplerEstimator(GradientEstimator):
     """
     """
 
 
     def __init__(self, func, numOfSamples):
-        """func is a function of where func(my_wdnf) = log(my_wdnf) or
-        func(my_wdnf) = my_wdnf/(1 - my_wdnf)
+        """func is either log or queueSize.
         """
         self.func = func
         self.numOfSamples = numOfSamples
@@ -96,9 +117,7 @@ class SamplerEstimatorWithDependencies(GradientEstimator): #
 
 
     def __init__(self, my_wdnf, func, numOfSamples):
-        """my_wdnf is a wdnf object and func is a function of that wdnf object
-        such as func(my_wdnf) = log(my_wdnf) or
-        func(my_wdnf) = my_wdnf/(1 - my_wdnf)
+        """func is either log or queueSize.
         """
         self.my_wdnf = my_wdnf
         self.func = func
@@ -116,6 +135,13 @@ class SamplerEstimatorWithDependencies(GradientEstimator): #
             grad[i] += self.func(x1) - self.func(x0)
         grad = grad / self.numOfSamples
         return grad
+
+
+def evaluateAll(taylor_instance):
+    my_wdnf = wdnf({}, wdnf_list[0].sign)
+    for wdnf_instance in wdnf_list:
+        my_wdnf += taylor_instance.compose(wdnf_instance)
+    return my_wdnf
 
 
 class PolynomialEstimator(GradientEstimator):
