@@ -11,6 +11,28 @@ from ProblemInstances import Problem, DiversityReward
 # import os
 
 
+def log(x):
+    """
+    """
+    output = 0.0
+    for wdnf_object in wdnf_list:
+        output += wdnf_object.evaluate(x, np.log1p)
+    return output
+
+
+def qs(x):
+    return x / (1.0 - x)
+
+
+def queueSize(x):
+    """
+    """
+    output = 0.0
+    for wdnf_object in wdnf_list:
+        output += wdnf_object.evaluate(x, qs)
+    return output
+
+
 def generateSamples(y, dependencies = {}):
     """ Generates random samples x for e in dependencies P(x_e = 1) = y_e
     """
@@ -41,10 +63,23 @@ def derive(type, x, degree):
 
 
 def findDerivatives(type, center, degree):
+    """Type is either 'ln' or 'queueSize'.
+    """
     derivatives = []
     for i in range(degree + 1):
         derivatives.append(derive(type, center, i))
     return derivatives
+
+
+def evaluateAll(taylor_instance):
+    my_wdnf = wdnf(dict(), wdnf_list[0].sign)
+    #print(my_wdnf.coefficients)
+    for wdnf_instance in wdnf_list:
+        #print(wdnf_instance.coefficients)
+        #print(taylor_instance.compose(wdnf_instance).coefficients)
+        my_wdnf += taylor_instance.compose(wdnf_instance)
+        #print(my_wdnf.coefficients)
+    return my_wdnf
 
 
 class GradientEstimator(object): #For Python 3, replace object with ABCMeta
@@ -64,28 +99,6 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-def log(x):
-    """
-    """
-    output = 0.0
-    for wdnf_object in wdnf_list:
-        output += wdnf_object.evaluate(x, np.log1p)
-    return output
-
-
-def qs(x):
-    return x / (1.0 - x)
-
-
-def queueSize(x):
-    """
-    """
-    output = 0.0
-    for wdnf_object in wdnf_list:
-        output += wdnf_object.evaluate(x, qs)
-    return output
-
-
 class SamplerEstimator(GradientEstimator):
     """
     """
@@ -102,9 +115,9 @@ class SamplerEstimator(GradientEstimator):
         """y is a dictionary of {item: value} pairs.
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
-        print(grad)
+        #print(grad)
         x = generateSamples(y)
-        print(x)
+        #print(x)
         for i in y.keys():
             x1 = x
             x1[i] = 1
@@ -129,7 +142,7 @@ class SamplerEstimatorWithDependencies(GradientEstimator): #
 
 
     def estimate(self, y):
-        grad = [0.0] * len(y)
+        grad = dict.fromkeys(y.iterkeys(), 0.0)
         x = generateSamples(y, self.my_wdnf.findDependencies())
         for i in range(self.numOfSamples):
             x1 = x
@@ -141,28 +154,21 @@ class SamplerEstimatorWithDependencies(GradientEstimator): #
         return grad
 
 
-def evaluateAll(taylor_instance):
-    my_wdnf = wdnf({}, wdnf_list[0].sign)
-    for wdnf_instance in wdnf_list:
-        my_wdnf += taylor_instance.compose(wdnf_instance)
-    return my_wdnf
-
-
 class PolynomialEstimator(GradientEstimator):
     """
     """
 
 
-    def __init__(self, my_wdnf, degree):
+    def __init__(self, my_wdnf):
         """my_wdnf is a wdnf object
         """
         self.my_wdnf = my_wdnf
-        self.degree = degree
 
 
     def estimate(self, y):
-        grad = [0.0] * len(y)
+        grad = dict.fromkeys(y.iterkeys(), 0.0)
         for key in self.my_wdnf.findDependencies().keys():
+            #print(key)
             y1 = y
             y1[key] = 1
             grad1 = self.my_wdnf(y1)
@@ -172,7 +178,7 @@ class PolynomialEstimator(GradientEstimator):
             grad0 = self.my_wdnf(y0)
 
             delta = grad1 - grad0
-            grad += delta
+            grad[key] += delta
         return grad
 
 
@@ -195,7 +201,7 @@ class LinearSolver(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-class UniformMatroidSolver(LinearSolver): #tested, works
+class UniformMatroidSolver(LinearSolver):
     """
     """
 
@@ -232,13 +238,11 @@ class PartitionMatroidSolver(LinearSolver): #tested for distinct partititons, wo
         result = {}
         selection = []
         for partition in self.partitionedSet:
-            print(partition)
-            print(gradient)
+            #print(partition)
+            #print(gradient)
             UniformSolver = UniformMatroidSolver(self.partitionedSet[partition], self.k_list[partition])
             for key in self.partitionedSet[partition]:
-                print(key)
-                print(gradient[key])
-            filtered_gradient = {key: gradient[key] for key in self.partitionedSet[partition]}
+                filtered_gradient = {key: gradient[key] for key in self.partitionedSet[partition]}
             selection = UniformSolver.solve(filtered_gradient)
             result[partition] = selection
         return result
@@ -263,12 +267,12 @@ class ContinuousGreedy():
         for t in range(iterations):
             gradient = self.estimator.estimate(y)
             mk = (self.linearSolver).solve(gradient) #finds maximum
-            print(mk)
+            #print(mk)
             indices = set()
             for value in mk.values(): #updates y
                 indices = indices.union(value)
-                print(value)
-            print(list(indices))
+                #print(value)
+            #print(list(indices))
             for i in list(indices):
                 y[i] += gamma
         return y
@@ -279,18 +283,26 @@ if __name__ == "__main__":
     givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)}
     types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'}
     newProblem = DiversityReward(rewards, givenPartitions, types)
-    for item in newProblem.wdnf_list:
-        print item.coefficients
-        print item.sign
-    print(newProblem.partitionedSet)
+    #for item in newProblem.wdnf_list:
+        #print item.coefficients
+        #print item.sign
+    #print(newProblem.partitionedSet)
     wdnf_list = newProblem.wdnf_list
     estimator1 = SamplerEstimator(log, 10)
     linearSolver = PartitionMatroidSolver(newProblem.partitionedSet, {'verb': 1, 'noun': 2})
-    cg = ContinuousGreedy(linearSolver, estimator1)
-    Y = cg.FW(3)
-    print(Y)
-    estimator2 = PolynomialEstimator(my_wdnf, 3)
-    ##write my_wdnf here
+    cg1 = ContinuousGreedy(linearSolver, estimator1)
+    Y1 = cg1.FW(3)
+    print(Y1)
+
+    derivatives = findDerivatives('ln', 0, 1)
+    myTaylor = taylor(1, derivatives, 0)
+    print(myTaylor.poly_coef)
+    my_wdnf = evaluateAll(myTaylor)
+    print(my_wdnf.coefficients)
+    estimator2 = PolynomialEstimator(my_wdnf)
+    cg2 = ContinuousGreedy(linearSolver, estimator2)
+    Y2 = cg2.FW(3)
+    print(Y2)
 
 
     # actors = {'act1', 'act2', 'act3', 'act4', 'act5'}
