@@ -38,7 +38,9 @@ class DiversityReward(Problem):
                     partitionedSet[types[j]] = {j}
             new_wdnf = wdnf(coefficients, 1)
             wdnf_list.append(new_wdnf)
-        return wdnf_list, partitionedSet
+        self.wdnf_list = wdnf_list
+        self.partitionedSet = partitionedSet
+        self.problemSize = len(rewards)
 
 
 class QueueSize(Problem):

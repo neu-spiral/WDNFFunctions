@@ -1,10 +1,10 @@
-# # demands is list of object instances, edges is dictionary with (u,v) as key and mu_uv as value
 import numpy as np
 import math
 #import itertools
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
 from wdnf import wdnf, poly, taylor
+from ProblemInstances import Problem, DiversityReward
 # from time import time
 # from helpers import write
 # import argparse
@@ -240,7 +240,7 @@ class ContinuousGreedy():
     """
 
 
-    def __init__(linearSolver, estimator):
+    def __init__(self, linearSolver, estimator):
         """
         """
         self.linearSolver = linearSolver
@@ -248,7 +248,7 @@ class ContinuousGreedy():
 
 
     def FW(self, iterations):
-        x0 = [0.0] * len(self.y) ##How to keep the size information?
+        x0 = [0.0] * newProblem.problemSize ##How to keep the size information?
         gamma = 1.0 / iterations
         y = x0
         for t in range(iterations):
@@ -260,25 +260,41 @@ class ContinuousGreedy():
 
 
 if __name__ == "__main__":
-    actors = {'act1', 'act2', 'act3', 'act4', 'act5'}
-    actors_gradient = {'act1': 1000, 'act2': 300, 'act3': 400, 'act4': 500, 'act5': 700}
-    NewUniSolver = UniformMatroidSolver(actors, 3)
-    print(NewUniSolver.solve(actors_gradient))
-    print(isinstance(NewUniSolver, UniformMatroidSolver))
+    rewards = {'apple': 0.3, 'newspaper': 0.2, 'pencil': 0.1, 'go': 0.7, 'orange': 0.05, 'jump': 0.4}
+    givenPartitions = {'fruits': ('apple', 'orange'), 'things': ('newspaper', 'pencil'), 'actions': ('go', 'jump')}
+    types = {'apple': 'noun', 'newspaper': 'noun', 'pencil': 'noun', 'go': 'verb', 'orange': 'noun', 'jump': 'verb'}
+    newProblem = DiversityReward(rewards, givenPartitions, types)
+    for item in newProblem.wdnf_list:
+        print item.coefficients
+        print item.sign
+    print(newProblem.partitionedSet)
+    wdnf_list = newProblem.wdnf_list
+    estimator = SamplerEstimator(log, 10)
+    linearSolver = PartitionMatroidSolver(newProblem.partitionedSet, {'verb': 1, 'noun': 2})
+    cg = ContinuousGreedy(linearSolver, estimator)
+    Y = cg.FW(3)
+    print(Y)
 
-    directors = {'dir1', 'dir2', 'dir3'}
-    directors_gradient = {'dir1': 1500, 'dir2': 1200, 'dir3': 250}
-    figurants = {'fig1', 'fig2', 'fig3', 'fig4', 'fig5', 'fig6', 'fig7'}
-    figurants_gradient = {'fig1': 10, 'fig2': 20, 'fig3': 35, 'fig4': 5, 'fig5': 6, 'fig6': 2, 'fig7': 13}
-    candidates = {'actors': actors, 'directors': directors, 'figurants': figurants}
-    candidates_gradient = {}
-    candidates_gradient.update(actors_gradient)
-    candidates_gradient.update(directors_gradient)
-    candidates_gradient.update(figurants_gradient)
-    k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
-    NewPartSolver = PartitionMatroidSolver(candidates, k_list)
-    print(NewPartSolver.solve(candidates_gradient))
-    print(findDerivatives('queueSize', 3, 5))
+
+    # actors = {'act1', 'act2', 'act3', 'act4', 'act5'}
+    # actors_gradient = {'act1': 1000, 'act2': 300, 'act3': 400, 'act4': 500, 'act5': 700}
+    # NewUniSolver = UniformMatroidSolver(actors, 3)
+    # print(NewUniSolver.solve(actors_gradient))
+    # print(isinstance(NewUniSolver, UniformMatroidSolver))
+    #
+    # directors = {'dir1', 'dir2', 'dir3'}
+    # directors_gradient = {'dir1': 1500, 'dir2': 1200, 'dir3': 250}
+    # figurants = {'fig1', 'fig2', 'fig3', 'fig4', 'fig5', 'fig6', 'fig7'}
+    # figurants_gradient = {'fig1': 10, 'fig2': 20, 'fig3': 35, 'fig4': 5, 'fig5': 6, 'fig6': 2, 'fig7': 13}
+    # candidates = {'actors': actors, 'directors': directors, 'figurants': figurants}
+    # candidates_gradient = {}
+    # candidates_gradient.update(actors_gradient)
+    # candidates_gradient.update(directors_gradient)
+    # candidates_gradient.update(figurants_gradient)
+    # k_list = {'actors': 2, 'directors': 1, 'figurants': 5}
+    # NewPartSolver = PartitionMatroidSolver(candidates, k_list)
+    # print(NewPartSolver.solve(candidates_gradient))
+    # print(findDerivatives('queueSize', 3, 5))
     #
     # kids = {'kid1': {'goalkeeper': 100, 'defender': 50, 'forward': 25},
     #         'kid2': {'goalkeeper': 80, 'defender': 150, 'forward': 30},
