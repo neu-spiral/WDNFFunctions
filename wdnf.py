@@ -163,7 +163,7 @@ class poly():
         return poly(self.degree, list(np.array(self.poly_coef) * scalar))
 
 
-    def compose(self, my_wdnf): 
+    def compose(self, my_wdnf):
         """ Given a one-dimensional polynomial function f with degree k and coefficients
         stored in coef_list, computes f(self) and returns the result in WDNF.
         """
@@ -246,64 +246,3 @@ if __name__=="__main__":
     #print(new_wdnf1.coefficients)
     #print(new_wdnf1.sets)
     #print(new_wdnf1.sign)
-
-#if __name__=="__main__":
-
-    # for i in range(10):
-    #     r_val = 0.1*i
-    #     taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 )
-    #     taylor_approx.expand()
-    #     r = r_val+0.01
-    #     print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
-
-
-
-
-    # P = Problem.unpickle_cls("problem_abilene_1000demands_300catalog_size_mincap_30maxcap_30_100_uniform")
-    # # Problem class is defined in Toplogy_gen.
-
-
-
-
-
-    # X = generateRandomPlacement(P)
-
-
-
-    # print X
-    # rhos = ro_uv(X,P)
-
-    # rho_uvs_coefficients,  rho_uvs_sets = rho_uv_dicts(P)
-    # print rho_uvs_coefficients[(0, 8)],rho_uvs_sets[(0,8)]
-    # for edge in rho_uvs_coefficients:
-    #     rho_wdnf = wdnf(rho_uvs_coefficients[edge], rho_uvs_sets[edge])
-    #     r_val= rho_wdnf.evaluate(X)
-
-
-
-    #     print 'For edge',edge,'rho is',rhos[edge],'calculated via poly is',r_val
-
-
-    #     #taylor_approx = taylor( 4*[np.exp(r_val)],r_val,3 )
-
-    #     #taylor_approx.expand()
-    #     #r = r_val+0.01
-    #     #print np.exp(r),taylor_approx.evaluate(r),taylor_approx.evaluate_expanded( dict([ (i+1,r**(i+1))    for i in range(3)]   ))
-
-
-
-
-    #     rk ={}
-    #     i=1
-    #     rk[i] = rho_wdnf
-    #     #print rho_wdnf.coefficients,rho_wdnf.sets
-    #     while i<2:
-    #         i +=1
-    #         rk[i] = rk[i-1].product(rho_wdnf)
-    #         print 'For edge',edge,'rho^'+str(i),'is',rhos[edge]**i,'calculated via poly is',rk[i].evaluate(X)
-
-    #         #print rk[i].coefficients,rk[i].sets
-
-
-
-    #     ##test taylor expansion with f(x) =np.exp(x).

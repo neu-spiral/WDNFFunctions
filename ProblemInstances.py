@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from wdnf import wdnf
-from ContinuousGreedy import LinearSolver, PartitionMatroidSolver
+#from ContinuousGreedy import LinearSolver, PartitionMatroidSolver
 
 
 class Problem(object): #For Python 3, replace object with ABCMeta
@@ -39,3 +39,30 @@ class DiversityReward(Problem):
             new_wdnf = wdnf(coefficients, 1)
             wdnf_list.append(new_wdnf)
         return wdnf_list, partitionedSet
+
+
+class QueueSize(Problem):
+    """
+    """
+
+
+    def __init__(self):
+        pass
+
+
+class InfluenceMaximization(Problem):
+    """
+    """
+
+
+    def __init__(self):
+        pass
+
+
+class FacilityLocation(Problem):
+    """
+    """
+
+
+    def __init__(self):
+        pass
