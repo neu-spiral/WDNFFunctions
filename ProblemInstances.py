@@ -41,6 +41,7 @@ class DiversityReward(Problem):
         self.wdnf_list = wdnf_list
         self.partitionedSet = partitionedSet
         self.problemSize = len(rewards)
+        self.y = dict.fromkeys(rewards.iterkeys(), 0.0)
 
 
 class QueueSize(Problem):

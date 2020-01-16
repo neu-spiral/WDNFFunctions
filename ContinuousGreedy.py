@@ -14,14 +14,14 @@ from ProblemInstances import Problem, DiversityReward
 def generateSamples(y, dependencies = {}):
     """ Generates random samples x for e in dependencies P(x_e = 1) = y_e
     """
-    samples = [0.0] * len(y)
-    p = np.random.rand(len(y))
+    samples = dict.fromkeys(y.iterkeys(), 0.0)
+    p = dict.fromkeys(y.iterkeys(), np.random.rand())
     if dependencies != {}:
         for element in dependencies.keys():
             if y[element] > p[element]:
                 samples[element] = 1
     else:
-        for i in range(len(y)):
+        for i in y.keys():
             if y[i] > p[i]:
                 samples[i] = 1
     return samples
@@ -99,15 +99,19 @@ class SamplerEstimator(GradientEstimator):
 
 
     def estimate(self, y):
-        grad = [0.0] * len(y)
+        """y is a dictionary of {item: value} pairs.
+        """
+        grad = dict.fromkeys(y.iterkeys(), 0.0)
+        print(grad)
         x = generateSamples(y)
-        for i in range(self.numOfSamples):
+        print(x)
+        for i in y.keys():
             x1 = x
             x1[i] = 1
             x0 = x
             x0[i] = 0
             grad[i] += self.func(x1) - self.func(x0)
-        grad = grad / self.numOfSamples
+        grad = {key: grad[key] / self.numOfSamples for key in grad.keys()}
         return grad
 
 
@@ -228,7 +232,12 @@ class PartitionMatroidSolver(LinearSolver): #tested for distinct partititons, wo
         result = {}
         selection = []
         for partition in self.partitionedSet:
+            print(partition)
+            print(gradient)
             UniformSolver = UniformMatroidSolver(self.partitionedSet[partition], self.k_list[partition])
+            for key in self.partitionedSet[partition]:
+                print(key)
+                print(gradient[key])
             filtered_gradient = {key: gradient[key] for key in self.partitionedSet[partition]}
             selection = UniformSolver.solve(filtered_gradient)
             result[partition] = selection
@@ -248,32 +257,40 @@ class ContinuousGreedy():
 
 
     def FW(self, iterations):
-        x0 = [0.0] * newProblem.problemSize ##How to keep the size information?
+        x0 = newProblem.y ##How to keep the size information?
         gamma = 1.0 / iterations
         y = x0
         for t in range(iterations):
             gradient = self.estimator.estimate(y)
             mk = (self.linearSolver).solve(gradient) #finds maximum
-            for i in mk: #updates y
+            print(mk)
+            indices = set()
+            for value in mk.values(): #updates y
+                indices = indices.union(value)
+                print(value)
+            print(list(indices))
+            for i in list(indices):
                 y[i] += gamma
         return y
 
 
 if __name__ == "__main__":
-    rewards = {'apple': 0.3, 'newspaper': 0.2, 'pencil': 0.1, 'go': 0.7, 'orange': 0.05, 'jump': 0.4}
-    givenPartitions = {'fruits': ('apple', 'orange'), 'things': ('newspaper', 'pencil'), 'actions': ('go', 'jump')}
-    types = {'apple': 'noun', 'newspaper': 'noun', 'pencil': 'noun', 'go': 'verb', 'orange': 'noun', 'jump': 'verb'}
+    rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.7, 5: 0.05, 6: 0.4}
+    givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)}
+    types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'}
     newProblem = DiversityReward(rewards, givenPartitions, types)
     for item in newProblem.wdnf_list:
         print item.coefficients
         print item.sign
     print(newProblem.partitionedSet)
     wdnf_list = newProblem.wdnf_list
-    estimator = SamplerEstimator(log, 10)
+    estimator1 = SamplerEstimator(log, 10)
     linearSolver = PartitionMatroidSolver(newProblem.partitionedSet, {'verb': 1, 'noun': 2})
-    cg = ContinuousGreedy(linearSolver, estimator)
+    cg = ContinuousGreedy(linearSolver, estimator1)
     Y = cg.FW(3)
     print(Y)
+    estimator2 = PolynomialEstimator(my_wdnf, 3)
+    ##write my_wdnf here
 
 
     # actors = {'act1', 'act2', 'act3', 'act4', 'act5'}

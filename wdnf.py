@@ -8,7 +8,7 @@ def merge(t1, t2):
     """Merge two tuples (in this context, keys) into a sorted tuple by taking
     the set union of them.
     """
-    return tuple(sorted(set(t1).union(set(t2))))
+    return tuple(sorted(set([t1]).union(set([t2])))) ##check here again
 
 
 class wdnf():
@@ -30,11 +30,18 @@ class wdnf():
     def findDependencies(self):
         dependencies = {}
         for key in self.coefficients:
-            for var in key:
-                if var in dependencies:
-                    dependencies[var].append(key)
+            try:
+                for var in key:
+                    if var in dependencies:
+                        dependencies[var].append(key)
+                    else:
+                        dependencies[var] = [key]
+                        break
+            except TypeError, KeyError:
+                if key in dependencies:
+                    dependencies[key].append(key)
                 else:
-                    dependencies[var] = [key]
+                    dependencies[key] = [key]
         return dependencies
 
 
@@ -46,12 +53,19 @@ class wdnf():
             beta = self.coefficients[key]
             setofx = key
             prod = beta
-            if  self.sign == -1:
-                for var in setofx:
-                    prod = prod * (1.0-x[var])
-            else:
-                for var in setofx:
-                    prod = prod * x[var]
+            try:
+                if  self.sign == -1:
+                    for var in setofx:
+                        prod = prod * (1.0-x[var])
+                else:
+                    for var in setofx:
+                        prod = prod * x[var]
+                        break
+            except TypeError, KeyError:
+                if  self.sign == -1:
+                    prod = prod * (1.0-x[key])
+                else:
+                    prod = prod * x[key]
             sumsofar = sumsofar + prod
         return sumsofar
 
@@ -212,7 +226,7 @@ class taylor(poly):
 
 if __name__=="__main__":
     #wdnf0 = wdnf({}, {})
-    wdnf1 = wdnf({(2, 3): 2.0, (2, 4): 10.0, (3, 4): 3.0})
+    wdnf1 = wdnf({(2): 2.0, (2, 4): 10.0, (3, 4): 3.0})
     print(wdnf1.findDependencies())
     #print(wdnf1.sets)
     wdnf2 = wdnf({(1, 2): 4.0, (1, 3): 5.0})
