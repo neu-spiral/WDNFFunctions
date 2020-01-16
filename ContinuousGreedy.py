@@ -85,17 +85,17 @@ class SamplerEstimatorWithDependencies(GradientEstimator): #
     """
 
 
-    def __init__(self, my_wdnf, func, numOfSamples):
+    def __init__(self, dependencies, func, numOfSamples):
         """func is either log or queueSize.
         """
-        self.my_wdnf = my_wdnf
+        self.dependencies = dependencies
         self.func = func
         self.numOfSamples = numOfSamples
 
 
     def estimate(self, y):
         grad = dict.fromkeys(y.iterkeys(), 0.0)
-        x = generateSamples(y, self.my_wdnf.findDependencies())
+        x = generateSamples(y, self.dependencies)
         for i in range(self.numOfSamples):
             x1 = x
             x1[i] = 1
