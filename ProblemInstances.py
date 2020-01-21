@@ -82,15 +82,15 @@ class Problem(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-    def setSolver(self, k_list):
+    def setSolver(self):
         pass
 
 
-    def setSamplerEstimator(self):
+    def setSamplerEstimator(self, numOfSamples):
         pass
 
 
-    def setPolynomialEstimator(self):
+    def setPolynomialEstimator(self, center, degree):
         pass
 
 
@@ -107,8 +107,9 @@ class DiversityReward(Problem):
 
     def __init__(self, rewards, givenPartitions, fun, types, k_list):
         """ rewards is a dictionary containing {word: reward} pairs,
-        givenPartitions is a dictionary containing {partition: word tuples},
-        types is a dictionary containing {word: type} pairs.
+        givenPartitions is a dictionary containing {partition: word tuples}, fun
+        is either log or qs, types is a dictionary containing {word: type} pairs,
+        k_list is a dictionary of {type: cardinality} pairs.
         """
         wdnf_list = []
         partitionedSet = {}
@@ -164,6 +165,24 @@ class QueueSize(Problem):
         pass
 
 
+    def setSolver(self):
+        pass
+
+
+    def setSamplerEstimator(self, numOfSamples):
+        pass
+
+
+    def setPolynomialEstimator(self, center, degree):
+        pass
+
+
+    def setInitialPoint(self):
+        pass
+
+
+
+
 class InfluenceMaximization(Problem):
     """
     """
@@ -173,6 +192,24 @@ class InfluenceMaximization(Problem):
         pass
 
 
+    def setSolver(self):
+        pass
+
+
+    def setSamplerEstimator(self, numOfSamples):
+        pass
+
+
+    def setPolynomialEstimator(self, center, degree):
+        pass
+
+
+    def setInitialPoint(self):
+        pass
+
+
+
+
 class FacilityLocation(Problem):
     """
     """
@@ -180,6 +217,23 @@ class FacilityLocation(Problem):
 
     def __init__(self):
         pass
+
+
+    def setSolver(self):
+        pass
+
+
+    def setSamplerEstimator(self, numOfSamples):
+        pass
+
+
+    def setPolynomialEstimator(self, center, degree):
+        pass
+
+
+    def setInitialPoint(self):
+        pass
+
 
 
 

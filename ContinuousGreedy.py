@@ -40,7 +40,7 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-    def estimate(self, y): #Should the estimate's take y as an input? --I think it should
+    def estimate(self, y):
         pass
 
 
@@ -62,7 +62,7 @@ class SamplerEstimator(GradientEstimator):
         """y is a dictionary of {item: value} pairs.
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
-        x = generateSamples(y) ##Is this generating only one sample?
+        x = generateSamples(y) ##double check here
         for i in y.keys():
             x1 = x
             x1[i] = 1
@@ -218,7 +218,7 @@ class ContinuousGreedy():
 
 
     def FW(self, iterations):
-        x0 = self.initialPoint ##How to keep the size information? --FIX HERE
+        x0 = self.initialPoint
         gamma = 1.0 / iterations
         y = x0
         for t in range(iterations):
