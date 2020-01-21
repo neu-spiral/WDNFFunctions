@@ -83,18 +83,26 @@ class Problem(object): #For Python 3, replace object with ABCMeta
 
 
     def setSolver(self):
+        """
+        """
         pass
 
 
     def setSamplerEstimator(self, numOfSamples):
+        """
+        """
         pass
 
 
     def setPolynomialEstimator(self, center, degree):
+        """
+        """
         pass
 
 
     def setInitialPoint(self):
+        """
+        """
         pass
 
 
@@ -132,18 +140,26 @@ class DiversityReward(Problem):
 
 
     def setSolver(self):
+        """
+        """
         return PartitionMatroidSolver(self.partitionedSet, self.k_list)
 
 
     def func(self, x):
+        """
+        """
         return self.fun(self.wdnf_list, x)
 
 
     def setSamplerEstimator(self, numOfSamples):
+        """
+        """
         return SamplerEstimator(self.func, numOfSamples)
 
 
     def setPolynomialEstimator(self, center, degree):
+        """
+        """
         derivatives = findDerivatives(self.fun, center, degree)
         myTaylor = taylor(degree, derivatives, center)
         my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
@@ -151,6 +167,8 @@ class DiversityReward(Problem):
 
 
     def setInitialPoint(self):
+        """
+        """
         return dict.fromkeys(self.rewards.iterkeys(), 0.0)
 
 
@@ -162,22 +180,32 @@ class QueueSize(Problem):
 
 
     def __init__(self):
+        """
+        """
         pass
 
 
     def setSolver(self):
+        """
+        """
         pass
 
 
     def setSamplerEstimator(self, numOfSamples):
+        """
+        """
         pass
 
 
     def setPolynomialEstimator(self, center, degree):
+        """
+        """
         pass
 
 
     def setInitialPoint(self):
+        """
+        """
         pass
 
 
@@ -189,22 +217,32 @@ class InfluenceMaximization(Problem):
 
 
     def __init__(self):
+        """
+        """
         pass
 
 
     def setSolver(self):
+        """
+        """
         pass
 
 
     def setSamplerEstimator(self, numOfSamples):
+        """
+        """
         pass
 
 
     def setPolynomialEstimator(self, center, degree):
+        """
+        """
         pass
 
 
     def setInitialPoint(self):
+        """
+        """
         pass
 
 
@@ -216,22 +254,32 @@ class FacilityLocation(Problem):
 
 
     def __init__(self):
+        """
+        """
         pass
 
 
     def setSolver(self):
+        """
+        """
         pass
 
 
     def setSamplerEstimator(self, numOfSamples):
+        """
+        """
         pass
 
 
     def setPolynomialEstimator(self, center, degree):
+        """
+        """
         pass
 
 
     def setInitialPoint(self):
+        """
+        """
         pass
 
 
