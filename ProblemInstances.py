@@ -1,10 +1,13 @@
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
-from wdnf import wdnf
-from ContinuousGreedy import LinearSolver, PartitionMatroidSolver
+from wdnf import wdnf, poly, taylor
+from ContinuousGreedy import LinearSolver, PartitionMatroidSolver, SamplerEstimator, PolynomialEstimator, ContinuousGreedy
+import math
+import numpy as np
 
 
-def log(x):
-    """
+def log(wdnf_list, x):
+    """ Given a list of wdnf objects and a vector x as a dictionary, returns the
+    f(x) = sum_{i=1}^K log(sum_j r_j x_{j} + 1)
     """
     output = 0.0
     for wdnf_object in wdnf_list:
@@ -13,11 +16,14 @@ def log(x):
 
 
 def qs(x):
+    """Given rho returns rho / (1 - rho)
+    """
     return x / (1.0 - x)
 
 
-def queueSize(x):
-    """
+def queueSize(wdnf_list, x):
+    """ Given a list of wdnf objects and a vector x as a dictionary, returns the
+    f(x) = sum_{i=1}^K qs(sum_j r_j x_{j} + 1)
     """
     output = 0.0
     for wdnf_object in wdnf_list:
@@ -26,20 +32,25 @@ def queueSize(x):
 
 
 def derive(type, x, degree):
-    if type == 'ln':
+    """Helper function to create derivatives list of taylor objects. Given the
+    degree and the center of the taylor expansion with the type of the functions
+    returns the value of the function's derivative at the given center point.
+    """
+    if type == log:
         if degree == 0:
             return np.log1p(x) #log1p(x) is ln(x+1)
         else:
             return (((-1.0)**degree) * math.factorial(degree)) / ((1.0 + x)**(degree + 1))
-    if type == 'queueSize':
+    if type == qs:
         if degree == 0:
-            return 1.0 / (1.0 - x)
+            return qs(x)
         else:
             return math.factorial(degree) / ((1.0 - x)**(degree + 1))
 
 
 def findDerivatives(type, center, degree):
-    """Type is either 'ln' or 'queueSize'.
+    """Type is either 'ln' or 'queueSize', helper function to create the
+    derivatives list of taylor objects.
     """
     derivatives = []
     for i in range(degree + 1):
@@ -47,7 +58,7 @@ def findDerivatives(type, center, degree):
     return derivatives
 
 
-def evaluateAll(taylor_instance):
+def evaluateAll(taylor_instance, wdnf_list):
     my_wdnf = wdnf(dict(), wdnf_list[0].sign)
     #print(my_wdnf.coefficients)
     for wdnf_instance in wdnf_list:
@@ -71,12 +82,30 @@ class Problem(object): #For Python 3, replace object with ABCMeta
         pass
 
 
+    def setSolver(self, k_list):
+        pass
+
+
+    def setSamplerEstimator(self):
+        pass
+
+
+    def setPolynomialEstimator(self):
+        pass
+
+
+    def setInitialPoint(self):
+        pass
+
+
+
+
 class DiversityReward(Problem):
     """
     """
 
 
-    def __init__(self, rewards, givenPartitions, types):
+    def __init__(self, rewards, givenPartitions, fun, types, k_list):
         """ rewards is a dictionary containing {word: reward} pairs,
         givenPartitions is a dictionary containing {partition: word tuples},
         types is a dictionary containing {word: type} pairs.
@@ -93,10 +122,37 @@ class DiversityReward(Problem):
                     partitionedSet[types[j]] = {j}
             new_wdnf = wdnf(coefficients, 1)
             wdnf_list.append(new_wdnf)
+        self.rewards = rewards
         self.wdnf_list = wdnf_list
         self.partitionedSet = partitionedSet
-        self.problemSize = len(rewards)
-        self.y = dict.fromkeys(rewards.iterkeys(), 0.0)
+        self.fun = fun
+        self.k_list = k_list
+        #self.problemSize = len(rewards)
+
+
+    def setSolver(self):
+        return PartitionMatroidSolver(self.partitionedSet, self.k_list)
+
+
+    def func(self, x):
+        return self.fun(self.wdnf_list, x)
+
+
+    def setSamplerEstimator(self, numOfSamples):
+        return SamplerEstimator(self.func, numOfSamples)
+
+
+    def setPolynomialEstimator(self, center, degree):
+        derivatives = findDerivatives(self.fun, center, degree)
+        myTaylor = taylor(degree, derivatives, center)
+        my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
+        return PolynomialEstimator(my_wdnf)
+
+
+    def setInitialPoint(self):
+        return dict.fromkeys(self.rewards.iterkeys(), 0.0)
+
+
 
 
 class QueueSize(Problem):
@@ -131,25 +187,24 @@ if __name__ == "__main__":
     rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.7, 5: 0.05, 6: 0.4}
     givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)}
     types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'}
-    newProblem = DiversityReward(rewards, givenPartitions, types)
+    k_list = {'verb': 1, 'noun': 2}
+    newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
     #for item in newProblem.wdnf_list:
         #print item.coefficients
         #print item.sign
     #print(newProblem.partitionedSet)
-    wdnf_list = newProblem.wdnf_list
-    estimator1 = SamplerEstimator(log, 10)
-    linearSolver = PartitionMatroidSolver(newProblem.partitionedSet, {'verb': 1, 'noun': 2})
-    cg1 = ContinuousGreedy(linearSolver, estimator1)
+    #wdnf_list = newProblem.wdnf_list
+    cg1 = ContinuousGreedy(newProblem.setSolver(), newProblem.setSamplerEstimator(10), newProblem.setInitialPoint())
     Y1 = cg1.FW(3)
-    print(Y1)
-
+    #print(Y1)
+    #print(derive(qs, 3, 0))
     derivatives = findDerivatives('ln', 0, 1)
     myTaylor = taylor(1, derivatives, 0)
-    print(myTaylor.poly_coef)
-    my_wdnf = evaluateAll(myTaylor)
-    print(my_wdnf.coefficients)
-    estimator2 = PolynomialEstimator(my_wdnf)
-    cg2 = ContinuousGreedy(linearSolver, estimator2)
+    #print(myTaylor.poly_coef)
+    #my_wdnf = evaluateAll(myTaylor)
+    #print(my_wdnf.coefficients)
+    #estimator2 = PolynomialEstimator(my_wdnf)
+    cg2 = ContinuousGreedy(newProblem.setSolver(), newProblem.setPolynomialEstimator(0, 3), newProblem.setInitialPoint())
     Y2 = cg2.FW(3)
     print(Y2)
 

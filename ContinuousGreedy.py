@@ -1,10 +1,8 @@
 import numpy as np
-import math
 #import itertools
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
 from wdnf import wdnf, poly, taylor
-#from ProblemInstances import Problem, DiversityReward
 # from time import time
 # from helpers import write
 # import argparse
@@ -42,7 +40,7 @@ class GradientEstimator(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-    def estimate(self, y): #Should the estimate's take y as an input?
+    def estimate(self, y): #Should the estimate's take y as an input? --I think it should
         pass
 
 
@@ -64,9 +62,7 @@ class SamplerEstimator(GradientEstimator):
         """y is a dictionary of {item: value} pairs.
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
-        #print(grad)
         x = generateSamples(y) ##Is this generating only one sample?
-        #print(x)
         for i in y.keys():
             x1 = x
             x1[i] = 1
@@ -80,7 +76,7 @@ class SamplerEstimator(GradientEstimator):
 
 
 
-class SamplerEstimatorWithDependencies(GradientEstimator): #
+class SamplerEstimatorWithDependencies(GradientEstimator):
     """
     """
 
@@ -122,7 +118,6 @@ class PolynomialEstimator(GradientEstimator):
     def estimate(self, y):
         grad = dict.fromkeys(y.iterkeys(), 0.0)
         for key in self.my_wdnf.findDependencies().keys():
-            #print(key)
             y1 = y
             y1[key] = 1
             grad1 = self.my_wdnf(y1)
@@ -199,8 +194,6 @@ class PartitionMatroidSolver(LinearSolver): #tested for distinct partititons, wo
         result = {}
         selection = []
         for partition in self.partitionedSet:
-            #print(partition)
-            #print(gradient)
             UniformSolver = UniformMatroidSolver(self.partitionedSet[partition], self.k_list[partition])
             for key in self.partitionedSet[partition]:
                 filtered_gradient = {key: gradient[key] for key in self.partitionedSet[partition]}
@@ -216,26 +209,24 @@ class ContinuousGreedy():
     """
 
 
-    def __init__(self, linearSolver, estimator):
+    def __init__(self, linearSolver, estimator, initialPoint):
         """
         """
         self.linearSolver = linearSolver
         self.estimator = estimator
+        self.initialPoint = initialPoint
 
 
     def FW(self, iterations):
-        x0 = newProblem.y ##How to keep the size information?
+        x0 = self.initialPoint ##How to keep the size information? --FIX HERE
         gamma = 1.0 / iterations
         y = x0
         for t in range(iterations):
             gradient = self.estimator.estimate(y)
             mk = (self.linearSolver).solve(gradient) #finds maximum
-            #print(mk)
             indices = set()
             for value in mk.values(): #updates y
                 indices = indices.union(value)
-                #print(value)
-            #print(list(indices))
             for i in list(indices):
                 y[i] += gamma
         return y
