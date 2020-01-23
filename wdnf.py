@@ -245,8 +245,8 @@ if __name__=="__main__":
     #wdnf5 = 4 * wdnf1
     #wdnf6 = wdnf1**2
     #wdnf7 = wdnf0 + wdnf1
-    x = {1:0.5, 2:0.5, 3:0.5, 4:0.5}
-
+    x = {1:1, 2:1, 3:1, 4:0}
+    print(wdnf1(x))
 
     # poly1 = poly(2, [3, 4, 0])
     # poly2 = poly(2, [8, 1, 1])

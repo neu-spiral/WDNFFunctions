@@ -63,11 +63,11 @@ class SamplerEstimator(GradientEstimator):
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
         for j in range(self.numOfSamples):
-            x = generateSamples(y)
+            x = generateSamples(y).copy()
             for i in y.keys():
-                x1 = x
+                x1 = x.copy()
                 x1[i] = 1
-                x0 = x
+                x0 = x.copy()
                 x0[i] = 0
                 grad[i] += self.func(x1) - self.func(x0)
         grad = {key: grad[key] / self.numOfSamples for key in grad.keys()}
@@ -231,4 +231,5 @@ class ContinuousGreedy():
                 indices = indices.union(value)
             for i in list(indices):
                 y[i] = y[i] + gamma
+            #print(y)
         return y

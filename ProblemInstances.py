@@ -145,6 +145,8 @@ class DiversityReward(Problem):
             wdnf_list.append(new_wdnf)
         self.rewards = rewards
         self.wdnf_list = wdnf_list
+        for i in self.wdnf_list:
+            print(i.coefficients)
         self.partitionedSet = partitionedSet
         self.fun = fun
         self.k_list = k_list
@@ -175,10 +177,11 @@ class DiversityReward(Problem):
         derivatives = findDerivatives(self.fun, center, degree)
         #print('derivatives' + str(derivatives))
         myTaylor = taylor(degree, derivatives, center)
-        #print(myTaylor.poly_coef)
-        #print(myTaylor.degree)
+        print(myTaylor.poly_coef)
+        print(myTaylor.degree)
+        #myTaylor = taylor(2, [1, 1, 1], 0)
         my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
-        #print('my_wdnf:' + str(my_wdnf.coefficients))
+        print('my_wdnf:' + str(my_wdnf.coefficients))
         return PolynomialEstimator(my_wdnf)
 
 
@@ -352,19 +355,27 @@ class FacilityLocation(Problem):
 
 
 if __name__ == "__main__":
-    rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.6, 5: 0.1, 6: 0.4} #{x_i: r_i} pairs
+    rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.6, 5: 0.5, 6: 0.4} #{x_i: r_i} pairs
     givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)} #{P_i: (x_j)} pairs where x_j in P_i
     types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'} #{x_i: type} pairs
     k_list = {'verb': 1, 'noun': 2}
     newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
-    start = time()
-    Y1 = newProblem.getPolynomialContinuousGreedy(0, 100, 100)
-    print('Time elapsed: ' + str(time() - start))
+    start1 = time()
+    Y1 = newProblem.getPolynomialContinuousGreedy(0, 170, 100)
+    print('Time elapsed: ' + str(time() - start1))
+    objective = 0.0
+    for wdnf_instance in newProblem.wdnf_list:
+        objective += np.log1p(wdnf_instance(Y1))
+    print('Objective is: ' + str(objective))
     print(Y1)
 
-    start = time()
+    start2 = time()
     Y2 = newProblem.getSamplerContinuousGreedy(100, 100)
-    print('Time elapsed: ' + str(time() - start))
+    print('Time elapsed: ' + str(time() - start2))
+    objective = 0.0
+    for wdnf_instance in newProblem.wdnf_list:
+        objective += np.log1p(wdnf_instance(Y2))
+    print('Objective is: ' + str(objective))
     print(Y2)
 
 
