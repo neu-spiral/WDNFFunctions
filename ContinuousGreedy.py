@@ -10,7 +10,7 @@ from wdnf import wdnf, poly, taylor
 
 
 def generateSamples(y, dependencies = {}):
-    """ Generates random samples x for e in dependencies P(x_e = 1) = y_e
+    """ Generates random samples for x 
     """
     samples = dict.fromkeys(y.iterkeys(), 0.0)
     p = dict.fromkeys(y.iterkeys(), np.random.rand())
@@ -222,14 +222,10 @@ class ContinuousGreedy():
         gamma = 1.0 / iterations
         y = x0.copy()
         for t in range(iterations):
-            #print(t)
             gradient = self.estimator.estimate(y)
-            #print(gradient)
             mk = self.linearSolver.solve(gradient) #finds maximum
             indices = set()
             for value in mk.values(): #updates y
-                indices = indices.union(value)
-            for i in list(indices):
-                y[i] = y[i] + gamma
-            #print(y)
+                for i in value:
+                    y[i] = y[i] + gamma
         return y

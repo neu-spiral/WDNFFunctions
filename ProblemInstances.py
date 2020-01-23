@@ -191,14 +191,14 @@ class DiversityReward(Problem):
         return dict.fromkeys(self.rewards.iterkeys(), 0.0)
 
 
-    def getSamplerContinuousGreedy(self, numOfSamples, iterations):
+    def SamplerContinuousGreedy(self, numOfSamples, iterations):
         """
         """
         newCG = ContinuousGreedy(self.getSolver(), self.getSamplerEstimator(numOfSamples), newProblem.getInitialPoint())
         return newCG.FW(iterations)
 
 
-    def getPolynomialContinuousGreedy(self, center, degree, iterations):
+    def PolynomialContinuousGreedy(self, center, degree, iterations):
         """
         """
         newCG = ContinuousGreedy(self.getSolver(), self.getPolynomialEstimator(center, degree), self.getInitialPoint())
@@ -361,7 +361,7 @@ if __name__ == "__main__":
     k_list = {'verb': 1, 'noun': 2}
     newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
     start1 = time()
-    Y1 = newProblem.getPolynomialContinuousGreedy(0, 170, 100)
+    Y1 = newProblem.PolynomialContinuousGreedy(0, 10, 100)
     print('Time elapsed: ' + str(time() - start1))
     objective = 0.0
     for wdnf_instance in newProblem.wdnf_list:
@@ -370,7 +370,7 @@ if __name__ == "__main__":
     print(Y1)
 
     start2 = time()
-    Y2 = newProblem.getSamplerContinuousGreedy(100, 100)
+    Y2 = newProblem.SamplerContinuousGreedy(100, 100)
     print('Time elapsed: ' + str(time() - start2))
     objective = 0.0
     for wdnf_instance in newProblem.wdnf_list:
