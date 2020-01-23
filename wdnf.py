@@ -8,7 +8,11 @@ def merge(t1, t2):
     """Merge two tuples (in this context, keys) into a sorted tuple by taking
     the set union of them.
     """
-    return tuple(sorted(set(t1).union(set(t2)))) ##check here again
+    if len({t1}.union({t2})) == 1:
+        key = list({t1}.union({t2}))[0]
+    else:
+        key = tuple(sorted({t1}.union({t2}))) ##check here again
+    return key
 
 
 class wdnf():
@@ -95,13 +99,7 @@ class wdnf():
         new_coefficients = dict()
         for key1 in self.coefficients:
             for key2 in other.coefficients:
-                try:
-                    new_key = merge(key1, key2)
-                    #print(new_key)
-                    break
-                except TypeError:
-                    new_key = key2
-                    #print(new_key)
+                new_key = merge(key1, key2)
                 if new_key in new_coefficients:
                     new_coefficients[new_key] += self.coefficients[key1] * other.coefficients[key2]
                 else:
@@ -193,8 +191,12 @@ class poly():
         """
         wdnfSoFar = wdnf({(): 1}, my_wdnf.sign)
         result = self.poly_coef[0] * wdnfSoFar
-        for i in range(1, self.degree + 1):
+        wdnfSoFar = my_wdnf
+        result += self.poly_coef[1] * wdnfSoFar
+        for i in range(2, self.degree + 1):
+            print(wdnfSoFar.coefficients)
             wdnfSoFar *= my_wdnf
+            print(wdnfSoFar.coefficients)
             result += self.poly_coef[i] * wdnfSoFar
         return result
 
@@ -233,8 +235,6 @@ class taylor(poly):
 if __name__=="__main__":
     wdnf0 = wdnf(dict(), 1)
     wdnf1 = wdnf({2: 0.2, 3: 0.1}, 1)
-    #print(wdnf1.findDependencies())
-    #print(wdnf1.sets)
     #wdnf2 = wdnf({(1, 2): 4.0, (1, 3): 5.0})
     #wdnf3 = wdnf1 * wdnf2
     #wdnf4 = wdnf1 + wdnf0
@@ -242,31 +242,15 @@ if __name__=="__main__":
     #wdnf6 = wdnf1**2
     #wdnf7 = wdnf0 + wdnf1
     x = {1:0.5, 2:0.5, 3:0.5, 4:0.5}
-    #print(wdnf4.coefficients)
-    #print(wdnf3.sign)
-    #print(wdnf2.sets.get(2))
-    #print(wdnf1.sign)
-    #print(wdnf1(x))
-    #print(wdnf2.coefficients)
-    #print(wdnf4.coefficients)
-    #print(wdnf4.sign)
-    #print(wdnf5.coefficients)
-    #print(wdnf5.sign)
-    #print(wdnf6.coefficients)
-    #print(wdnf6.sign)
+
 
     # poly1 = poly(2, [3, 4, 0])
     # poly2 = poly(2, [8, 1, 1])
     # poly3 = poly2 + poly1
     # wdnf4 = poly2.compose(wdnf1)
-    #print(wdnf4.coefficients)
-    #print(poly3.poly_coef)
-    myTaylor = taylor(1, [0, -1], 0)
-    #print(myTaylor.evaluate(1))
+
+    myTaylor = taylor(3, [1, 1, 1, 1], 0)
     #myTaylor.expand()
-    #print(myTaylor.poly_coef)
-    #print(myTaylor.degree)
+
     new_wdnf1 = myTaylor.compose(wdnf1)
     print(new_wdnf1.coefficients)
-    #print(new_wdnf1.sets)
-    #print(new_wdnf1.sign)

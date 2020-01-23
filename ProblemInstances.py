@@ -60,10 +60,10 @@ def findDerivatives(type, center, degree):
 
 def evaluateAll(taylor_instance, wdnf_list):
     my_wdnf = wdnf(dict(), wdnf_list[0].sign)
-    #print(my_wdnf.coefficients)
+    print(my_wdnf.coefficients)
     for wdnf_instance in wdnf_list:
-        #print(wdnf_instance.coefficients)
-        #print(taylor_instance.compose(wdnf_instance).coefficients)
+        print(wdnf_instance.coefficients)
+        print(taylor_instance.compose(wdnf_instance).coefficients)
         my_wdnf += taylor_instance.compose(wdnf_instance)
         #print(my_wdnf.coefficients)
     return my_wdnf
@@ -82,25 +82,37 @@ class Problem(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-    def setSolver(self):
+    def getSolver(self):
         """
         """
         pass
 
 
-    def setSamplerEstimator(self, numOfSamples):
+    def getSamplerEstimator(self, numOfSamples):
         """
         """
         pass
 
 
-    def setPolynomialEstimator(self, center, degree):
+    def getPolynomialEstimator(self, center, degree):
         """
         """
         pass
 
 
-    def setInitialPoint(self):
+    def getInitialPoint(self):
+        """
+        """
+        pass
+
+
+    def getSamplerContinuousGreedy(self, numOfSamples):
+        """
+        """
+        pass
+
+
+    def getPolynomialContinuousGreedy(self, center, degree):
         """
         """
         pass
@@ -116,7 +128,7 @@ class DiversityReward(Problem):
     def __init__(self, rewards, givenPartitions, fun, types, k_list):
         """ rewards is a dictionary containing {word: reward} pairs,
         givenPartitions is a dictionary containing {partition: word tuples}, fun
-        is either log or qs, types is a dictionary containing {word: type} pairs,
+        is either log or queueSize, types is a dictionary containing {word: type} pairs,
         k_list is a dictionary of {type: cardinality} pairs.
         """
         wdnf_list = []
@@ -139,7 +151,7 @@ class DiversityReward(Problem):
         #self.problemSize = len(rewards)
 
 
-    def setSolver(self):
+    def getSolver(self):
         """
         """
         return PartitionMatroidSolver(self.partitionedSet, self.k_list)
@@ -151,25 +163,43 @@ class DiversityReward(Problem):
         return self.fun(self.wdnf_list, x)
 
 
-    def setSamplerEstimator(self, numOfSamples):
+    def getSamplerEstimator(self, numOfSamples):
         """
         """
         return SamplerEstimator(self.func, numOfSamples)
 
 
-    def setPolynomialEstimator(self, center, degree):
+    def getPolynomialEstimator(self, center, degree):
         """
         """
         derivatives = findDerivatives(self.fun, center, degree)
+        print('derivatives' + str(derivatives))
         myTaylor = taylor(degree, derivatives, center)
+        print(myTaylor.poly_coef)
+        print(myTaylor.degree)
         my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
+        print('my_wdnf:' + str(my_wdnf.coefficients))
         return PolynomialEstimator(my_wdnf)
 
 
-    def setInitialPoint(self):
+    def getInitialPoint(self):
         """
         """
         return dict.fromkeys(self.rewards.iterkeys(), 0.0)
+
+
+    def getSamplerContinuousGreedy(self, numOfSamples, iterations):
+        """
+        """
+        newCG = ContinuousGreedy(self.getSolver(), self.getSamplerEstimator(numOfSamples), newProblem.getInitialPoint())
+        return newCG.FW(iterations)
+
+
+    def getPolynomialContinuousGreedy(self, center, degree, iterations):
+        """
+        """
+        newCG = ContinuousGreedy(self.getSolver(), self.getPolynomialEstimator(center, degree), self.getInitialPoint())
+        return newCG.FW(iterations)
 
 
 
@@ -185,25 +215,37 @@ class QueueSize(Problem):
         pass
 
 
-    def setSolver(self):
+    def getSolver(self):
         """
         """
         pass
 
 
-    def setSamplerEstimator(self, numOfSamples):
+    def getSamplerEstimator(self, numOfSamples):
         """
         """
         pass
 
 
-    def setPolynomialEstimator(self, center, degree):
+    def getPolynomialEstimator(self, center, degree):
         """
         """
         pass
 
 
-    def setInitialPoint(self):
+    def getInitialPoint(self):
+        """
+        """
+        pass
+
+
+    def getSamplerContinuousGreedy(self, numOfSamples):
+        """
+        """
+        pass
+
+
+    def getPolynomialContinuousGreedy(self, center, degree):
         """
         """
         pass
@@ -222,25 +264,37 @@ class InfluenceMaximization(Problem):
         pass
 
 
-    def setSolver(self):
+    def getSolver(self):
         """
         """
         pass
 
 
-    def setSamplerEstimator(self, numOfSamples):
+    def getSamplerEstimator(self, numOfSamples):
         """
         """
         pass
 
 
-    def setPolynomialEstimator(self, center, degree):
+    def getPolynomialEstimator(self, center, degree):
         """
         """
         pass
 
 
-    def setInitialPoint(self):
+    def getInitialPoint(self):
+        """
+        """
+        pass
+
+
+    def getSamplerContinuousGreedy(self, numOfSamples):
+        """
+        """
+        pass
+
+
+    def getPolynomialContinuousGreedy(self, center, degree):
         """
         """
         pass
@@ -259,25 +313,37 @@ class FacilityLocation(Problem):
         pass
 
 
-    def setSolver(self):
+    def getSolver(self):
         """
         """
         pass
 
 
-    def setSamplerEstimator(self, numOfSamples):
+    def getSamplerEstimator(self, numOfSamples):
         """
         """
         pass
 
 
-    def setPolynomialEstimator(self, center, degree):
+    def getPolynomialEstimator(self, center, degree):
         """
         """
         pass
 
 
-    def setInitialPoint(self):
+    def getInitialPoint(self):
+        """
+        """
+        pass
+
+
+    def getSamplerContinuousGreedy(self, numOfSamples):
+        """
+        """
+        pass
+
+
+    def getPolynomialContinuousGreedy(self, center, degree):
         """
         """
         pass
@@ -286,29 +352,16 @@ class FacilityLocation(Problem):
 
 
 if __name__ == "__main__":
-    rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.7, 5: 0.05, 6: 0.4}
-    givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)}
-    types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'}
+    rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.6, 5: 0.4, 6: 0.4} #{x_i: r_i} pairs
+    givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)} #{P_i: (x_j)} pairs where x_j in P_i
+    types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'} #{x_i: type} pairs
     k_list = {'verb': 1, 'noun': 2}
     newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
-    #for item in newProblem.wdnf_list:
-        #print item.coefficients
-        #print item.sign
-    #print(newProblem.partitionedSet)
-    #wdnf_list = newProblem.wdnf_list
-    cg1 = ContinuousGreedy(newProblem.setSolver(), newProblem.setSamplerEstimator(10), newProblem.setInitialPoint())
-    Y1 = cg1.FW(3)
-    #print(Y1)
-    #print(derive(qs, 3, 0))
-    derivatives = findDerivatives('ln', 0, 1)
-    myTaylor = taylor(1, derivatives, 0)
-    #print(myTaylor.poly_coef)
-    #my_wdnf = evaluateAll(myTaylor)
-    #print(my_wdnf.coefficients)
-    #estimator2 = PolynomialEstimator(my_wdnf)
-    cg2 = ContinuousGreedy(newProblem.setSolver(), newProblem.setPolynomialEstimator(0, 3), newProblem.setInitialPoint())
-    Y2 = cg2.FW(3)
-    print(Y2)
+    Y1 = newProblem.getPolynomialContinuousGreedy(0.5, 2, 100)
+    print(Y1)
+
+    #Y2 = newProblem.getSamplerContinuousGreedy(100, 100)
+    #print(Y2)
 
 
     # actors = {'act1', 'act2', 'act3', 'act4', 'act5'}

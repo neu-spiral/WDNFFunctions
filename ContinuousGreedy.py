@@ -62,15 +62,15 @@ class SamplerEstimator(GradientEstimator):
         """y is a dictionary of {item: value} pairs.
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
-        x = generateSamples(y) ##double check here
-        for i in y.keys():
-            x1 = x
-            x1[i] = 1
-            x0 = x
-            x0[i] = 0
-            grad[i] += self.func(x1) - self.func(x0)
+        for j in range(self.numOfSamples):
+            x = generateSamples(y)
+            for i in y.keys():
+                x1 = x
+                x1[i] = 1
+                x0 = x
+                x0[i] = 0
+                grad[i] += self.func(x1) - self.func(x0)
         grad = {key: grad[key] / self.numOfSamples for key in grad.keys()}
-        print(grad)
         return grad
 
 
@@ -91,13 +91,14 @@ class SamplerEstimatorWithDependencies(GradientEstimator):
 
     def estimate(self, y):
         grad = dict.fromkeys(y.iterkeys(), 0.0)
-        x = generateSamples(y, self.dependencies)
-        for i in range(self.numOfSamples):
-            x1 = x
-            x1[i] = 1
-            x0 = x
-            x0[i] = 0
-            grad[i] += self.func(x1) - self.func(x0)
+        for j in range(self.numOfSamples):
+            x = generateSamples(y, self.dependencies)
+            for i in range(self.numOfSamples):
+                x1 = x
+                x1[i] = 1
+                x0 = x
+                x0[i] = 0
+                grad[i] += self.func(x1) - self.func(x0)
         grad = grad / self.numOfSamples
         return grad
 
@@ -128,7 +129,6 @@ class PolynomialEstimator(GradientEstimator):
 
             delta = grad1 - grad0
             grad[key] += delta
-            print(grad)
         return grad
 
 
@@ -223,10 +223,11 @@ class ContinuousGreedy():
         y = x0
         for t in range(iterations):
             gradient = self.estimator.estimate(y)
-            mk = (self.linearSolver).solve(gradient) #finds maximum
+            mk = self.linearSolver.solve(gradient) #finds maximum
             indices = set()
             for value in mk.values(): #updates y
                 indices = indices.union(value)
             for i in list(indices):
                 y[i] += gamma
+            print(y)
         return y
