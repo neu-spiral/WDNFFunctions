@@ -8,10 +8,16 @@ def merge(t1, t2):
     """Merge two tuples (in this context, keys) into a sorted tuple by taking
     the set union of them.
     """
-    if len({t1}.union({t2})) == 1:
-        key = list({t1}.union({t2}))[0]
+    if type(t1) is int and type(t2) is int and t1 == t2: #len({t1}.union({t2})) == 1:
+        key = t1
+    elif type(t1) is int and type(t2) is int and t1 != t2:
+        key = tuple(sorted([t1, t2]))
+    elif type(t1) is int and type(t2) is tuple:
+        key = tuple(sorted({t1}.union(set(t2))))
+    elif type(t1) is tuple and type(t2) is int:
+        key = tuple(sorted(set(t1).union({t2})))
     else:
-        key = tuple(sorted({t1}.union({t2}))) ##check here again
+        key = tuple(sorted(set(t1).union(set(t2))))
     return key
 
 
@@ -194,9 +200,7 @@ class poly():
         wdnfSoFar = my_wdnf
         result += self.poly_coef[1] * wdnfSoFar
         for i in range(2, self.degree + 1):
-            print(wdnfSoFar.coefficients)
             wdnfSoFar *= my_wdnf
-            print(wdnfSoFar.coefficients)
             result += self.poly_coef[i] * wdnfSoFar
         return result
 
@@ -249,7 +253,7 @@ if __name__=="__main__":
     # poly3 = poly2 + poly1
     # wdnf4 = poly2.compose(wdnf1)
 
-    myTaylor = taylor(3, [1, 1, 1, 1], 0)
+    myTaylor = taylor(8, [1, 1, 1, 1, 1, 1, 1, 1, 1], 0)
     #myTaylor.expand()
 
     new_wdnf1 = myTaylor.compose(wdnf1)

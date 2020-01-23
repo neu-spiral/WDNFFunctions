@@ -3,6 +3,7 @@ from wdnf import wdnf, poly, taylor
 from ContinuousGreedy import LinearSolver, PartitionMatroidSolver, SamplerEstimator, PolynomialEstimator, ContinuousGreedy
 import math
 import numpy as np
+from time import time
 
 
 def log(wdnf_list, x):
@@ -60,12 +61,11 @@ def findDerivatives(type, center, degree):
 
 def evaluateAll(taylor_instance, wdnf_list):
     my_wdnf = wdnf(dict(), wdnf_list[0].sign)
-    print(my_wdnf.coefficients)
+    #print(my_wdnf.coefficients)
     for wdnf_instance in wdnf_list:
-        print(wdnf_instance.coefficients)
-        print(taylor_instance.compose(wdnf_instance).coefficients)
+        #print(wdnf_instance.coefficients)
+        #print(taylor_instance.compose(wdnf_instance).coefficients)
         my_wdnf += taylor_instance.compose(wdnf_instance)
-        #print(my_wdnf.coefficients)
     return my_wdnf
 
 
@@ -173,12 +173,12 @@ class DiversityReward(Problem):
         """
         """
         derivatives = findDerivatives(self.fun, center, degree)
-        print('derivatives' + str(derivatives))
+        #print('derivatives' + str(derivatives))
         myTaylor = taylor(degree, derivatives, center)
-        print(myTaylor.poly_coef)
-        print(myTaylor.degree)
+        #print(myTaylor.poly_coef)
+        #print(myTaylor.degree)
         my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
-        print('my_wdnf:' + str(my_wdnf.coefficients))
+        #print('my_wdnf:' + str(my_wdnf.coefficients))
         return PolynomialEstimator(my_wdnf)
 
 
@@ -352,16 +352,20 @@ class FacilityLocation(Problem):
 
 
 if __name__ == "__main__":
-    rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.6, 5: 0.4, 6: 0.4} #{x_i: r_i} pairs
+    rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.6, 5: 0.1, 6: 0.4} #{x_i: r_i} pairs
     givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)} #{P_i: (x_j)} pairs where x_j in P_i
     types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'} #{x_i: type} pairs
     k_list = {'verb': 1, 'noun': 2}
     newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
-    Y1 = newProblem.getPolynomialContinuousGreedy(0.5, 2, 100)
+    start = time()
+    Y1 = newProblem.getPolynomialContinuousGreedy(0, 100, 100)
+    print('Time elapsed: ' + str(time() - start))
     print(Y1)
 
-    #Y2 = newProblem.getSamplerContinuousGreedy(100, 100)
-    #print(Y2)
+    start = time()
+    Y2 = newProblem.getSamplerContinuousGreedy(100, 100)
+    print('Time elapsed: ' + str(time() - start))
+    print(Y2)
 
 
     # actors = {'act1', 'act2', 'act3', 'act4', 'act5'}

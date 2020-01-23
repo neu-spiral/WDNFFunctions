@@ -119,11 +119,11 @@ class PolynomialEstimator(GradientEstimator):
     def estimate(self, y):
         grad = dict.fromkeys(y.iterkeys(), 0.0)
         for key in self.my_wdnf.findDependencies().keys():
-            y1 = y
+            y1 = y.copy()
             y1[key] = 1
             grad1 = self.my_wdnf(y1)
 
-            y0 = y
+            y0 = y.copy()
             y0[key] = 0
             grad0 = self.my_wdnf(y0)
 
@@ -218,16 +218,17 @@ class ContinuousGreedy():
 
 
     def FW(self, iterations):
-        x0 = self.initialPoint
+        x0 = self.initialPoint.copy()
         gamma = 1.0 / iterations
-        y = x0
+        y = x0.copy()
         for t in range(iterations):
+            #print(t)
             gradient = self.estimator.estimate(y)
+            #print(gradient)
             mk = self.linearSolver.solve(gradient) #finds maximum
             indices = set()
             for value in mk.values(): #updates y
                 indices = indices.union(value)
             for i in list(indices):
-                y[i] += gamma
-            print(y)
+                y[i] = y[i] + gamma
         return y
