@@ -3,14 +3,14 @@ import numpy as np
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
 from wdnf import wdnf, poly, taylor
-# from time import time
+from time import time
 # from helpers import write
 # import argparse
 # import os
 
 
 def generateSamples(y, dependencies = {}):
-    """ Generates random samples for x 
+    """ Generates random samples for x
     """
     samples = dict.fromkeys(y.iterkeys(), 0.0)
     p = dict.fromkeys(y.iterkeys(), np.random.rand())
@@ -217,10 +217,13 @@ class ContinuousGreedy():
         self.initialPoint = initialPoint
 
 
-    def FW(self, iterations):
+    def FW(self, iterations, keepTrack = False):
         x0 = self.initialPoint.copy()
         gamma = 1.0 / iterations
         y = x0.copy()
+        start = time()
+        track = []
+        bases = []
         for t in range(iterations):
             gradient = self.estimator.estimate(y)
             mk = self.linearSolver.solve(gradient) #finds maximum
@@ -228,4 +231,9 @@ class ContinuousGreedy():
             for value in mk.values(): #updates y
                 for i in value:
                     y[i] = y[i] + gamma
-        return y
+            if keepTrack or t == iterations - 1:
+                timePassed = time() - start
+                newY = y.copy()
+                track.append((timePassed, newY))
+            bases.append(mk)
+        return y, track, bases
