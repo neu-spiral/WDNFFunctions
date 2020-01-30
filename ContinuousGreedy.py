@@ -120,7 +120,14 @@ class PolynomialEstimator(GradientEstimator):
 
     def estimate(self, y):
         grad = dict.fromkeys(y.iterkeys(), 0.0)
-        for key in self.my_wdnf.findDependencies().keys():
+        dependencies = self.my_wdnf.findDependencies()
+        #print(dependencies)
+        #grad = dict.fromkeys(dependencies.values(), 0.0)
+        #print(grad)
+        for key in dependencies.keys():
+            #print(key)
+            #for i in dependencies[key]:
+            #print(key)
             y1 = y.copy()
             y1[key] = 1
             grad1 = self.my_wdnf(y1)
@@ -128,9 +135,9 @@ class PolynomialEstimator(GradientEstimator):
             y0 = y.copy()
             y0[key] = 0
             grad0 = self.my_wdnf(y0)
-
             delta = grad1 - grad0
-            grad[key] += delta
+            #print(delta)
+            grad[key] = delta
         return grad
 
 

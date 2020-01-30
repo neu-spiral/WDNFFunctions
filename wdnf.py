@@ -223,17 +223,20 @@ class taylor(poly):
         expansion of a function in the standart polynomial form by expanding the
         terms using binomial expansion.
         """
-        if center == 0:
-            poly.__init__(self, degree, derivatives)
-        else:
-            poly_coef = [0.0] * (degree + 1)
-            for i in range(degree + 1):
-                for j in range(i, degree + 1):
-                    if j-i > 0:
-                        poly_coef[i] += derivatives[j] * comb(j, i, True)/math.factorial(j) * (-center)**(j-i)
-                    else:
-                        poly_coef[i] += derivatives[j] * comb(j, i, True)/math.factorial(j)
-            poly.__init__(self, degree, poly_coef)
+        #if center == 0:
+        #    poly.__init__(self, degree, derivatives)
+        #else:
+        poly_coef = [0.0] * (degree + 1)
+        for i in range(degree + 1):
+            #print(i)
+            for j in range(i, degree + 1):
+                #print(j)
+                if j-i > 0:
+                    poly_coef[i] += derivatives[j] * comb(j, i, True)/math.factorial(j) * (-center)**(j-i)
+                    #print(poly_coef[i])
+                else:
+                    poly_coef[i] += derivatives[j] * comb(j, i, True)/math.factorial(j)
+        poly.__init__(self, degree, poly_coef)
 
 
 if __name__=="__main__":
@@ -246,7 +249,7 @@ if __name__=="__main__":
     #wdnf6 = wdnf1**2
     #wdnf7 = wdnf0 + wdnf1
     x = {1:1, 2:1, 3:1, 4:0}
-    print(wdnf1(x))
+    #print(wdnf1(x))
 
     # poly1 = poly(2, [3, 4, 0])
     # poly2 = poly(2, [8, 1, 1])
@@ -257,4 +260,4 @@ if __name__=="__main__":
     #myTaylor.expand()
 
     new_wdnf1 = myTaylor.compose(wdnf1)
-    print(new_wdnf1.coefficients)
+    #print(new_wdnf1.coefficients)

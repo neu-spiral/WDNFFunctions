@@ -44,7 +44,7 @@ def derive(type, x, degree):
         if degree == 0:
             return np.log1p(x) #log1p(x) is ln(x+1)
         else:
-            return (((-1.0)**degree) * math.factorial(degree)) / ((1.0 + x)**(degree + 1))
+            return (((-1.0)**degree) * math.factorial(degree - 1)) / ((1.0 + x)**(degree))
     if type == qs:
         if degree == 0:
             return qs(x)
@@ -180,13 +180,14 @@ class DiversityReward(Problem):
         """
         """
         derivatives = findDerivatives(self.fun, center, degree)
-        #print('derivatives' + str(derivatives))
+        print('derivatives are: ' + str(derivatives))
         myTaylor = taylor(degree, derivatives, center)
-        #print(myTaylor.poly_coef)
-        #print(myTaylor.degree)
+        print('coefficients of the Taylor expansion are:' + str(myTaylor.poly_coef))
+        print('degree of the Taylor expansion is: ' + str(myTaylor.degree))
         #myTaylor = taylor(2, [1, 1, 1], 0)
         my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
-        #print('my_wdnf:' + str(my_wdnf.coefficients))
+        print('my_wdnf:' + str(my_wdnf.coefficients))
+        print(my_wdnf(y))
         return PolynomialEstimator(my_wdnf)
 
 
@@ -327,22 +328,48 @@ if __name__ == "__main__":
 
     #Gradient check
     y = dict()
+    sum = 0.0
     for i in range(1, 7):
         y[i] = np.random.rand()
-    print(y)
+        sum += y[i]
+    y = {key: y[key] / sum for key in y.keys()}
+    print('random y: ' + str(y))
 
     newSamplerEstimator = newProblem.getSamplerEstimator(100)
-    newPolynomialEstimator = newProblem.getPolynomialEstimator(0, 2)
+    newPolynomialEstimator = newProblem.getPolynomialEstimator(0, 4)
     samplerGradient = newSamplerEstimator.estimate(y)
-    print(samplerGradient)
+    #print('Sampler Gradient is: ' + str(samplerGradient))
     polynomialGradient = newPolynomialEstimator.estimate(y)
-    print(polynomialGradient)
+    #print('Polynomial Gradient is: ' + str(polynomialGradient))
+
+
+    def realGrad(wdnf_list, y):
+        grad = dict.fromkeys(y.iterkeys(), 0.0)
+        for i in y.keys():
+            x1 = y.copy()
+            x1[i] = 1
+            grad1 = 0
+
+            x0 = y.copy()
+            x0[i] = 0
+            grad0 = 0
+            for wdnf_instance in wdnf_list:
+                grad1 += np.log1p(wdnf_instance(x1))
+                grad0 += np.log1p(wdnf_instance(x0))
+            grad[i] = grad1 - grad0
+        return grad
+
+    realGrad = realGrad(newProblem.wdnf_list, y)
+    #print('real Gradient is: ' + str(realGrad))
+
     def l2norm(grad1, grad2):
         sum = 0.0
         for key in grad1:
             sum += (grad1[key] - grad2[key])**2
         return np.sqrt(sum)
-    print(l2norm(samplerGradient, polynomialGradient))
+    print('||SamplerGrad - polyGrad|| = ' + str(l2norm(samplerGradient, polynomialGradient)))
+    print('||realGrad - samplerGrad|| = ' + str(l2norm(realGrad, samplerGradient)))
+    print('||realGrad - polyGrad|| = ' + str(l2norm(realGrad, polynomialGradient)))
 
     # Y1, track1, bases1 = newProblem.PolynomialContinuousGreedy(0, 10, 100)
     # objective = 0.0
