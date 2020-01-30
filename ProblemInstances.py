@@ -150,8 +150,8 @@ class DiversityReward(Problem):
             wdnf_list.append(new_wdnf)
         self.rewards = rewards
         self.wdnf_list = wdnf_list
-        for i in self.wdnf_list:
-            print(i.coefficients)
+        #for i in self.wdnf_list:
+            #print(i.coefficients)
         self.partitionedSet = partitionedSet
         self.fun = fun
         self.k_list = k_list
@@ -182,11 +182,11 @@ class DiversityReward(Problem):
         derivatives = findDerivatives(self.fun, center, degree)
         #print('derivatives' + str(derivatives))
         myTaylor = taylor(degree, derivatives, center)
-        print(myTaylor.poly_coef)
-        print(myTaylor.degree)
+        #print(myTaylor.poly_coef)
+        #print(myTaylor.degree)
         #myTaylor = taylor(2, [1, 1, 1], 0)
         my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
-        print('my_wdnf:' + str(my_wdnf.coefficients))
+        #print('my_wdnf:' + str(my_wdnf.coefficients))
         return PolynomialEstimator(my_wdnf)
 
 
@@ -324,31 +324,51 @@ if __name__ == "__main__":
     types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'} #{x_i: type} pairs
     k_list = {'verb': 1, 'noun': 2}
     newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
-    Y1, track1, bases1 = newProblem.PolynomialContinuousGreedy(0, 10, 100)
-    objective = 0.0
-    time_list1 = []
-    obj_list1 = []
-    for i in track1:
-        for wdnf_instance in newProblem.wdnf_list:
-            objective += np.log1p(wdnf_instance(i[1]))
-        time_list1.append(i[0])
-        obj_list1.append(objective)
-        print('(Polynomial) Time elapsed: ' + str(i[0]) + '    Objective is: ' + str(objective))
 
+    #Gradient check
+    y = dict()
+    for i in range(1, 7):
+        y[i] = np.random.rand()
+    print(y)
 
-    Y2, track2, bases2 = newProblem.SamplerContinuousGreedy(100, 100)
-    objective = 0.0
-    time_list2 = []
-    obj_list2 = []
-    for j in track2:
-        for wdnf_instance in newProblem.wdnf_list:
-            objective += np.log1p(wdnf_instance(j[1]))
-        time_list2.append(j[0])
-        obj_list2.append(objective)
-        print('(Sampler) Time elapsed: ' + str(j[0]) + '    Objective is: ' + str(objective))
+    newSamplerEstimator = newProblem.getSamplerEstimator(100)
+    newPolynomialEstimator = newProblem.getPolynomialEstimator(0, 2)
+    samplerGradient = newSamplerEstimator.estimate(y)
+    print(samplerGradient)
+    polynomialGradient = newPolynomialEstimator.estimate(y)
+    print(polynomialGradient)
+    def l2norm(grad1, grad2):
+        sum = 0.0
+        for key in grad1:
+            sum += (grad1[key] - grad2[key])**2
+        return np.sqrt(sum)
+    print(l2norm(samplerGradient, polynomialGradient))
 
-    plt.plot(time_list1, obj_list1, 'r^', time_list2, obj_list2, 'g^')
-    plt.show()
+    # Y1, track1, bases1 = newProblem.PolynomialContinuousGreedy(0, 10, 100)
+    # objective = 0.0
+    # time_list1 = []
+    # obj_list1 = []
+    # for i in track1:
+    #     for wdnf_instance in newProblem.wdnf_list:
+    #         objective += np.log1p(wdnf_instance(i[1]))
+    #     time_list1.append(i[0])
+    #     obj_list1.append(objective)
+    #     print('(Polynomial) Time elapsed: ' + str(i[0]) + '    Objective is: ' + str(objective) + '   Gradient is: ' + str(i[2]))
+    #
+    #
+    # Y2, track2, bases2 = newProblem.SamplerContinuousGreedy(100, 100)
+    # objective = 0.0
+    # time_list2 = []
+    # obj_list2 = []
+    # for j in track2:
+    #     for wdnf_instance in newProblem.wdnf_list:
+    #         objective += np.log1p(wdnf_instance(j[1]))
+    #     time_list2.append(j[0])
+    #     obj_list2.append(objective)
+    #     print('(Sampler) Time elapsed: ' + str(j[0]) + '    Objective is: ' + str(objective) + '   Gradient is:  ' + str(j[2]))
+    #
+    # plt.plot(time_list1, obj_list1, 'r^', time_list2, obj_list2, 'g^')
+    # plt.show()
 
 
 

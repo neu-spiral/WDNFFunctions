@@ -90,6 +90,8 @@ class SamplerEstimatorWithDependencies(GradientEstimator):
 
 
     def estimate(self, y):
+        """
+        """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
         for j in range(self.numOfSamples):
             x = generateSamples(y, self.dependencies)
@@ -234,6 +236,11 @@ class ContinuousGreedy():
             if keepTrack or t == iterations - 1:
                 timePassed = time() - start
                 newY = y.copy()
-                track.append((timePassed, newY))
+                track.append((timePassed, newY, gradient))
             bases.append(mk)
         return y, track, bases
+
+
+
+#if __name__ == "__main__":
+    #Compare gradients
