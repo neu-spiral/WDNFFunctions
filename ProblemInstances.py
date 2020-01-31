@@ -35,6 +35,14 @@ def queueSize(wdnf_list, x):
     return output
 
 
+def id(wdnf_list, x):
+    output = 0.0
+    for wdnf_object in wdnf_list:
+        output += wdnf_object(x)
+    return output
+
+
+
 def derive(type, x, degree):
     """Helper function to create derivatives list of taylor objects. Given the
     degree and the center of the taylor expansion with the type of the functions
@@ -50,6 +58,13 @@ def derive(type, x, degree):
             return qs(x)
         else:
             return math.factorial(degree) / ((1.0 - x)**(degree + 1))
+    if type == id:
+        if degree == 0:
+            return x
+        elif degree == 1:
+            return 1
+        else:
+            return 0
 
 
 def findDerivatives(type, center, degree):
@@ -124,6 +139,79 @@ class Problem(object): #For Python 3, replace object with ABCMeta
 
 
 
+class Test(Problem):
+
+
+        def __init__(self, rewards, givenPartitions, fun, types, k_list):
+            """ rewards is a dictionary containing {word: reward} pairs,
+            givenPartitions is a dictionary containing {partition: word tuples}, fun
+            is either log or queueSize, types is a dictionary containing {word: type} pairs,
+            k_list is a dictionary of {type: cardinality} pairs.
+            """
+            wdnf_list = []
+            partitionedSet = {}
+            for i in givenPartitions:
+                coefficients = {}
+                for j in givenPartitions[i]:
+                    coefficients[j] = rewards[j]
+                    if partitionedSet.has_key(types[j]):
+                        partitionedSet[types[j]].add(j)
+                    else:
+                        partitionedSet[types[j]] = {j}
+                new_wdnf = wdnf(coefficients, 1)
+                wdnf_list.append(new_wdnf)
+            self.rewards = rewards
+            self.wdnf_list = wdnf_list
+            #for i in self.wdnf_list:
+                #print(i.coefficients)
+            self.partitionedSet = partitionedSet
+            self.fun = fun
+            self.k_list = k_list
+            #self.problemSize = len(rewards)
+
+
+        def getSolver(self):
+            """
+            """
+            return PartitionMatroidSolver(self.partitionedSet, self.k_list)
+
+
+        def func(self, x):
+            """
+            """
+            return self.fun(self.wdnf_list, x)
+
+
+        def getSamplerEstimator(self, numOfSamples):
+            """
+            """
+            return SamplerEstimator(self.func, numOfSamples)
+
+
+        def getPolynomialEstimator(self, center, degree):
+            """
+            """
+            derivatives = [1] + [0] * (degree)
+            #print('derivatives are: ' + str(derivatives))
+            myTaylor = taylor(degree, derivatives, center)
+            #print('coefficients of the Taylor expansion are:' + str(myTaylor.poly_coef))
+            #print('degree of the Taylor expansion is: ' + str(myTaylor.degree))
+            #derivatives = [1] + [0] * (degree - 1)
+            #myTaylor = taylor(degree, [1, 0)
+            my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
+            #print('my_wdnf:' + str(my_wdnf.coefficients))
+            #print(my_wdnf(y))
+            return PolynomialEstimator(my_wdnf)
+
+
+        def getInitialPoint(self):
+            """
+            """
+            return dict.fromkeys(self.rewards.iterkeys(), 0.0)
+
+
+
+
 
 class DiversityReward(Problem):
     """
@@ -180,14 +268,15 @@ class DiversityReward(Problem):
         """
         """
         derivatives = findDerivatives(self.fun, center, degree)
-        print('derivatives are: ' + str(derivatives))
+        #print('derivatives are: ' + str(derivatives))
         myTaylor = taylor(degree, derivatives, center)
-        print('coefficients of the Taylor expansion are:' + str(myTaylor.poly_coef))
-        print('degree of the Taylor expansion is: ' + str(myTaylor.degree))
-        #myTaylor = taylor(2, [1, 1, 1], 0)
+        #print('coefficients of the Taylor expansion are:' + str(myTaylor.poly_coef))
+        #print('degree of the Taylor expansion is: ' + str(myTaylor.degree))
+        #derivatives = [1] + [0] * (degree - 1)
+        #myTaylor = taylor(degree, [1, 0)
         my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
         print('my_wdnf:' + str(my_wdnf.coefficients))
-        print(my_wdnf(y))
+        #print(my_wdnf(y))
         return PolynomialEstimator(my_wdnf)
 
 
@@ -324,78 +413,33 @@ if __name__ == "__main__":
     givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)} #{P_i: (x_j)} pairs where x_j in P_i
     types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'} #{x_i: type} pairs
     k_list = {'verb': 1, 'noun': 2}
-    newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
+    newProblem = DiversityReward(rewards, givenPartitions, id, types, k_list)
 
-    #Gradient check
-    y = dict()
-    sum = 0.0
-    for i in range(1, 7):
-        y[i] = np.random.rand()
-        sum += y[i]
-    y = {key: y[key] / sum for key in y.keys()}
-    print('random y: ' + str(y))
+    # Y1, track1, bases1 = newProblem.PolynomialContinuousGreedy(0, 4, 150)
+    # objective = 0.0
+    # time_list1 = []
+    # obj_list1 = []
+    # for i in track1:
+    #     for wdnf_instance in newProblem.wdnf_list:
+    #         objective += np.log1p(wdnf_instance(i[1]))
+    #     time_list1.append(i[0])
+    #     obj_list1.append(objective)
+    #     print('(Polynomial) Time elapsed: ' + str(i[0]) + '    Objective is: ' + str(objective) + '   Gradient is: ' + str(i[2]))
+    #
+    #
+    # Y2, track2, bases2 = newProblem.SamplerContinuousGreedy(200, 100)
+    # objective = 0.0
+    # time_list2 = []
+    # obj_list2 = []
+    # for j in track2:
+    #     for wdnf_instance in newProblem.wdnf_list:
+    #         objective += np.log1p(wdnf_instance(j[1]))
+    #     time_list2.append(j[0])
+    #     obj_list2.append(objective)
+    #     print('(Sampler) Time elapsed: ' + str(j[0]) + '    Objective is: ' + str(objective) + '   Gradient is:  ' + str(j[2]))
 
-    newSamplerEstimator = newProblem.getSamplerEstimator(100)
-    newPolynomialEstimator = newProblem.getPolynomialEstimator(0.5, 4)
-    samplerGradient = newSamplerEstimator.estimate(y)
-    #print('Sampler Gradient is: ' + str(samplerGradient))
-    polynomialGradient = newPolynomialEstimator.estimate(y)
-    #print('Polynomial Gradient is: ' + str(polynomialGradient))
-
-
-    def realGrad(wdnf_list, y):
-        grad = dict.fromkeys(y.iterkeys(), 0.0)
-        for i in y.keys():
-            x1 = y.copy()
-            x1[i] = 1
-            grad1 = 0
-
-            x0 = y.copy()
-            x0[i] = 0
-            grad0 = 0
-            for wdnf_instance in wdnf_list:
-                grad1 += np.log1p(wdnf_instance(x1))
-                grad0 += np.log1p(wdnf_instance(x0))
-            grad[i] = grad1 - grad0
-        return grad
-
-    realGrad = realGrad(newProblem.wdnf_list, y)
-    #print('real Gradient is: ' + str(realGrad))
-
-    def l2norm(grad1, grad2):
-        sum = 0.0
-        for key in grad1:
-            sum += (grad1[key] - grad2[key])**2
-        return np.sqrt(sum)
-    print('||SamplerGrad - polyGrad|| = ' + str(l2norm(samplerGradient, polynomialGradient)))
-    print('||realGrad - samplerGrad|| = ' + str(l2norm(realGrad, samplerGradient)))
-    print('||realGrad - polyGrad|| = ' + str(l2norm(realGrad, polynomialGradient)))
-
-    Y1, track1, bases1 = newProblem.PolynomialContinuousGreedy(0, 4, 100)
-    objective = 0.0
-    time_list1 = []
-    obj_list1 = []
-    for i in track1:
-        for wdnf_instance in newProblem.wdnf_list:
-            objective += np.log1p(wdnf_instance(i[1]))
-        time_list1.append(i[0])
-        obj_list1.append(objective)
-        print('(Polynomial) Time elapsed: ' + str(i[0]) + '    Objective is: ' + str(objective) + '   Gradient is: ' + str(i[2]))
-
-
-    Y2, track2, bases2 = newProblem.SamplerContinuousGreedy(100, 100)
-    objective = 0.0
-    time_list2 = []
-    obj_list2 = []
-    for j in track2:
-        for wdnf_instance in newProblem.wdnf_list:
-            objective += np.log1p(wdnf_instance(j[1]))
-        time_list2.append(j[0])
-        obj_list2.append(objective)
-        print('(Sampler) Time elapsed: ' + str(j[0]) + '    Objective is: ' + str(objective) + '   Gradient is:  ' + str(j[2]))
-
-    plt.plot(time_list1, obj_list1, 'r^', time_list2, obj_list2, 'g^')
-    plt.show()
+    #plt.plot(time_list1, obj_list1, 'r^', time_list2, obj_list2, 'g^')
+    #plt.show()
 
 
 
