@@ -14,11 +14,11 @@ if __name__ == "__main__":
     parser.add_argument('--constraints', default = {1: 15, 2: 42}, help = 'Constraints dictionary with {type:cardinality} pairs')
     parser.add_argument('--estimator', default = "sampler", help = 'Type of the estimator', choices = ['sampler', 'polynomial', 'samplerWithDependencies'])
     parser.add_argument('--iterations', default = 100, help = 'Number of iterations used in the Frank-Wolfe algorithm')
-    parser.add_argument('--degree', default = 5, help = 'Degree of the polynomial estimator')
+    parser.add_argument('--degree', default = 8, help = 'Degree of the polynomial estimator')
     parser.add_argument('--center', default = 0.0, help = 'The point around which Taylor approximation is calculated')
     parser.add_argument('--samples', default = 100, help = 'Number of samples used to calculate the sampler estimator')
-    parser.add_argument('--timeOutput', default = "time.txt", help = 'File in which time of each iteration is stored')
-    parser.add_argument('--objectiveOutput', default = "obj.txt", help = 'File in which objective at each iteration is stored')
+    parser.add_argument('--timeOutput', default = "sampler_time.txt", help = 'File in which time of each iteration is stored')
+    parser.add_argument('--objectiveOutput', default = "sampler_obj.txt", help = 'File in which objective at each iteration is stored')
     args = parser.parse_args()
 
     #rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.6, 5: 0.5, 6: 0.4} #{x_i: r_i} pairs

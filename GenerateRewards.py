@@ -8,9 +8,9 @@ if __name__ == "__main__":
     parser.add_argument('--size', default = 20, help = 'Total size of the ground set')
     parser.add_argument('--partitions', default = 5, help = 'Number of partitions in the ground set')
     parser.add_argument('--types', default = 2, help = 'Number of targeted partitions of the ground set')
-    parser.add_argument('rewardsOutput', help = 'File in which output rewards are stored')
-    parser.add_argument('givenPartitionsOutput', help = 'File in which given partitions are stored')
-    parser.add_argument('targetedPartitionsOutput', help = 'File in which targeted partitions are stored')
+    parser.add_argument('--rewardsOutput', default = 'rewards.txt', help = 'File in which output rewards are stored')
+    parser.add_argument('--givenPartitionsOutput', default = 'givenPartitions.txt', help = 'File in which given partitions are stored')
+    parser.add_argument('--targetedPartitionsOutput', default = 'types.txt', help = 'File in which targeted partitions are stored')
     args = parser.parse_args()
 
     #creates random {x_i: r_i} pairs
