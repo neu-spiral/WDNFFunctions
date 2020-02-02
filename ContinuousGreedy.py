@@ -236,7 +236,7 @@ class ContinuousGreedy():
         for t in range(iterations):
             gradient = self.estimator.estimate(y)
             mk = self.linearSolver.solve(gradient) #finds maximum
-            print(mk)
+            #print(mk)
             indices = set()
             for value in mk.values(): #updates y
                 for i in value:

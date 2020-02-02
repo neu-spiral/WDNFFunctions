@@ -1,10 +1,11 @@
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
-from ContinuousGreedy import LinearSolver, PartitionMatroidSolver, SamplerEstimator, PolynomialEstimator, ContinuousGreedy
+from ContinuousGreedy import LinearSolver, UniformMatroidSolver, PartitionMatroidSolver, SamplerEstimator, PolynomialEstimator, ContinuousGreedy
 from networkx import Graph, DiGraph
 from time import time
 from wdnf import wdnf, poly, taylor
 import argparse
 import math
+import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -251,29 +252,40 @@ class InfluenceMaximization(Problem):
     """
 
 
-    def __init__(self, graph, targetPartitions = None, fun, constraints):
+    def __init__(self, graph, fun, constraints, targetPartitions = None):
         """ graph is a Graph object from networkx. If given, targetPartitions is a dictionary with {node : type}
         pairs and converts the problem to an Influence Maximization over partition matroids, fun is log, constraints is an
         integer denoting the number of seeds if constraints is over uniform matroid or a dictionary with {type : int} pairs
         if over partition matroids.
         """
 
-        self.nodes = graph.nodes()
+        self.groundSet = graph.nodes()
         self.edges = graph.edges()
-        self.targetPartitions = targetPartitions
         self.fun = fun
         self.constraints = constraints
+        self.targetPartitions = targetPartitions
 
-
-
-
-        pass
+        givenPartitions = dict()
+        groundSet = dict()
+        paths = dict(nx.all_pairs_shortest_path(graph))
+        for node1 in self.groundSet: ##this is not efficient. More efficient way?
+            givenPartitions[node1] = ()
+            groundSet[node1] = paths[node1].keys()
+            for node2 in self.groundSet:
+                if nx.has_path(graph, node2, node1):
+                    givenPartitions[node1] += (node2,)
+        self.givenPartitions = givenPartitions.copy()
+        self.groundSet = groundSet.copy()
 
 
     def getSolver(self):
         """
         """
-        pass
+        if self.targetPartitions == None:
+            solver = UniformMatroidSolver(self.groundSet, self.constraints)
+        else:
+            solver  = PartitionMatroidSolver(self.partitionedSet, self.constraints)
+        return solver
 
 
     def getSamplerEstimator(self, numOfSamples):
@@ -334,6 +346,13 @@ class FacilityLocation(Problem):
 
 
 if __name__ == "__main__":
+
+    graph = DiGraph()
+    graph.add_nodes_from([1, 2, 3, 4, 5, 6])
+    graph.add_edges_from([(1, 2), (1, 3), (1, 4), (2, 3), (3, 4), (4, 5), (4, 6), (6, 3)])
+    newProblem = InfluenceMaximization(graph, log, 5)
+    print(newProblem.groundSet)
+
 
     # parser = argparse.ArgumentParser(description = 'Run the Continuous Greedy Algorithm', formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     # parser.add_argument('output')
