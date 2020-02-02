@@ -259,7 +259,7 @@ class InfluenceMaximization(Problem):
         if over partition matroids.
         """
 
-        self.groundSet = graph.nodes()
+        self.groundSet = set(graph.nodes())
         self.edges = graph.edges()
         self.fun = fun
         self.constraints = constraints
@@ -290,13 +290,17 @@ class InfluenceMaximization(Problem):
         return solver
 
 
-    #def
+    def func(self, x):
+        sum = 0.0
+        for node in self.groundSet:
+            sum += 1 - self.wdnf_list[node](x)
+        return np.log1p(sum / self.size)
 
 
     def getSamplerEstimator(self, numOfSamples):
         """
         """
-        pass
+        return SamplerEstimator(self.func, numOfSamples)
 
 
     def getPolynomialEstimator(self, center, degree):
@@ -356,8 +360,13 @@ if __name__ == "__main__":
     graph.add_nodes_from([1, 2, 3, 4, 5, 6])
     graph.add_edges_from([(1, 2), (1, 3), (1, 4), (2, 3), (3, 4), (4, 5), (4, 6), (6, 3)])
     newProblem = InfluenceMaximization(graph, log, 5)
-    for i in newProblem.givenPartitions.keys():
-        print(newProblem.givenPartitions[i].coefficients)
+    #for i in newProblem.givenPartitions.keys():
+    #    print(newProblem.givenPartitions[i].coefficients)
+    x = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0}
+    sum = 0.0
+    for node in newProblem.groundSet:
+        sum += 1 - newProblem.wdnf_list[node - 1](x)
+    print(sum)
     #print(newProblem.groundSet)
 
 
