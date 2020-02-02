@@ -266,16 +266,18 @@ class InfluenceMaximization(Problem):
         self.targetPartitions = targetPartitions
 
         givenPartitions = dict()
-        groundSet = dict()
+        wdnf_list = []
         paths = dict(nx.all_pairs_shortest_path(graph))
         for node1 in self.groundSet: ##this is not efficient. More efficient way?
             givenPartitions[node1] = ()
-            groundSet[node1] = paths[node1].keys()
+            #groundSet[node1] = paths[node1].keys()
             for node2 in self.groundSet:
                 if nx.has_path(graph, node2, node1):
                     givenPartitions[node1] += (node2,)
+            wdnf_list.append(wdnf({givenPartitions[node1]: 1}, -1))
         self.givenPartitions = givenPartitions.copy()
-        self.groundSet = groundSet.copy()
+        self.wdnf_list = wdnf_list
+        #self.groundSet = groundSet.copy()
 
 
     def getSolver(self):
@@ -284,8 +286,11 @@ class InfluenceMaximization(Problem):
         if self.targetPartitions == None:
             solver = UniformMatroidSolver(self.groundSet, self.constraints)
         else:
-            solver  = PartitionMatroidSolver(self.partitionedSet, self.constraints)
+            solver  = PartitionMatroidSolver(self.targetPartitions, self.constraints)
         return solver
+
+
+    #def
 
 
     def getSamplerEstimator(self, numOfSamples):
@@ -351,7 +356,9 @@ if __name__ == "__main__":
     graph.add_nodes_from([1, 2, 3, 4, 5, 6])
     graph.add_edges_from([(1, 2), (1, 3), (1, 4), (2, 3), (3, 4), (4, 5), (4, 6), (6, 3)])
     newProblem = InfluenceMaximization(graph, log, 5)
-    print(newProblem.groundSet)
+    for i in newProblem.givenPartitions.keys():
+        print(newProblem.givenPartitions[i].coefficients)
+    #print(newProblem.groundSet)
 
 
     # parser = argparse.ArgumentParser(description = 'Run the Continuous Greedy Algorithm', formatter_class = argparse.ArgumentDefaultsHelpFormatter)
