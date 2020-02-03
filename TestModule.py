@@ -1,12 +1,12 @@
 from ContinuousGreedy import LinearSolver, PartitionMatroidSolver, SamplerEstimator, PolynomialEstimator, ContinuousGreedy
-from ProblemInstances import DiversityReward, log
+from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log
 import argparse
 import numpy as np
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Generate a random rewards dataset',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description = 'Generate a random rewards dataset',
+                                     formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default = 'DR', help = 'Type of the problem instance', choices = ['DR', 'QS', 'FL', 'IM'])
     parser.add_argument('--rewardsInput', default = "rewards.txt", help = 'Input file that stores rewards')
     parser.add_argument('--partitionsInput', default = "givenPartitions.txt", help = 'Input file that stores partitions')

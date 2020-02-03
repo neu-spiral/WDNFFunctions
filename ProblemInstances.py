@@ -75,10 +75,7 @@ def findDerivatives(type, center, degree):
 
 def evaluateAll(taylor_instance, wdnf_list):
     my_wdnf = wdnf(dict(), wdnf_list[0].sign)
-    #print(my_wdnf.coefficients)
     for wdnf_instance in wdnf_list:
-        #print(wdnf_instance.coefficients)
-        #print(taylor_instance.compose(wdnf_instance).coefficients)
         my_wdnf += taylor_instance.compose(wdnf_instance)
     return my_wdnf
 
@@ -167,12 +164,9 @@ class DiversityReward(Problem):
             wdnf_list.append(new_wdnf)
         self.rewards = rewards
         self.wdnf_list = wdnf_list
-        #for i in self.wdnf_list:
-            #print(i.coefficients)
         self.partitionedSet = partitionedSet
         self.fun = fun
         self.k_list = k_list
-        #self.problemSize = len(rewards)
 
 
     def getSolver(self):
@@ -187,25 +181,13 @@ class DiversityReward(Problem):
         return self.fun(self.wdnf_list, x)
 
 
-    # def getSamplerEstimator(self, numOfSamples):
-    #     """
-    #     """
-    #     return SamplerEstimator(self.func, numOfSamples)
-
-
     def getPolynomialEstimator(self, center, degree):
         """
         """
         derivatives = findDerivatives(self.fun, center, degree)
-        #print('derivatives are: ' + str(derivatives))
         myTaylor = taylor(degree, derivatives, center)
-        #print('coefficients of the Taylor expansion are:' + str(myTaylor.poly_coef))
-        #print('degree of the Taylor expansion is: ' + str(myTaylor.degree))
-        #derivatives = [1] + [0] * (degree - 1)
-        #myTaylor = taylor(degree, [1, 0)
         my_wdnf = evaluateAll(myTaylor, self.wdnf_list)
         print('my_wdnf:' + str(my_wdnf.coefficients))
-        #print(my_wdnf(y))
         return PolynomialEstimator(my_wdnf)
 
 
@@ -268,7 +250,6 @@ class InfluenceMaximization(Problem):
 
         self.groundSet = set(graph.nodes())
         self.edges = graph.edges()
-        #self.fun = fun
         self.constraints = constraints
         self.targetPartitions = targetPartitions
 
@@ -277,7 +258,6 @@ class InfluenceMaximization(Problem):
         paths = dict(nx.all_pairs_shortest_path(graph))
         for node1 in self.groundSet: ##this is not efficient. More efficient way?
             givenPartitions[node1] = ()
-            #groundSet[node1] = paths[node1].keys()
             for node2 in self.groundSet:
                 if nx.has_path(graph, node2, node1):
                     givenPartitions[node1] += (node2,)
@@ -285,7 +265,6 @@ class InfluenceMaximization(Problem):
         self.givenPartitions = givenPartitions.copy()
         self.wdnf_list = wdnf_list
         self.size = graph.number_of_nodes()
-        #self.groundSet = groundSet.copy()
 
 
     def getSolver(self):
@@ -305,28 +284,15 @@ class InfluenceMaximization(Problem):
         return np.log1p(sum / self.size)
 
 
-    # def getSamplerEstimator(self, numOfSamples):
-    #     """
-    #     """
-    #     return SamplerEstimator(self.func, numOfSamples)
-
-
     def getPolynomialEstimator(self, center, degree):
         """
         """
         derivatives = findDerivatives(log, center, degree)
-        #print('derivatives are: ' + str(derivatives))
         myTaylor = taylor(degree, derivatives, center)
-        #print('coefficients of the Taylor expansion are:' + str(myTaylor.poly_coef))
-        #print('degree of the Taylor expansion is: ' + str(myTaylor.degree))
-        #derivatives = [1] + [0] * (degree - 1)
-        #myTaylor = taylor(degree, [1, 0)
         wdnfSoFar = wdnf(dict(), -1)
         for wdnf_object in self.wdnf_list:
             wdnfSoFar += wdnf({(): 1}, -1) + (-1.0) * wdnf_object
         my_wdnf = myTaylor.compose((1.0 / self.size) * wdnfSoFar + wdnf({(): 1}, -1))
-        #print('my_wdnf:' + str(my_wdnf.coefficients))
-        #print(my_wdnf(y))
         return PolynomialEstimator(my_wdnf)
 
 
@@ -343,13 +309,26 @@ class FacilityLocation(Problem):
     """
 
 
-    def __init__(self, B, constraints, targetPartitions):
+    def __init__(self, B, constraints):
         """ B is a complete weighted bipartite graph, constraints is an integer which denotes the maximum number of facilities
         """
         self.X = {n for n, d in B.nodes(data = True) if d['bipartite'] == 0} #facilities
-        self.Y = set(B) #customers
+        self.Y = set(B) - self.X #customers
         self.constraints = constraints
-        self.partitionedSet = dict.fromkeys(Y, X)
+        self.partitionedSet = dict.fromkeys(self.Y, self.X)
+        self.size = len(self.Y) #number of customers
+        wdnf_dict = dict()
+        for y in self.Y:
+            weights = {nodeX : B.get_edge_data(nodeX, y)['weight'] for nodeX in self.X}
+            weights[len(self.X) + 1] = 0.0
+            wdnfSoFar = wdnf(dict(), -1)
+            descending_weights = sorted(weights.values(), reverse = True)
+            indices = sorted(range(len(weights.values())), key = lambda k: weights.values()[k], reverse = True)
+            for i in range(len(self.X)):
+                index = tuple(index + 1 for index in indices[:(i+1)])
+                wdnfSoFar += (descending_weights[i] - descending_weights[i + 1]) * (wdnf({():1}, -1) + (-1.0) * wdnf({index: 1}, -1))
+            wdnf_dict[y] = wdnfSoFar
+        self.wdnf_dict = wdnf_dict
 
 
     def getSolver(self):
@@ -359,28 +338,31 @@ class FacilityLocation(Problem):
         return PartitionMatroidSolver(self.partitionedSet, k_list)
 
 
-    def func(self):
+    def func(self, x):
         """
         """
-
-
-
-    # def getSamplerEstimator(self, numOfSamples):
-    #     """
-    #     """
-    #     pass
+        sum = 0.0
+        for y in self.Y:
+            sum += np.log1p(self.wdnf_dict[y](x))
+        return sum / self.size
 
 
     def getPolynomialEstimator(self, center, degree):
         """
         """
-        pass
+        derivatives = findDerivatives(log, center, degree)
+        myTaylor = taylor(degree, derivatives, center)
+        wdnfSoFar = wdnf(dict(), -1)
+        for y in self.Y:
+            wdnfSoFar += myTaylor.compose(self.wdnf_dict[y])
+        my_wdnf = (1.0 / self.size) * wdnfSoFar
+        return PolynomialEstimator(my_wdnf)
 
 
     def getInitialPoint(self):
         """
         """
-        pass
+        return dict.fromkeys(self.X, 0.0)
 
 
 
@@ -404,8 +386,14 @@ if __name__ == "__main__":
     B = Graph()
     B.add_nodes_from([1, 2, 3, 4, 5, 6], bipartite = 0)
     B.add_nodes_from(['a', 'b'], bipartite = 1)
-    B.add_edges_from([(1, 'a'), (2, 'a'), (3, 'a'), (4, 'a'), (5, 'a'), (6, 'a'), (1, 'b'), (2, 'b'), (3, 'b'), (4, 'b'), (5, 'b'), (6, 'b')])
-    print(bipartite.sets(B))
+    B.add_weighted_edges_from([(1, 'a', 0.5), (2, 'a', 0.25), (3, 'a', 3.0), (4, 'a', 4.0), (5, 'a', 2.0), (6, 'a', 1.0), (1, 'b', 1.0), (2, 'b', 1.0), (3, 'b', 1.0), (4, 'b', 1.0), (5, 'b', 1.0), (6, 'b', 1.0)])
+    #print(B.get_edge_data(1, 'a')['weight'])
+    #print(B.edges(data = True))
+    x = ['m1', 'm2', 'm3', 'm4']
+    #print(x[:4])
+    newProb = FacilityLocation(B, 2)
+    Y2, track2, bases2 = newProb.PolynomialContinuousGreedy(0.0, 5, 10)
+    print(Y2)
 
 
 
