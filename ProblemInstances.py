@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
 from ContinuousGreedy import LinearSolver, UniformMatroidSolver, PartitionMatroidSolver, SamplerEstimator, PolynomialEstimator, ContinuousGreedy
 from networkx import Graph, DiGraph
+from networkx.algorithms import bipartite
 from time import time
 from wdnf import wdnf, poly, taylor
 import argparse
@@ -63,7 +64,7 @@ def derive(type, x, degree):
 
 
 def findDerivatives(type, center, degree):
-    """Type is either 'ln' or 'queueSize', helper function to create the
+    """Type is either 'log' or 'queueSize', helper function to create the
     derivatives list of taylor objects.
     """
     derivatives = []
@@ -101,10 +102,16 @@ class Problem(object): #For Python 3, replace object with ABCMeta
         pass
 
 
-    def getSamplerEstimator(self, numOfSamples):
+    def func(self):
         """
         """
         pass
+
+
+    def getSamplerEstimator(self, numOfSamples):
+        """
+        """
+        return SamplerEstimator(self.func, numOfSamples)
 
 
     def getPolynomialEstimator(self, center, degree):
@@ -180,10 +187,10 @@ class DiversityReward(Problem):
         return self.fun(self.wdnf_list, x)
 
 
-    def getSamplerEstimator(self, numOfSamples):
-        """
-        """
-        return SamplerEstimator(self.func, numOfSamples)
+    # def getSamplerEstimator(self, numOfSamples):
+    #     """
+    #     """
+    #     return SamplerEstimator(self.func, numOfSamples)
 
 
     def getPolynomialEstimator(self, center, degree):
@@ -252,7 +259,7 @@ class InfluenceMaximization(Problem):
     """
 
 
-    def __init__(self, graph, fun, constraints, targetPartitions = None):
+    def __init__(self, graph, constraints, targetPartitions = None):
         """ graph is a Graph object from networkx. If given, targetPartitions is a dictionary with {node : type}
         pairs and converts the problem to an Influence Maximization over partition matroids, fun is log, constraints is an
         integer denoting the number of seeds if constraints is over uniform matroid or a dictionary with {type : int} pairs
@@ -261,7 +268,7 @@ class InfluenceMaximization(Problem):
 
         self.groundSet = set(graph.nodes())
         self.edges = graph.edges()
-        self.fun = fun
+        #self.fun = fun
         self.constraints = constraints
         self.targetPartitions = targetPartitions
 
@@ -277,6 +284,7 @@ class InfluenceMaximization(Problem):
             wdnf_list.append(wdnf({givenPartitions[node1]: 1}, -1))
         self.givenPartitions = givenPartitions.copy()
         self.wdnf_list = wdnf_list
+        self.size = graph.number_of_nodes()
         #self.groundSet = groundSet.copy()
 
 
@@ -297,22 +305,35 @@ class InfluenceMaximization(Problem):
         return np.log1p(sum / self.size)
 
 
-    def getSamplerEstimator(self, numOfSamples):
-        """
-        """
-        return SamplerEstimator(self.func, numOfSamples)
+    # def getSamplerEstimator(self, numOfSamples):
+    #     """
+    #     """
+    #     return SamplerEstimator(self.func, numOfSamples)
 
 
     def getPolynomialEstimator(self, center, degree):
         """
         """
-        pass
+        derivatives = findDerivatives(log, center, degree)
+        #print('derivatives are: ' + str(derivatives))
+        myTaylor = taylor(degree, derivatives, center)
+        #print('coefficients of the Taylor expansion are:' + str(myTaylor.poly_coef))
+        #print('degree of the Taylor expansion is: ' + str(myTaylor.degree))
+        #derivatives = [1] + [0] * (degree - 1)
+        #myTaylor = taylor(degree, [1, 0)
+        wdnfSoFar = wdnf(dict(), -1)
+        for wdnf_object in self.wdnf_list:
+            wdnfSoFar += wdnf({(): 1}, -1) + (-1.0) * wdnf_object
+        my_wdnf = myTaylor.compose((1.0 / self.size) * wdnfSoFar + wdnf({(): 1}, -1))
+        #print('my_wdnf:' + str(my_wdnf.coefficients))
+        #print(my_wdnf(y))
+        return PolynomialEstimator(my_wdnf)
 
 
     def getInitialPoint(self):
         """
         """
-        pass
+        return dict.fromkeys(self.groundSet, 0.0)
 
 
 
@@ -322,22 +343,32 @@ class FacilityLocation(Problem):
     """
 
 
-    def __init__(self):
+    def __init__(self, B, constraints, targetPartitions):
+        """ B is a complete weighted bipartite graph, constraints is an integer which denotes the maximum number of facilities
         """
-        """
-        pass
+        self.X = {n for n, d in B.nodes(data = True) if d['bipartite'] == 0} #facilities
+        self.Y = set(B) #customers
+        self.constraints = constraints
+        self.partitionedSet = dict.fromkeys(Y, X)
 
 
     def getSolver(self):
         """
         """
-        pass
+        k_list = dict.fromkeys(self.Y, self.constraints)
+        return PartitionMatroidSolver(self.partitionedSet, k_list)
 
 
-    def getSamplerEstimator(self, numOfSamples):
+    def func(self):
         """
         """
-        pass
+
+
+
+    # def getSamplerEstimator(self, numOfSamples):
+    #     """
+    #     """
+    #     pass
 
 
     def getPolynomialEstimator(self, center, degree):
@@ -359,15 +390,24 @@ if __name__ == "__main__":
     graph = DiGraph()
     graph.add_nodes_from([1, 2, 3, 4, 5, 6])
     graph.add_edges_from([(1, 2), (1, 3), (1, 4), (2, 3), (3, 4), (4, 5), (4, 6), (6, 3)])
-    newProblem = InfluenceMaximization(graph, log, 5)
+    newProblem = InfluenceMaximization(graph, 5)
+    Y1, track1, bases1 = newProblem.PolynomialContinuousGreedy(0.0, 5, 10)
+    #print(Y1)
     #for i in newProblem.givenPartitions.keys():
     #    print(newProblem.givenPartitions[i].coefficients)
     x = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0}
     sum = 0.0
     for node in newProblem.groundSet:
         sum += 1 - newProblem.wdnf_list[node - 1](x)
-    print(sum)
+    #print(sum)
     #print(newProblem.groundSet)
+    B = Graph()
+    B.add_nodes_from([1, 2, 3, 4, 5, 6], bipartite = 0)
+    B.add_nodes_from(['a', 'b'], bipartite = 1)
+    B.add_edges_from([(1, 'a'), (2, 'a'), (3, 'a'), (4, 'a'), (5, 'a'), (6, 'a'), (1, 'b'), (2, 'b'), (3, 'b'), (4, 'b'), (5, 'b'), (6, 'b')])
+    print(bipartite.sets(B))
+
+
 
 
     # parser = argparse.ArgumentParser(description = 'Run the Continuous Greedy Algorithm', formatter_class = argparse.ArgumentDefaultsHelpFormatter)

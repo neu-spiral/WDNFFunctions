@@ -237,9 +237,13 @@ class ContinuousGreedy():
             gradient = self.estimator.estimate(y)
             mk = self.linearSolver.solve(gradient) #finds maximum
             #print(mk)
-            indices = set()
-            for value in mk.values(): #updates y
-                for i in value:
+            try:
+                indices = set()
+                for value in mk.values(): #updates y
+                    for i in value:
+                        y[i] = y[i] + gamma
+            except AttributeError:
+                for i in mk:
                     y[i] = y[i] + gamma
             if keepTrack or t == iterations - 1:
                 timePassed = time() - start
