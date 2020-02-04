@@ -8,7 +8,7 @@ import argparse
 import math
 import networkx as nx
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 
 
@@ -78,6 +78,81 @@ def evaluateAll(taylor_instance, wdnf_list):
     for wdnf_instance in wdnf_list:
         my_wdnf += taylor_instance.compose(wdnf_instance)
     return my_wdnf
+
+
+def ro_uv(edges, demands, x):
+    """ edges is a list of edges in (u, v) form where (u, v) is an edge from u to v.
+        demands is a list of Demand objects
+    """
+    ro_uv = {}
+        #Initialize the functions...
+    for edge in edge_dict:
+        ro_uv[edge] = 0.0
+        # Go through demands
+    for demand in demands:
+        path = demand['path']
+        item = demand['item']
+        rate = demand['rate']
+        if  x[(path[0], item)] == 0 and len(path) > 1:
+            for node_i in range(len(path) - 1):
+                edge = (path[node_i], path[node_i + 1])
+                ro_uv[edge] = ro_uv[edge] + rate
+                if x[(path[node_i + 1], item)] == 1:
+                     break
+    return ro_uv   #is a dictionary of {(u, v): load}
+
+
+class Demand:
+    """ A demand object. Contains the item requested, the path a request follows, as a list, and the
+        rate with which requests are generated. Tallies count various metrics.
+
+        Attributes:
+        item: the id of the item requested
+        path: a list of nodes to be visited
+        rate: the rate with which this request is generated
+        query_source: first node on the path
+        item_source: last node on the path
+    """
+
+    def __init__(self, item, path, rate):
+        """ Initialize a new request.
+        """
+        self.item = item
+        self.path = path
+        self.rate = rate
+
+        self.query_source = path[0]
+        self.item_source = path[-1]
+
+    def __str__(self):
+        return Demand.__repr__(self)
+
+    def __repr__(self):
+        return 'Demand(' + ','.join(map(str, [self.item, self.path, self.rate])) + ')'
+
+    def succ(self, node):
+        """ The successor of a node in the path.
+        """
+        path = self.path
+        if node not in path:
+            return None
+        i = path.index(node)
+        if i + 1 == len(path):
+            return None
+        else:
+            return path[i + 1]
+
+    def pred(self, node):
+        """The predecessor of a node in the path.
+        """
+        path = self.path
+        if node not in path:
+            return None
+        i = path.index(node)
+        if i - 1 < 0:
+            return None
+        else:
+            return path[i - 1]
 
 
 class Problem(object): #For Python 3, replace object with ABCMeta
@@ -204,8 +279,10 @@ class QueueSize(Problem):
     """
 
 
-    def __init__(self):
-        """
+    def __init__(self, graph, capacities, demands):
+        """ graph is a symmetrical directed graph,
+        capacities is a dictionary with {node: capacity} pairs,
+        demands is a list of demand objects
         """
         pass
 
@@ -216,7 +293,7 @@ class QueueSize(Problem):
         pass
 
 
-    def getSamplerEstimator(self, numOfSamples):
+    def func(self, x):
         """
         """
         pass

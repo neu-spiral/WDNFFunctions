@@ -87,7 +87,7 @@ class Demand:
 
 
 class Problem:
-    def __init__(self, capacities, demands, bandwidths, utilityfunction,capacity_servicerate, min_servicerate, cost=0):
+    def __init__(self, capacities, demands, bandwidths, utilityfunction, capacity_servicerate, min_servicerate, cost=0):
         self.capacities = capacities
         self.EDGE = bandwidths
         self.demands = demands
@@ -351,4 +351,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
