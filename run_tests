@@ -12,6 +12,6 @@ for center in 0.0 0.25 0.50 0.75
 do
     for degree in 2 4 6 8 10
     do
-      sbatch ../script.sh TestModule.py --problemType IM --input soc-Epinions1.txt --estimator polynomial --iterations 1000 --degree $degree --center $center
+      sbatch test_IM $degree $center
     done
 done
