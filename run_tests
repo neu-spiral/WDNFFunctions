@@ -1,0 +1,17 @@
+#!/bin/bash
+
+  #SBATCH --time=20:00:00
+
+  #SBATCH --job-name=MyJobName
+
+  #SBATCH --partition=ioannidis
+
+  #SBATCH --constraint=E5-2680v4@2.40GHz
+
+for center in 0.0 0.25 0.50 0.75
+do
+    for degree in 2 4 6 8 10
+    do
+      sbatch ../script.sh TestModule.py --problemType IM --input soc-Epinions1.txt --estimator polynomial --iterations 1000 --degree $degree --center $center
+    done
+done
