@@ -2,6 +2,7 @@ from ContinuousGreedy import LinearSolver, PartitionMatroidSolver, SamplerEstima
 from networkx import Graph, DiGraph
 from networkx.algorithms import bipartite
 from networkx.convert import to_edgelist
+from networkx.readwrite.edgelist import read_edgelist
 from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log
 import argparse
 import numpy as np
@@ -42,24 +43,16 @@ if __name__ == "__main__":
 
 
     if args.problemType == 'IM':
-        G = DiGraph()
-        with open(args.input) as f:
-            lines = f.readlines()
-        f.close()
-        edges = [tuple(line.split()) for line in lines if not line.strip().startswith('#')]
-        G.add_edges_from(edges)
-        #probabilities = np.random.rand(1000, G.number_of_edges())
-        #for i in range(1000):
-        newG = DiGraph()
-        choose = np.random.uniform(0, 1, G.number_of_edges()) < args.p
-        #print(to_edgelist(G))
-        for i in range(len(choose)):
-            if choose[i] == True:
-                print(list(to_edgelist(G))[i])
-                newG.add_edges_from(tuple(list(to_edgelist(G))[i]))
-        print(newG.edges())
-
-
+        G = read_edgelist(args.input, comments = '#', create_using = DiGraph, nodetype = int)
+        graphs = []
+        for i in range(args.cascades):
+            newG = DiGraph()
+            choose = np.array([np.random.uniform(0, 1, G.number_of_edges()) < args.p, ] * 2).transpose()
+            chosen_edges = np.extract(choose, G.edges())
+            chosen_edges = [(chosen_edges[2 * i], chosen_edges[2 * i + 1]) for i in range(len(chosen_edges) / 2)]
+            newG.add_nodes_from(G.nodes())
+            newG.add_edges_from(chosen_edges)
+            graphs.append(newG)
         newProblem = InfluenceMaximization(graphs, args.constraints)
 
 
