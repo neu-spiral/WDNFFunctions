@@ -93,7 +93,7 @@ if __name__ == "__main__":
         pass
 
 
-    if if args.problemType == 'IM':
+    if args.problemType == 'IM':
         objective = 0.0
         time_list = []
         obj_list = []
