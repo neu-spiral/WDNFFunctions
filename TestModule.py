@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     if args.problemType == 'IM':
         logging.info('Reading edge list...')
-        G = read_edgelist(args.input, comments = '#', create_using = DiGraph, nodetype = int)
+        G = read_edgelist(args.input, comments = '#', create_using = DiGraph(), nodetype = int)
         numOfNodes = G.number_of_nodes()
         numOfEdges = G.number_of_edges()
         logging.info('...done. Created a directed graph with %d nodes and %d edges' % (numOfNodes, numOfEdges))

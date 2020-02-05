@@ -338,7 +338,7 @@ class InfluenceMaximization(Problem):
             wdnf_list = []
             paths = nx.algorithms.dag.transitive_closure(graphs[i])
             for node1 in self.groundSet:
-                P[node1] = tuple(sorted([node1] + list(paths.predecessors(2))))
+                P[node1] = tuple(sorted([node1] + list(paths.predecessors(node1))))
             wdnf_list.append(wdnf({P[node1]: 1}, -1))
             #givenPartitions[i] = P.copy() #givenPartitions is a dictionary of (v: P_v) pairs where v is a node in graph and P_v is the set of all nodes having a (directed) path to v (in tuple format)
             wdnf_dict[i] = wdnf_list #prod(1 - x_u) for all u in P_v
