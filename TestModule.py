@@ -1,6 +1,7 @@
 from ContinuousGreedy import LinearSolver, PartitionMatroidSolver, SamplerEstimator, PolynomialEstimator, ContinuousGreedy
 from networkx import Graph, DiGraph
 from networkx.algorithms import bipartite
+from networkx.convert import to_edgelist
 from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log
 import argparse
 import numpy as np
@@ -11,6 +12,8 @@ if __name__ == "__main__":
                                      formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default = 'IM', help = 'Type of the problem instance', choices = ['DR', 'QS', 'FL', 'IM'])
     parser.add_argument('--input', default = 'soc-Epinions1.txt', help = 'Data input for the InfluenceMaximization problem')
+    parser.add_argument('--cascades', default = 1000, help = 'Number of cascades used in the Independent Cascade model')
+    parser.add_argument('--p', default = 0.02, help = 'Infection probability')
     parser.add_argument('--rewardsInput', default = "rewards.txt", help = 'Input file that stores rewards')
     parser.add_argument('--partitionsInput', default = "givenPartitions.txt", help = 'Input file that stores partitions')
     parser.add_argument('--typesInput', default = "types.txt", help = 'Input file that stores targeted partitions of the ground set')
@@ -45,6 +48,18 @@ if __name__ == "__main__":
         f.close()
         edges = [tuple(line.split()) for line in lines if not line.strip().startswith('#')]
         G.add_edges_from(edges)
+        #probabilities = np.random.rand(1000, G.number_of_edges())
+        #for i in range(1000):
+        newG = DiGraph()
+        choose = np.random.uniform(0, 1, G.number_of_edges()) < args.p
+        #print(to_edgelist(G))
+        for i in range(len(choose)):
+            if choose[i] == True:
+                print(list(to_edgelist(G))[i])
+                newG.add_edges_from(tuple(list(to_edgelist(G))[i]))
+        print(newG.edges())
+
+
         newProblem = InfluenceMaximization(graphs, args.constraints)
 
 
