@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH --output=slurm_logs/trial%j.out
+
+#SBATCH --error=slurm_logs/trial%j.err
+
+#SBATCH --job-name=MyJobName
+
+#SBATCH --partition=ioannidis
+
+#SBATCH --constraint=E5-2680v4@2.40GHz
+
+srun python TestModule.py --problemType IM --input soc-Epinions1.txt --estimator polynomial --iterations 1000 --degree $1 --center $2
