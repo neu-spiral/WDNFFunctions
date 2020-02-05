@@ -318,30 +318,31 @@ class InfluenceMaximization(Problem):
     """
 
 
-    def __init__(self, graph, constraints, targetPartitions = None):
-        """ graph is a Graph object from networkx. If given, targetPartitions is a dictionary with {node : type}
-        pairs and converts the problem to an Influence Maximization over partition matroids, fun is log, constraints is an
+    def __init__(self, graphs, constraints, targetPartitions = None):
+        """ graphs is a list of DiGraph objects from networkx. If given, targetPartitions is a dictionary with {node : type}
+        pairs and converts the problem to an Influence Maximization over partition matroids, constraints is an
         integer denoting the number of seeds if constraints is over uniform matroid or a dictionary with {type : int} pairs
         if over partition matroids.
         """
-
-        self.groundSet = set(graph.nodes())
-        self.edges = graph.edges()
-        self.constraints = constraints
+        #self.graphs = graphs
+        self.groundSet = set(graphs[0].nodes()) #all graphs share the same set of nodes
+        self.graphSize = graphs[0].number_of_nodes() #|V|
+        self.instancesSize = len(graphs) #|G|
+        self.constraints = constraints #number of seeds aka k
         self.targetPartitions = targetPartitions
-
-        givenPartitions = dict()
-        wdnf_list = []
-        paths = dict(nx.all_pairs_shortest_path(graph))
-        for node1 in self.groundSet: ##this is not efficient. More efficient way?
-            givenPartitions[node1] = ()
-            for node2 in self.groundSet:
-                if nx.has_path(graph, node2, node1):
-                    givenPartitions[node1] += (node2,)
-            wdnf_list.append(wdnf({givenPartitions[node1]: 1}, -1))
-        self.givenPartitions = givenPartitions.copy()
-        self.wdnf_list = wdnf_list
-        self.size = graph.number_of_nodes()
+        #givenPartitions = dict()
+        wdnf_dict = dict()
+        for i in range(self.instancesSize):
+            self.edges = graphs[i].edges() #edges are different for each graph
+            P = dict()
+            wdnf_list = []
+            paths = nx.algorithms.dag.transitive_closure(graphs[i])
+            for node1 in self.groundSet:
+                P[node1] = tuple(sorted([node1] + list(paths.predecessors(2))))
+            wdnf_list.append(wdnf({P[node1]: 1}, -1))
+            #givenPartitions[i] = P.copy() #givenPartitions is a dictionary of (v: P_v) pairs where v is a node in graph and P_v is the set of all nodes having a (directed) path to v (in tuple format)
+            wdnf_dict[i] = wdnf_list #prod(1 - x_u) for all u in P_v
+        self.wdnf_dict = wdnf_dict
 
 
     def getSolver(self):
@@ -355,10 +356,13 @@ class InfluenceMaximization(Problem):
 
 
     def func(self, x):
-        sum = 0.0
-        for node in self.groundSet:
-            sum += 1 - self.wdnf_list[node](x)
-        return np.log1p(sum / self.size)
+        output = 0.0
+        for i in range(self.instancesSize):
+            sum = 0.0
+            for node in self.groundSet:
+                sum += 1 - self.wdnf_dict[i][node](x)
+            output += np.log1p(sum / self.graphSize)
+        return output / (self.instancesSize * 1.0)
 
 
     def getPolynomialEstimator(self, center, degree):
@@ -366,11 +370,14 @@ class InfluenceMaximization(Problem):
         """
         derivatives = findDerivatives(log, center, degree)
         myTaylor = taylor(degree, derivatives, center)
-        wdnfSoFar = wdnf(dict(), -1)
-        for wdnf_object in self.wdnf_list:
-            wdnfSoFar += wdnf({(): 1}, -1) + (-1.0) * wdnf_object
-        my_wdnf = myTaylor.compose((1.0 / self.size) * wdnfSoFar + wdnf({(): 1}, -1))
-        return PolynomialEstimator(my_wdnf)
+        final_wdnf = wdnf(dict(), -1)
+        for i in range(self.instancesSize):
+            wdnfSoFar = wdnf(dict(), -1)
+            for wdnf_object in self.wdnf_dict[i]:
+                wdnfSoFar += wdnf({(): 1}, -1) + (-1.0) * wdnf_object
+            my_wdnf = myTaylor.compose((1.0 / self.graphSize) * wdnfSoFar + wdnf({(): 1}, -1))
+        final_wdnf += my_wdnf
+        return PolynomialEstimator((1.0 / self.instancesSize) * final_wdnf)
 
 
     def getInitialPoint(self):
@@ -449,15 +456,16 @@ if __name__ == "__main__":
     graph = DiGraph()
     graph.add_nodes_from([1, 2, 3, 4, 5, 6])
     graph.add_edges_from([(1, 2), (1, 3), (1, 4), (2, 3), (3, 4), (4, 5), (4, 6), (6, 3)])
-    newProblem = InfluenceMaximization(graph, 5)
-    Y1, track1, bases1 = newProblem.PolynomialContinuousGreedy(0.0, 5, 10)
-    #print(Y1)
+    newProblem = InfluenceMaximization([graph], 3)
+    Y1, track1, bases1 = newProblem.PolynomialContinuousGreedy(0.0, 5, 100)
+    print(Y1)
     #for i in newProblem.givenPartitions.keys():
     #    print(newProblem.givenPartitions[i].coefficients)
     x = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0}
-    sum = 0.0
-    for node in newProblem.groundSet:
-        sum += 1 - newProblem.wdnf_list[node - 1](x)
+
+    #sum = 0.0
+    #for node in newProblem.groundSet:
+    #    sum += 1 - newProblem.wdnf_list[node - 1](x)
     #print(sum)
     #print(newProblem.groundSet)
     B = Graph()
@@ -470,7 +478,7 @@ if __name__ == "__main__":
     #print(x[:4])
     newProb = FacilityLocation(B, 2)
     Y2, track2, bases2 = newProb.PolynomialContinuousGreedy(0.0, 5, 10)
-    print(Y2)
+    #print(Y2)
 
 
 

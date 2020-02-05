@@ -1,4 +1,6 @@
 from ContinuousGreedy import LinearSolver, PartitionMatroidSolver, SamplerEstimator, PolynomialEstimator, ContinuousGreedy
+from networkx import Graph, DiGraph
+from networkx.algorithms import bipartite
 from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log
 import argparse
 import numpy as np
@@ -7,7 +9,8 @@ import numpy as np
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Generate a random rewards dataset',
                                      formatter_class = argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--problemType', default = 'DR', help = 'Type of the problem instance', choices = ['DR', 'QS', 'FL', 'IM'])
+    parser.add_argument('--problemType', default = 'IM', help = 'Type of the problem instance', choices = ['DR', 'QS', 'FL', 'IM'])
+    parser.add_argument('--input', default = 'soc-Epinions1.txt', help = 'Data input for the InfluenceMaximization problem')
     parser.add_argument('--rewardsInput', default = "rewards.txt", help = 'Input file that stores rewards')
     parser.add_argument('--partitionsInput', default = "givenPartitions.txt", help = 'Input file that stores partitions')
     parser.add_argument('--typesInput', default = "types.txt", help = 'Input file that stores targeted partitions of the ground set')
@@ -33,6 +36,17 @@ if __name__ == "__main__":
 
     if args.problemType == 'DR':
         newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
+
+
+    if args.problemType == 'IM':
+        G = DiGraph()
+        with open(args.input) as f:
+            lines = f.readlines()
+        f.close()
+        edges = [tuple(line.split()) for line in lines if not line.strip().startswith('#')]
+        G.add_edges_from(edges)
+        newProblem = InfluenceMaximization(graphs, args.constraints)
+
 
     if args.estimator == 'polynomial':
         Y1, track1, bases1 = newProblem.PolynomialContinuousGreedy(args.center, args.degree, args.iterations)
