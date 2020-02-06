@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --output=slurm_logs/trial%j.out
+#SBATCH --output=slurm_logs/cascades%j.out
 
-#SBATCH --error=slurm_logs/trial%j.err
+#SBATCH --error=slurm_logs/cascades%j.err
 
-#SBATCH --job-name=MyJobName
+#SBATCH --job-name=gen_cascades
 
 #SBATCH --partition=ioannidis
 
-#SBATCH --constraint=E5-2680v4@2.40GHz
+#SBATCH --mem=256Gb
 
-srun python TestModule.py --problemType IM --input soc-Epinions1.txt --estimator polynomial --iterations 1000 --degree $1 --center $2
+srun python generateCascades.py

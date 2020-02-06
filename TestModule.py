@@ -7,6 +7,7 @@ from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, 
 import argparse
 import numpy as np
 import os
+import pickle
 import logging
 
 
@@ -14,7 +15,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Generate a random rewards dataset',
                                      formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default = 'IM', help = 'Type of the problem instance', choices = ['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default = 'soc-Epinions1.txt', help = 'Data input for the InfluenceMaximization problem')
+    parser.add_argument('--input', default = 'graphs_file', help = 'Data input for the InfluenceMaximization problem')
     parser.add_argument('--cascades', default = 1000, help = 'Number of cascades used in the Independent Cascade model')
     parser.add_argument('--p', default = 0.02, help = 'Infection probability')
     parser.add_argument('--rewardsInput', default = "rewards.txt", help = 'Input file that stores rewards')
@@ -56,11 +57,9 @@ if __name__ == "__main__":
 
     if args.problemType == 'IM':
         logging.info('Reading edge lists...')
-        graphs = []
-        for cascade in os.listdir("/edge_lists""):
-            G = read_edgelist(cascade, create_using = DiGraph(), nodetype = int)
-            graphs.append(G)
-            logging.info('...just read edge list %d' % (len(graphs)))
+        with open(args.input, "r") as f:
+            graphs = pickle.load(f)
+        logging.info('...just read %d edge list' % (len(graphs)))
         #numOfNodes = G.number_of_nodes()
         #numOfEdges = G.number_of_edges()
         #logging.info('...done. Created a directed graph with %d nodes and %d edges' % (numOfNodes, numOfEdges))
@@ -74,7 +73,7 @@ if __name__ == "__main__":
         #    chosen_edges = np.extract(choose, G.edges())
         #    chosen_edges = zip(chosen_edges[0::2], chosen_edges[1::2])
         #    graphs[cascade].add_edges_from(chosen_edges)
-        logging.info('...done. Created %d cascades with %s infection probability.' % (len(graphs), args.p))
+        #logging.info('...done. Created %d cascades with %s infection probability.' % (len(graphs), args.p))
 
         logging.info('Defining an InfluenceMaximization problem...')
         newProblem = InfluenceMaximization(graphs, args.constraints)
