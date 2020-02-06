@@ -376,7 +376,7 @@ class InfluenceMaximization(Problem):
             for wdnf_object in self.wdnf_dict[i]:
                 wdnfSoFar += wdnf({(): 1}, -1) + (-1.0) * wdnf_object
             my_wdnf = myTaylor.compose((1.0 / self.graphSize) * wdnfSoFar + wdnf({(): 1}, -1))
-        final_wdnf += my_wdnf
+            final_wdnf += my_wdnf
         return PolynomialEstimator((1.0 / self.instancesSize) * final_wdnf)
 
 
