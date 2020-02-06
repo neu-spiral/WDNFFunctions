@@ -6,6 +6,7 @@ from networkx.readwrite.edgelist import read_edgelist
 from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log
 import argparse
 import numpy as np
+import os
 import logging
 
 
@@ -54,22 +55,26 @@ if __name__ == "__main__":
 
 
     if args.problemType == 'IM':
-        logging.info('Reading edge list...')
-        G = read_edgelist(args.input, comments = '#', create_using = DiGraph(), nodetype = int)
-        numOfNodes = G.number_of_nodes()
-        numOfEdges = G.number_of_edges()
-        logging.info('...done. Created a directed graph with %d nodes and %d edges' % (numOfNodes, numOfEdges))
+        logging.info('Reading edge lists...')
+        graphs = []
+        for cascade in os.listdir("/edge_lists""):
+            G = read_edgelist(cascade, create_using = DiGraph(), nodetype = int)
+            graphs.append(G)
+            logging.info('...just read edge list %d' % (len(graphs)))
+        #numOfNodes = G.number_of_nodes()
+        #numOfEdges = G.number_of_edges()
+        #logging.info('...done. Created a directed graph with %d nodes and %d edges' % (numOfNodes, numOfEdges))
 
-        logging.info('Creating cascades...')
-        newG = DiGraph()
-        newG.add_nodes_from(G.nodes())
-        graphs = [newG] * args.cascades
-        for cascade in range(args.cascades):
-            choose = np.array([np.random.uniform(0, 1, G.number_of_edges()) < args.p, ] * 2).transpose()
-            chosen_edges = np.extract(choose, G.edges())
-            chosen_edges = zip(chosen_edges[0::2], chosen_edges[1::2])
-            graphs[cascade].add_edges_from(chosen_edges)
-        logging.info('...done. Created %d cascades with %d infection probability.' % (args.cascades, args.p))
+        #logging.info('Creating cascades...')
+        ##newG = DiGraph()
+        #newG.add_nodes_from(G.nodes())
+        #graphs = [newG] * args.cascades
+        #for cascade in range(args.cascades):
+        #    choose = np.array([np.random.uniform(0, 1, G.number_of_edges()) < args.p, ] * 2).transpose()
+        #    chosen_edges = np.extract(choose, G.edges())
+        #    chosen_edges = zip(chosen_edges[0::2], chosen_edges[1::2])
+        #    graphs[cascade].add_edges_from(chosen_edges)
+        logging.info('...done. Created %d cascades with %s infection probability.' % (len(graphs), args.p))
 
         logging.info('Defining an InfluenceMaximization problem...')
         newProblem = InfluenceMaximization(graphs, args.constraints)

@@ -7,17 +7,14 @@ import os
 
 if __name__ == "__main__":
 
+    logging.basicConfig(level = logging.INFO)
+    logging.info('Reading graph...')
     G = read_edgelist("soc-Epinions1.txt", comments='#', create_using=DiGraph(), nodetype=int)
     degrees = dict(list(G.out_degree(G.nodes())))
-    #print(degrees)
     descending_degrees = sorted(degrees.values(), reverse = True)
-    #print(descending_degrees)
     indices = sorted(range(1, len(degrees.values()) + 1), key = lambda k: degrees.values()[k - 1], reverse = True)
     top10000_indices = indices[:10001]
-    #print(len(top10000_indices))
     G = G.subgraph(top10000_indices)
-    #print(top10000.number_of_nodes())
-    #print(top10000.edges)
     numOfNodes = G.number_of_nodes()
     numOfEdges = G.number_of_edges()
     logging.info('...done. Created a directed graph with %d nodes and %d edges' % (numOfNodes, numOfEdges))
