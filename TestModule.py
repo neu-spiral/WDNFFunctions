@@ -6,6 +6,8 @@ from networkx.readwrite.edgelist import read_edgelist
 from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log
 import argparse
 import numpy as np
+import os
+import pickle
 import logging
 
 
@@ -13,7 +15,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Generate a random rewards dataset',
                                      formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default = 'IM', help = 'Type of the problem instance', choices = ['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default = 'soc-Epinions1.txt', help = 'Data input for the InfluenceMaximization problem')
+    parser.add_argument('--input', default = 'graphs_file', help = 'Data input for the InfluenceMaximization problem')
     parser.add_argument('--cascades', default = 1000, help = 'Number of cascades used in the Independent Cascade model')
     parser.add_argument('--p', default = 0.02, help = 'Infection probability')
     parser.add_argument('--rewardsInput', default = "rewards.txt", help = 'Input file that stores rewards')
@@ -54,22 +56,24 @@ if __name__ == "__main__":
 
 
     if args.problemType == 'IM':
-        logging.info('Reading edge list...')
-        G = read_edgelist(args.input, comments = '#', create_using = DiGraph, nodetype = int)
-        numOfNodes = G.number_of_nodes()
-        numOfEdges = G.number_of_edges()
-        logging.info('...done. Created a directed graph with %d nodes and %d edges' % (numOfNodes, numOfEdges))
+        logging.info('Reading edge lists...')
+        with open(args.input, "r") as f:
+            graphs = pickle.load(f)
+        logging.info('...just read %d edge list' % (len(graphs)))
+        #numOfNodes = G.number_of_nodes()
+        #numOfEdges = G.number_of_edges()
+        #logging.info('...done. Created a directed graph with %d nodes and %d edges' % (numOfNodes, numOfEdges))
 
-        logging.info('Creating cascades...')
-        newG = DiGraph()
-        newG.add_nodes_from(G.nodes())
-        graphs = [newG] * args.cascades
-        for cascade in range(args.cascades):
-            choose = np.array([np.random.uniform(0, 1, G.number_of_edges()) < args.p, ] * 2).transpose()
-            chosen_edges = np.extract(choose, G.edges())
-            chosen_edges = zip(chosen_edges[0::2], chosen_edges[1::2])
-            graphs[cascade].add_edges_from(chosen_edges)
-        logging.info('...done. Created %d cascades with %d infection probability.' % (args.cascades, args.p))
+        #logging.info('Creating cascades...')
+        ##newG = DiGraph()
+        #newG.add_nodes_from(G.nodes())
+        #graphs = [newG] * args.cascades
+        #for cascade in range(args.cascades):
+        #    choose = np.array([np.random.uniform(0, 1, G.number_of_edges()) < args.p, ] * 2).transpose()
+        #    chosen_edges = np.extract(choose, G.edges())
+        #    chosen_edges = zip(chosen_edges[0::2], chosen_edges[1::2])
+        #    graphs[cascade].add_edges_from(chosen_edges)
+        #logging.info('...done. Created %d cascades with %s infection probability.' % (len(graphs), args.p))
 
         logging.info('Defining an InfluenceMaximization problem...')
         newProblem = InfluenceMaximization(graphs, args.constraints)
