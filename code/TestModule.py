@@ -3,7 +3,8 @@ from networkx import Graph, DiGraph
 from networkx.algorithms import bipartite
 from networkx.convert import to_edgelist
 from networkx.readwrite.edgelist import read_edgelist
-from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log
+from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log, findDerivatives
+from wdnf import wdnf, taylor
 import argparse
 import numpy as np
 import os
@@ -23,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument('--typesInput', default = "types.txt", help = 'Input file that stores targeted partitions of the ground set')
     parser.add_argument('--constraints', default = 50, help = 'Constraints dictionary with {type:cardinality} pairs')
     parser.add_argument('--estimator', default = "sampler", help = 'Type of the estimator', choices = ['sampler', 'polynomial', 'samplerWithDependencies'])
-    parser.add_argument('--iterations', default = 1000, help = 'Number of iterations used in the Frank-Wolfe algorithm')
+    parser.add_argument('--iterations', default = 300, help = 'Number of iterations used in the Frank-Wolfe algorithm')
     parser.add_argument('--degree', default = 8, help = 'Degree of the polynomial estimator')
     parser.add_argument('--center', default = 0.0, help = 'The point around which Taylor approximation is calculated')
     parser.add_argument('--samples', default = 100, help = 'Number of samples used to calculate the sampler estimator')
@@ -98,15 +99,24 @@ if __name__ == "__main__":
 
 
     if args.problemType == 'IM':
-        objective = 0.0
         time_list = []
         obj_list = []
+        derivatives = findDerivatives(log, center, degree)
+        myTaylor = taylor(degree, derivatives, center)
+        final_wdnf = wdnf(dict(), -1)
+        for i in range(newProblem.instancesSize):
+            wdnfSoFar = wdnf(dict(), -1)
+            for wdnf_object in newProblem.wdnf_dict[i]:
+                wdnfSoFar += wdnf({(): 1}, -1) + (-1.0) * wdnf_object
+            my_wdnf = myTaylor.compose((1.0 / newProblem.graphSize) * wdnfSoFar + wdnf({(): 1}, -1))
+            final_wdnf += my_wdnf
+        final_wdnf = (1.0 / newProblem.instancesSize) * final_wdnf
+
         for item in track:
-            for graph in range(newProblem.instancesSize):
-                for node in newProblem.groundSet:
-                    objective += (1.0 / newProblem.instancesSize) * np.log1p((1.0 / newProblem.graphSize) (1 - newProblem.wdnf_dict[graph][node](track[1])))
-            time_list.append(i[0])
+            objective = final_wdnf(track[item][1])
+            time_list.append(track[item][0])
             obj_list.append(objective)
+
 
     timeOutput = output + "_time"
     f = open(timeOutput, "w")
