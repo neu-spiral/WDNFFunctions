@@ -1,8 +1,0 @@
-#!/bin/bash
-
-
-  #SBATCH --partition=ioannidis
-	
-  #SBATCH --mem=256Gb
-
-sbatch test_IM
