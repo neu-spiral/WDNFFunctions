@@ -8,10 +8,10 @@
 
 #SBATCH --partition=ioannidis
 
-#SBATCH --mem=256G
+#SBATCH --mem=256Gb
 
 #SBATCH --time=20:00:00
 
 #SBATCH --constraint=E5-2680v4@2.40GHz
 
-srun python TestModule.py --problemType IM --input graphs_file --estimator polynomial --iterations 1000 --degree $1 --center $2
+srun python code/TestModule.py --problemType IM --input datasets/smaller_graphs_file --estimator polynomial --degree $1 --center $2

@@ -16,14 +16,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Generate a random rewards dataset',
                                      formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default = 'IM', help = 'Type of the problem instance', choices = ['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default = 'smaller_graphs_file', help = 'Data input for the InfluenceMaximization problem')
+    parser.add_argument('--input', default = 'datasets/smaller_graphs_file', help = 'Data input for the InfluenceMaximization problem')
     parser.add_argument('--cascades', default = 1000, help = 'Number of cascades used in the Independent Cascade model')
     parser.add_argument('--p', default = 0.02, help = 'Infection probability')
     parser.add_argument('--rewardsInput', default = "rewards.txt", help = 'Input file that stores rewards')
     parser.add_argument('--partitionsInput', default = "givenPartitions.txt", help = 'Input file that stores partitions')
     parser.add_argument('--typesInput', default = "types.txt", help = 'Input file that stores targeted partitions of the ground set')
-    parser.add_argument('--constraints', default = 50, help = 'Constraints dictionary with {type:cardinality} pairs')
-    parser.add_argument('--estimator', default = "sampler", help = 'Type of the estimator', choices = ['sampler', 'polynomial', 'samplerWithDependencies'])
+    parser.add_argument('--constraints', default = 10, help = 'Constraints dictionary with {type:cardinality} pairs')
+    parser.add_argument('--estimator', default = "polynomial", help = 'Type of the estimator', choices = ['sampler', 'polynomial', 'samplerWithDependencies'])
     parser.add_argument('--iterations', default = 300, help = 'Number of iterations used in the Frank-Wolfe algorithm')
     parser.add_argument('--degree', default = 8, help = 'Degree of the polynomial estimator')
     parser.add_argument('--center', default = 0.0, help = 'The point around which Taylor approximation is calculated')
@@ -39,12 +39,12 @@ if __name__ == "__main__":
     #types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'} #{x_i: type} pairs
     #k_list = {'verb': 1, 'noun': 2}
 
-    rewards = eval(open(args.rewardsInput, 'r').read())
-    givenPartitions = eval(open(args.partitionsInput, 'r').read())
-    types = eval(open(args.typesInput, 'r').read())
-    k_list = args.constraints
 
     if args.problemType == 'DR':
+        rewards = eval(open(args.rewardsInput, 'r').read())
+        givenPartitions = eval(open(args.partitionsInput, 'r').read())
+        types = eval(open(args.typesInput, 'r').read())
+        k_list = args.constraints
         newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
 
 
@@ -79,19 +79,19 @@ if __name__ == "__main__":
         logging.info('Defining an InfluenceMaximization problem...')
         newProblem = InfluenceMaximization(graphs, args.constraints)
         logging.info('...done. %d seeds will be selected' % (args.constraints))
-        output = args.problemType + "_on_" + args.input + "_dataset_with" + args.constraints + "seeds_" + args.estimator + "estimator_" + args.iterations + "_FW"
+        output = args.problemType + "_on_smaller_Epinions_dataset_with" + str(args.constraints) + "seeds_" + args.estimator + "estimator_" + str(args.iterations) + "_FW"
 
 
     if args.estimator == 'polynomial':
         logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
-        y, track, bases = newProblem.PolynomialContinuousGreedy(args.center, args.degree, args.iterations)
-        output += "_" + args.degree + "th_degree_around_" + args.center
+        y, track, bases = newProblem.PolynomialContinuousGreedy(float(args.center), int(args.degree), int(args.iterations))
+        output += "_" + str(args.degree) + "th_degree_around_" + str(args.center)
 
 
     if args.estimator == 'sampler':
         logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
         y, track, bases = newProblem.SamplerContinuousGreedy(args.samples, args.iterations)
-        output += "_with_" + args.samples + "_samples"
+        output += "_with_" + str(args.samples) + "_samples"
 
 
     if args.estimator == 'samplerWithDependencies':
@@ -99,21 +99,14 @@ if __name__ == "__main__":
 
 
     if args.problemType == 'IM':
+        objective = 0.0
         time_list = []
         obj_list = []
-        derivatives = findDerivatives(log, center, degree)
-        myTaylor = taylor(degree, derivatives, center)
-        final_wdnf = wdnf(dict(), -1)
-        for i in range(newProblem.instancesSize):
-            wdnfSoFar = wdnf(dict(), -1)
-            for wdnf_object in newProblem.wdnf_dict[i]:
-                wdnfSoFar += wdnf({(): 1}, -1) + (-1.0) * wdnf_object
-            my_wdnf = myTaylor.compose((1.0 / newProblem.graphSize) * wdnfSoFar + wdnf({(): 1}, -1))
-            final_wdnf += my_wdnf
-        final_wdnf = (1.0 / newProblem.instancesSize) * final_wdnf
-
-        for item in track:
-            objective = final_wdnf(track[item][1])
+        for item in track.keys():
+            for graph in range(newProblem.instancesSize):
+                for node in newProblem.groundSet:
+                    objective += 1 - newProblem.wdnf_dict[graph][node](track[item][1])
+                objective += (1.0 / newProblem.instancesSize) * np.log1p((1.0 / newProblem.graphSize) * objective)
             time_list.append(track[item][0])
             obj_list.append(objective)
 
@@ -124,7 +117,7 @@ if __name__ == "__main__":
     f.close()
 
     objectiveOutput = output + "_utilities"
-    f = open(args.objectiveOutput, "w")
+    f = open(objectiveOutput, "w")
     f.write(str(obj_list))
     f.close()
         #print('(Sampler) Time elapsed: ' + str(j[0]) + '    Objective is: ' + str(objective) + '   Gradient is:  ' + str(j[2]))

@@ -231,14 +231,12 @@ class ContinuousGreedy():
         gamma = 1.0 / iterations
         y = x0.copy()
         start = time()
-        track = []
+        track = dict()
         bases = []
         for t in range(iterations):
             gradient = self.estimator.estimate(y)
             mk = self.linearSolver.solve(gradient) #finds maximum
-            #print(mk)
             try:
-                indices = set()
                 for value in mk.values(): #updates y
                     for i in value:
                         y[i] = y[i] + gamma
@@ -248,6 +246,6 @@ class ContinuousGreedy():
             if keepTrack or t == iterations - 1:
                 timePassed = time() - start
                 newY = y.copy()
-                track.append((timePassed, newY, gradient))
+                track[t] = (timePassed, newY)
             bases.append(mk)
         return y, track, bases

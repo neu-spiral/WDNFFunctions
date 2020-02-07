@@ -335,11 +335,11 @@ class InfluenceMaximization(Problem):
         for i in range(self.instancesSize):
             self.edges = graphs[i].edges() #edges are different for each graph
             P = dict()
-            wdnf_list = []
+            wdnf_list = dict()
             paths = nx.algorithms.dag.transitive_closure(graphs[i])
             for node1 in self.groundSet:
-                P[node1] = tuple(sorted([node1] + list(paths.predecessors(node1))))
-            wdnf_list.append(wdnf({P[node1]: 1}, -1))
+                P[node1] = tuple(sorted([node1] + list(paths.predecessors(node1)))) # P is {v, P_v} pairs
+                wdnf_list[node1] = wdnf({P[node1]: 1}, -1)
             #givenPartitions[i] = P.copy() #givenPartitions is a dictionary of (v: P_v) pairs where v is a node in graph and P_v is the set of all nodes having a (directed) path to v (in tuple format)
             wdnf_dict[i] = wdnf_list #prod(1 - x_u) for all u in P_v
         self.wdnf_dict = wdnf_dict
@@ -373,8 +373,8 @@ class InfluenceMaximization(Problem):
         final_wdnf = wdnf(dict(), -1)
         for i in range(self.instancesSize):
             wdnfSoFar = wdnf(dict(), -1)
-            for wdnf_object in self.wdnf_dict[i]:
-                wdnfSoFar += wdnf({(): 1}, -1) + (-1.0) * wdnf_object
+            for node in self.groundSet:
+                wdnfSoFar += wdnf({(): 1}, -1) + ((-1.0) * self.wdnf_dict[i][node])
             my_wdnf = myTaylor.compose((1.0 / self.graphSize) * wdnfSoFar + wdnf({(): 1}, -1))
             final_wdnf += my_wdnf
         return PolynomialEstimator((1.0 / self.instancesSize) * final_wdnf)
