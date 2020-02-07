@@ -9,7 +9,7 @@ from time import time
 # import os
 
 
-def generateSamples(y, dependencies = {}):
+def generateSamples(y, dependencies={}):
     """ Generates random samples for x
     """
     samples = dict.fromkeys(y.iterkeys(), 0.0)
@@ -251,8 +251,3 @@ class ContinuousGreedy():
                 track.append((timePassed, newY, gradient))
             bases.append(mk)
         return y, track, bases
-
-
-
-#if __name__ == "__main__":
-    #Compare gradients
