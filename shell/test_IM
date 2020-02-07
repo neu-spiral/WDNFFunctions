@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#SBATCH --output=slurm_logs/testingIM%j.out
+
+#SBATCH --error=slurm_logs/testingIM%j.err
+
+#SBATCH --job-name=testIM
+
+#SBATCH --partition=ioannidis
+
+#SBATCH --mem=256G
+
+#SBATCH --time=20:00:00
+
+#SBATCH --constraint=E5-2680v4@2.40GHz
+
+srun python TestModule.py --problemType IM --input graphs_file --estimator polynomial --iterations 1000 --degree $1 --center $2

@@ -1,0 +1,6 @@
+INFO:root:Reading edge lists...
+INFO:root:...just read 1000 edge list
+INFO:root:Defining an InfluenceMaximization problem...
+srun: Job step aborted: Waiting up to 92 seconds for job step to finish.
+slurmstepd: error: *** JOB 9370801 ON c3127 CANCELLED AT 2020-02-07T09:03:59 ***
+slurmstepd: error: *** STEP 9370801.0 ON c3127 CANCELLED AT 2020-02-07T09:03:59 ***
