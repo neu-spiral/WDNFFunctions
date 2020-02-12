@@ -1,10 +1,11 @@
 from ContinuousGreedy import LinearSolver, PartitionMatroidSolver, SamplerEstimator, PolynomialEstimator, ContinuousGreedy
+from helpers import load
 from networkx import Graph, DiGraph
 from networkx.algorithms import bipartite
 from networkx.convert import to_edgelist
 from networkx.readwrite.edgelist import read_edgelist
 from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log, findDerivatives
-from wdnf import wdnf, taylor
+from wdnf import WDNF, taylor
 import argparse
 import numpy as np
 import os
@@ -15,24 +16,28 @@ import logging
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Generate a random rewards dataset',
                                      formatter_class = argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--problemType', default = 'IM', help = 'Type of the problem instance', choices = ['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default = 'datasets/smaller_graphs_file', help = 'Data input for the InfluenceMaximization problem')
-    parser.add_argument('--cascades', default = 1000, help = 'Number of cascades used in the Independent Cascade model')
-    parser.add_argument('--p', default = 0.02, help = 'Infection probability')
+    parser.add_argument('--problemType', default = 'IM', type = str, help = 'Type of the problem instance', choices = ['DR', 'QS', 'FL', 'IM'])
+    parser.add_argument('--input', default = 'datasets/smaller_graphs_file', type = str, help = 'Data input for the InfluenceMaximization problem')
+    parser.add_argument('--cascades', default = 1000, type = int, help = 'Number of cascades used in the Independent Cascade model')
+    parser.add_argument('--p', default = 0.02, type = float, help = 'Infection probability')
     parser.add_argument('--rewardsInput', default = "rewards.txt", help = 'Input file that stores rewards')
     parser.add_argument('--partitionsInput', default = "givenPartitions.txt", help = 'Input file that stores partitions')
     parser.add_argument('--typesInput', default = "types.txt", help = 'Input file that stores targeted partitions of the ground set')
-    parser.add_argument('--constraints', default = 10, help = 'Constraints dictionary with {type:cardinality} pairs')
-    parser.add_argument('--estimator', default = "polynomial", help = 'Type of the estimator', choices = ['sampler', 'polynomial', 'samplerWithDependencies'])
-    parser.add_argument('--iterations', default = 300, help = 'Number of iterations used in the Frank-Wolfe algorithm')
-    parser.add_argument('--degree', default = 8, help = 'Degree of the polynomial estimator')
-    parser.add_argument('--center', default = 0.0, help = 'The point around which Taylor approximation is calculated')
-    parser.add_argument('--samples', default = 100, help = 'Number of samples used to calculate the sampler estimator')
+    parser.add_argument('--constraints', default = 1, type = int, help = 'Constraints dictionary with {type:cardinality} pairs')
+    parser.add_argument('--estimator', default = "sampler", type = str, help = 'Type of the estimator', choices = ['sampler', 'polynomial', 'samplerWithDependencies'])
+    parser.add_argument('--iterations', default = 1000, type = int, help = 'Number of iterations used in the Frank-Wolfe algorithm')
+    parser.add_argument('--degree', default = 8, type = int, help = 'Degree of the polynomial estimator')
+    parser.add_argument('--center', default = 0.0, type = float, help = 'The point around which Taylor approximation is calculated')
+    parser.add_argument('--samples', default = 500, type = int, help = 'Number of samples used to calculate the sampler estimator')
     #parser.add_argument('--timeOutput', default = "sampler_time.txt", help = 'File in which time of each iteration is stored')
     #parser.add_argument('--objectiveOutput', default = "sampler_obj.txt", help = 'File in which objective at each iteration is stored')
     args = parser.parse_args()
 
     logging.basicConfig(level = logging.INFO)
+    directory_output = "results/continuous_greedy/"
+    if not os.path.exists(directory_output):
+        os.makedirs(directory_output)
+    logging.info('...output directory is created...')
 
     #rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.6, 5: 0.5, 6: 0.4} #{x_i: r_i} pairs
     #givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)} #{P_i: (x_j)} pairs where x_j in P_i
@@ -58,8 +63,7 @@ if __name__ == "__main__":
 
     if args.problemType == 'IM':
         logging.info('Reading edge lists...')
-        with open(args.input, "r") as f:
-            graphs = pickle.load(f)
+        graphs = load(args.input)
         logging.info('...just read %d edge list' % (len(graphs)))
         #numOfNodes = G.number_of_nodes()
         #numOfEdges = G.number_of_edges()
@@ -79,7 +83,7 @@ if __name__ == "__main__":
         logging.info('Defining an InfluenceMaximization problem...')
         newProblem = InfluenceMaximization(graphs, args.constraints)
         logging.info('...done. %d seeds will be selected' % (args.constraints))
-        output = args.problemType + "_on_smaller_Epinions_dataset_with" + str(args.constraints) + "seeds_" + args.estimator + "estimator_" + str(args.iterations) + "_FW"
+        output = directory_output + args.problemType + "_Epinions100_" + str(args.constraints) + "_seeds_" + args.estimator + "_" + str(args.iterations) + "_FW"
 
 
     if args.estimator == 'polynomial':
@@ -91,35 +95,36 @@ if __name__ == "__main__":
     if args.estimator == 'sampler':
         logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
         y, track, bases = newProblem.SamplerContinuousGreedy(args.samples, args.iterations)
-        output += "_with_" + str(args.samples) + "_samples"
+        output += "_" + str(args.samples) + "samples"
+        save(output, (track[args.iterations - 1][0], newProblem.utility_function(y)))
 
 
     if args.estimator == 'samplerWithDependencies':
         pass
 
 
-    if args.problemType == 'IM':
-        objective = 0.0
-        time_list = []
-        obj_list = []
-        for item in track.keys():
-            for graph in range(newProblem.instancesSize):
-                for node in newProblem.groundSet:
-                    objective += 1 - newProblem.wdnf_dict[graph][node](track[item][1])
-                objective += (1.0 / newProblem.instancesSize) * np.log1p((1.0 / newProblem.graphSize) * objective)
-            time_list.append(track[item][0])
-            obj_list.append(objective)
+    #if args.problemType == 'IM':
+    #    objective = 0.0
+    #    time_list = []
+    #    obj_list = []
+    #    for item in track.keys():
+    #        for graph in range(newProblem.instancesSize):
+    #            for node in newProblem.groundSet:
+    #                objective += 1 - newProblem.wdnf_dict[graph][node](track[item][1])
+    #            objective += (1.0 / newProblem.instancesSize) * np.log1p((1.0 / newProblem.graphSize) * objective)
+    #        time_list.append(track[item][0])
+    #        obj_list.append(objective)
 
 
-    timeOutput = output + "_time"
-    f = open(timeOutput, "w")
-    f.write(str(time_list))
-    f.close()
+    #timeOutput = output + "_time"
+    #f = open(timeOutput, "w")
+    #f.write(str(time_list))
+    #f.close()
 
-    objectiveOutput = output + "_utilities"
-    f = open(objectiveOutput, "w")
-    f.write(str(obj_list))
-    f.close()
+    #objectiveOutput = output + "_utilities"
+    #f = open(objectiveOutput, "w")
+    #f.write(str(obj_list))
+    #f.close()
         #print('(Sampler) Time elapsed: ' + str(j[0]) + '    Objective is: ' + str(objective) + '   Gradient is:  ' + str(j[2]))
 
     #plt.plot(time_list1, obj_list1, 'r^', time_list2, obj_list2, 'g^')

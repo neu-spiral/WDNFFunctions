@@ -3,11 +3,12 @@ from ContinuousGreedy import LinearSolver, UniformMatroidSolver, PartitionMatroi
 from networkx import Graph, DiGraph
 from networkx.algorithms import bipartite
 from time import time
-from wdnf import wdnf, poly, taylor
+from wdnf import WDNF, poly, taylor
 import argparse
 import math
 import networkx as nx
 import numpy as np
+import sys
 #import matplotlib.pyplot as plt
 
 
@@ -74,7 +75,7 @@ def findDerivatives(type, center, degree):
 
 
 def evaluateAll(taylor_instance, wdnf_list):
-    my_wdnf = wdnf(dict(), wdnf_list[0].sign)
+    my_wdnf = WDNF(dict(), wdnf_list[0].sign)
     for wdnf_instance in wdnf_list:
         my_wdnf += taylor_instance.compose(wdnf_instance)
     return my_wdnf
@@ -160,64 +161,58 @@ class Problem(object): #For Python 3, replace object with ABCMeta
     """
     __metaclass__ = ABCMeta #Comment out this line for Python 3
 
-
     @abstractmethod
     def __init__(self):
         """
         """
-        pass
+        self.problemSize = 0
+        self.groundSet = set()
+        self.utility_function()
 
+    def utility_function(self, y={}):
+        pass
 
     def getSolver(self):
         """
         """
         pass
 
-
     def func(self):
         """
         """
         pass
 
-
     def getSamplerEstimator(self, numOfSamples):
         """
         """
-        return SamplerEstimator(self.func, numOfSamples)
-
+        return SamplerEstimator(self.utility_function, numOfSamples)
 
     def getPolynomialEstimator(self, center, degree):
         """
         """
         pass
 
-
     def getInitialPoint(self):
         """
         """
         pass
 
-
     def SamplerContinuousGreedy(self, numOfSamples, iterations):
         """
         """
         newCG = ContinuousGreedy(self.getSolver(), self.getSamplerEstimator(numOfSamples), self.getInitialPoint())
-        return newCG.FW(iterations, True)
-
+        return newCG.fw(iterations, False)
 
     def PolynomialContinuousGreedy(self, center, degree, iterations):
         """
         """
         newCG = ContinuousGreedy(self.getSolver(), self.getPolynomialEstimator(center, degree), self.getInitialPoint())
-        return newCG.FW(iterations, True)
-
-
+        return newCG.fw(iterations, False)
 
 
 class DiversityReward(Problem):
     """
     """
-
 
     def __init__(self, rewards, givenPartitions, fun, types, k_list):
         """ rewards is a dictionary containing {word: reward} pairs,
@@ -242,6 +237,12 @@ class DiversityReward(Problem):
         self.partitionedSet = partitionedSet
         self.fun = fun
         self.k_list = k_list
+        #self.utility_function()
+        self.problem_size = len(rewards) ####revise
+
+
+    def utility_function(self):
+        pass
 
 
     def getSolver(self):
@@ -287,6 +288,10 @@ class QueueSize(Problem):
         pass
 
 
+    def utility_function(self):
+        pass
+
+
     def getSolver(self):
         """
         """
@@ -326,7 +331,7 @@ class InfluenceMaximization(Problem):
         """
         #self.graphs = graphs
         self.groundSet = set(graphs[0].nodes()) #all graphs share the same set of nodes
-        self.graphSize = graphs[0].number_of_nodes() #|V|
+        self.problemSize = graphs[0].number_of_nodes() #|V|
         self.instancesSize = len(graphs) #|G|
         self.constraints = constraints #number of seeds aka k
         self.targetPartitions = targetPartitions
@@ -336,13 +341,29 @@ class InfluenceMaximization(Problem):
             self.edges = graphs[i].edges() #edges are different for each graph
             P = dict()
             wdnf_list = dict()
+            dependencies = set()
             paths = nx.algorithms.dag.transitive_closure(graphs[i])
-            for node1 in self.groundSet:
-                P[node1] = tuple(sorted([node1] + list(paths.predecessors(node1)))) # P is {v, P_v} pairs
-                wdnf_list[node1] = wdnf({P[node1]: 1}, -1)
+            wdnfSoFar = WDNF(dict(), -1)
+            for node in self.groundSet:
+                P[node] = tuple(sorted([node] + list(paths.predecessors(node)))) # P is {v, P_v} pairs
+                #wdnf_list[node1] = WDNF({P[node1]: 1}, -1)
+                wdnfSoFar += (1.0 / self.problemSize) * (WDNF({(): 1.0}, -1) + ((-1.0) * WDNF({P[node]: 1.0}, -1)))
+                #sys.stderr.write("wndfSoFar is: " + str(wdnfSoFar.coefficients))
             #givenPartitions[i] = P.copy() #givenPartitions is a dictionary of (v: P_v) pairs where v is a node in graph and P_v is the set of all nodes having a (directed) path to v (in tuple format)
-            wdnf_dict[i] = wdnf_list #prod(1 - x_u) for all u in P_v
+            wdnf_dict[i] = wdnfSoFar #prod(1 - x_u) for all u in P_v
+            dependencies = dependencies.union(wdnfSoFar.find_dependencies())
         self.wdnf_dict = wdnf_dict
+        #self.utility_function()
+        self.dependencies = dependencies
+
+
+    def utility_function(self, y):
+        """
+        :param y:
+        :return:
+        """
+        objective = [(1.0 / self.instancesSize) * np.log1p(self.wdnf_dict[graph](y)) for graph in range(self.instancesSize)]
+        return sum(objective)
 
 
     def getSolver(self):
@@ -355,14 +376,14 @@ class InfluenceMaximization(Problem):
         return solver
 
 
-    def func(self, x):
-        output = 0.0
-        for i in range(self.instancesSize):
-            sum = 0.0
-            for node in self.groundSet:
-                sum += 1 - self.wdnf_dict[i][node](x)
-            output += np.log1p(sum / self.graphSize)
-        return output / (self.instancesSize * 1.0)
+    #def func(self, x):
+    #    output = 0.0
+    #    for i in range(self.instancesSize):
+    #        sum = 0.0
+    #        for node in self.groundSet:
+    #            sum += 1.0 - self.wdnf_dict[i][node](x)
+    #        output += np.log1p(sum / self.problemSize)
+    #    return output / (self.instancesSize * 1.0)
 
 
     def getPolynomialEstimator(self, center, degree):
@@ -370,12 +391,12 @@ class InfluenceMaximization(Problem):
         """
         derivatives = findDerivatives(log, center, degree)
         myTaylor = taylor(degree, derivatives, center)
-        final_wdnf = wdnf(dict(), -1)
+        final_wdnf = WDNF(dict(), -1)
         for i in range(self.instancesSize):
-            wdnfSoFar = wdnf(dict(), -1)
+            wdnfSoFar = WDNF(dict(), -1)
             for node in self.groundSet:
-                wdnfSoFar += wdnf({(): 1}, -1) + ((-1.0) * self.wdnf_dict[i][node])
-            my_wdnf = myTaylor.compose((1.0 / self.graphSize) * wdnfSoFar + wdnf({(): 1}, -1))
+                wdnfSoFar += WDNF({(): 1.0}, -1) + ((-1.0) * self.wdnf_dict[i][node]) ###edit here
+            my_wdnf = myTaylor.compose((1.0 / self.problemSize) * wdnfSoFar + WDNF({(): 1.0}, -1))
             final_wdnf += my_wdnf
         return PolynomialEstimator((1.0 / self.instancesSize) * final_wdnf)
 
@@ -405,14 +426,18 @@ class FacilityLocation(Problem):
         for y in self.Y:
             weights = {nodeX : B.get_edge_data(nodeX, y)['weight'] for nodeX in self.X}
             weights[len(self.X) + 1] = 0.0
-            wdnfSoFar = wdnf(dict(), -1)
+            wdnfSoFar = WDNF(dict(), -1)
             descending_weights = sorted(weights.values(), reverse = True)
             indices = sorted(range(len(weights.values())), key = lambda k: weights.values()[k], reverse = True)
             for i in range(len(self.X)):
                 index = tuple(index + 1 for index in indices[:(i+1)])
-                wdnfSoFar += (descending_weights[i] - descending_weights[i + 1]) * (wdnf({():1}, -1) + (-1.0) * wdnf({index: 1}, -1))
+                wdnfSoFar += (descending_weights[i] - descending_weights[i + 1]) * (WDNF({(): 1.0}, -1) + (-1.0) * WDNF({index: 1.0}, -1))
             wdnf_dict[y] = wdnfSoFar
         self.wdnf_dict = wdnf_dict
+
+
+    def utility_function(self):
+        pass
 
 
     def getSolver(self):
@@ -436,7 +461,7 @@ class FacilityLocation(Problem):
         """
         derivatives = findDerivatives(log, center, degree)
         myTaylor = taylor(degree, derivatives, center)
-        wdnfSoFar = wdnf(dict(), -1)
+        wdnfSoFar = WDNF(dict(), -1)
         for y in self.Y:
             wdnfSoFar += myTaylor.compose(self.wdnf_dict[y])
         my_wdnf = (1.0 / self.size) * wdnfSoFar

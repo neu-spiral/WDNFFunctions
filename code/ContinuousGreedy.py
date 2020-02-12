@@ -1,133 +1,105 @@
-import numpy as np
-#import itertools
-from abc import ABCMeta, abstractmethod #ABCMeta works with Python 2, use ABC for Python 3
+from abc import ABCMeta, abstractmethod  # ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
-from wdnf import wdnf, poly, taylor
 from time import time
-# from helpers import write
-# import argparse
-# import os
+import logging
+import numpy as np
+# import sys
 
 
-def generateSamples(y, dependencies={}):
-    """ Generates random samples for x
+def generate_samples(y, dependencies={}):
+    """
+    Generates random samples for the input vector x. Vector elements are binary.
+    If dependencies dictionary is non-empty, saves time by only generating
+    samples for dependant terms.
     """
     samples = dict.fromkeys(y.iterkeys(), 0.0)
     p = dict.fromkeys(y.iterkeys(), np.random.rand())
     if dependencies != {}:
-        for element in dependencies.keys():
-            if y[element] > p[element]:
-                samples[element] = 1
+        indices = [element for element in dependencies.keys() if y[element] > p[element]]
+        samples.update(dict.fromkeys(indices, 1))
     else:
-        for i in y.keys():
-            if y[i] > p[i]:
-                samples[i] = 1
+        indices = [key for key in y.keys() if y[key] > p[key]]
+        samples.update(dict.fromkeys(indices, 1))
     return samples
 
 
-
-
-class GradientEstimator(object): #For Python 3, replace object with ABCMeta
-    """Abstract class to parent classes of different gradient estimators.
+class GradientEstimator(object):  # For Python 3, replace object with ABCMeta
     """
-    __metaclass__ = ABCMeta #Comment out this line for Python 3
-
+    Abstract class to parent classes of different gradient estimators.
+    """
+    __metaclass__ = ABCMeta  # Comment out this line for Python 3
 
     @abstractmethod
     def __init__(self):
         """
+        Initializes estimator objects.
         """
         pass
 
-
     def estimate(self, y):
+        """
+        Estimate function to be called in the ContinuousGreedy.
+        :param y: a dictionary denoting the fractional vector
+        """
         pass
-
-
 
 
 class SamplerEstimator(GradientEstimator):
     """
+    Calculates the expectation by evaluating the given function at randomly
+    generated samples and taking the average of them.
     """
 
-
-    def __init__(self, func, numOfSamples):
-        """func is either log or queueSize.
+    def __init__(self, utility_function, numOfSamples, dependencies={}):
         """
-        self.func = func
+        utility_function is the function whose expectation is going to be estimated and
+        numOfSamples is an integer. If dependencies is a non-empty dictionary,
+        it contains the dependencies as {element : term} pairs.
+        """
+        super(SamplerEstimator, self).__init__()
+        self.utility_function = utility_function
         self.numOfSamples = numOfSamples
-
+        self.dependencies = dependencies
 
     def estimate(self, y):
-        """y is a dictionary of {item: value} pairs.
+        """
+        Estimates the function in self using sampling. y is a dictionary of
+        {item: value} pairs representing the fractional vector.
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
         for j in range(self.numOfSamples):
-            x = generateSamples(y).copy()
+            logging.info('Generating ' + str(j + 1) + '. sample... \n')
+            x = generate_samples(y).copy()
             for i in y.keys():
                 x1 = x.copy()
                 x1[i] = 1
                 x0 = x.copy()
                 x0[i] = 0
-                grad[i] += self.func(x1) - self.func(x0)
+                grad[i] += self.utility_function(x1) - self.utility_function(x0)
         grad = {key: grad[key] / self.numOfSamples for key in grad.keys()}
         return grad
 
 
-
-
-class SamplerEstimatorWithDependencies(GradientEstimator):
-    """
-    """
-
-
-    def __init__(self, dependencies, func, numOfSamples):
-        """func is either log or queueSize.
-        """
-        self.dependencies = dependencies
-        self.func = func
-        self.numOfSamples = numOfSamples
-
-
-    def estimate(self, y):
-        """
-        """
-        grad = dict.fromkeys(y.iterkeys(), 0.0)
-        for j in range(self.numOfSamples):
-            x = generateSamples(y, self.dependencies)
-            for i in range(self.numOfSamples):
-                x1 = x
-                x1[i] = 1
-                x0 = x
-                x0[i] = 0
-                grad[i] += self.func(x1) - self.func(x0)
-        grad = grad / self.numOfSamples
-        return grad
-
-
-
-
 class PolynomialEstimator(GradientEstimator):
     """
+    Calculates  the expectation by linearizing the function with Taylor
+    approximation.
     """
 
-
     def __init__(self, my_wdnf):
-        """my_wdnf is a wdnf object
         """
+        my_wdnf is the resulting wdnf object after compose.
+        """
+        super(PolynomialEstimator, self).__init__()
         self.my_wdnf = my_wdnf
 
-
     def estimate(self, y):
+        """
+        Estimates the expectation by evaluating the resulting wdnf.
+        """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
-        dependencies = self.my_wdnf.findDependencies()
-        #print(dependencies)
-        #grad = dict.fromkeys(dependencies.values(), 0.0)
-        #print(grad)
+        dependencies = self.my_wdnf.find_dependencies()
         for key in dependencies.keys():
-            #print(key)
-            #for i in dependencies[key]:
-            #print(key)
             y1 = y.copy()
             y1[key] = 1
             grad1 = self.my_wdnf(y1)
@@ -136,116 +108,128 @@ class PolynomialEstimator(GradientEstimator):
             y0[key] = 0
             grad0 = self.my_wdnf(y0)
             delta = grad1 - grad0
-            #print(delta)
             grad[key] = delta
         return grad
 
 
-
-
-class LinearSolver(object): #For Python 3, replace object with ABCMeta
-    """Abstract class to parent solver classes with different constraints.
+class LinearSolver(object):  # For Python 3, replace object with ABCMeta
     """
-    __metaclass__ = ABCMeta #Comment this line for Python 3
-
+    Abstract class to parent solver classes with different constraints.
+    """
+    __metaclass__ = ABCMeta  # Comment this line for Python 3
 
     @abstractmethod
     def __init__(self, sets, constraints):
         pass
 
-
     def solve(self, gradient):
-        """Abstract method to solve submodular maximization problems
+        """
+        Abstract method to solve submodular maximization problems
         according to given constraints where gradient is a GradientEstimator
         object.
         """
         pass
 
 
-
-
 class UniformMatroidSolver(LinearSolver):
     """
+    Given a set of elements and a cardinality constraint, creates a LinearSolver
+    object. Has a solve method to-be-called in the ContinuousGreedy algorithm.
     """
 
-
-    def __init__(self, groundSet, k):
+    def __init__(self, ground_set, k):
         """
+        groundSet is a set of elements and k is an integer denoting the
+        cardinality.
         """
-        self.groundSet = groundSet
+        super(LinearSolver, self).__init__()
+        self.ground_set = ground_set
         self.k = k
 
-
     def solve(self, gradient):
         """
+        Given a gradient dictionary with {element : partial derivative} pairs,
+        returns a set of k elements from the groundSet with the maximum partial
+        derivatives.
         """
-        return set(nlargest(self.k, gradient, key = gradient.get))
+        return set(nlargest(self.k, gradient, key=gradient.get))
 
 
-
-
-class PartitionMatroidSolver(LinearSolver): #tested for distinct partititons, works -should be revised for overlapping partitions
+class PartitionMatroidSolver(LinearSolver):
     """
+    Given disjoint partitions of a ground set and cardinality constraints,
+    creates a LinearSolver object. Has a solve method to-be-called in the
+    ContinuousGreedy algorithm.
     """
 
-
-    def __init__(self, partitionedSet, k_list):
-        """partitionedSet is a dictionary of sets, k_list is a
-        dictionary of cardinalities.
+    def __init__(self, partitioned_set, k_list):
         """
-        self.partitionedSet = partitionedSet
+        partitionedSet is a dictionary of sets with {partitionName : set} pairs,
+        k_list is a dictionary of cardinalities with {partitionName : int} pairs.
+        """
+        super(LinearSolver, self).__init__()
+        self.partitioned_set = partitioned_set
         self.k_list = k_list
 
-
     def solve(self, gradient):
         """
+        Given a gradient dictionary with {element : partial derivative} pairs,
+        returns a dictionary with {partitionName : set} pairs where each set has
+        the maximum k elements from that partition in the partitionedSet with the
+        maximum partial derivatives.
         """
         result = {}
-        selection = []
-        for partition in self.partitionedSet:
-            UniformSolver = UniformMatroidSolver(self.partitionedSet[partition], self.k_list[partition])
-            for key in self.partitionedSet[partition]:
-                filtered_gradient = {key: gradient[key] for key in self.partitionedSet[partition]}
-            selection = UniformSolver.solve(filtered_gradient)
+        for partition in self.partitioned_set:
+            uniform_solver = UniformMatroidSolver(self.partitioned_set[partition], self.k_list[partition])
+            filtered_gradient = {key: gradient[key] for key in self.partitioned_set[partition]}
+            selection = uniform_solver.solve(filtered_gradient)
             result[partition] = selection
+
         return result
 
 
-
-
-class ContinuousGreedy():
+class ContinuousGreedy:
     """
+    Given LinearSolver and GradientEstimator objects with a initialPoint
+    dictionary (fractional vector), creates a ContinuousGreedy object.
     """
 
-
-    def __init__(self, linearSolver, estimator, initialPoint):
+    def __init__(self, linear_solver, estimator, initial_point):
         """
+        linear_solver is a LinearSolver object, estimator is a GradientEstimator
+        object and the initialPoint is a dictionary with {element: value} pairs
+        where value is in [0, 1].
         """
-        self.linearSolver = linearSolver
+        self.linear_solver = linear_solver
         self.estimator = estimator
-        self.initialPoint = initialPoint
+        self.initial_point = initial_point
 
-
-    def FW(self, iterations, keepTrack = False):
-        x0 = self.initialPoint.copy()
+    def fw(self, iterations, keep_track=False):
+        """
+        iterations is an integer denoting the number of iterations in the
+        Frank-Wolfe algorithm.
+        """
+        x0 = self.initial_point.copy()
         gamma = 1.0 / iterations
         y = x0.copy()
         start = time()
         track = dict()
         bases = []
+        logging.info('Starting Frank-Wolfe...')
         for t in range(iterations):
+            logging.info('iteration #' + str(t) + "\n")
             gradient = self.estimator.estimate(y)
-            mk = self.linearSolver.solve(gradient) #finds maximum
+            mk = self.linear_solver.solve(gradient)  # finds maximum
             try:
-                for value in mk.values(): #updates y
+                for value in mk.values():  # updates y
                     for i in value:
-                        y[i] = y[i] + gamma
+                        y[i] += gamma
             except AttributeError:
                 for i in mk:
-                    y[i] = y[i] + gamma
-            if keepTrack or t == iterations - 1:
-                timePassed = time() - start
-                newY = y.copy()
-                track[t] = (timePassed, newY)
+                    y[i] += gamma
+            if keep_track or t == iterations - 1:
+                time_passed = time() - start
+                new_y = y.copy()
+                track[t] = (time_passed, new_y)
             bases.append(mk)
         return y, track, bases

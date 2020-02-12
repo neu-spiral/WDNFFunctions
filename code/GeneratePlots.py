@@ -7,25 +7,36 @@ import numpy as np
 from matplotlib.dates import date2num
 import datetime
 import os
+import sys
+from helpers import load
 
 
 
 if __name__ == "__main__":
 
-    time_ax = eval(open("results/IM_on_smaller_Epinions_dataset_with10seeds_polynomialestimator_300_FW_2th_degree_around_0.0_time", "r").read())
-    utility_ax = eval(open("results/IM_on_smaller_Epinions_dataset_with10seeds_polynomialestimator_300_FW_2th_degree_around_0.0_utilities", "r").read())
+    #time_ax = eval(open("results/IM_on_smaller_Epinions_dataset_with10seeds_polynomialestimator_300_FW_2th_degree_around_0.0_time", "r").read())
+    #utility_ax = eval(open("results/IM_on_smaller_Epinions_dataset_with10seeds_polynomialestimator_300_FW_2th_degree_around_0.0_utilities", "r").read())
+    greedy_track = load("results/greedy/IM_epinions100")
+    sys.stderr.write("greedy track is: " + str(greedy_track))
+    utility = [item[1][1] for item in greedy_track.items()]
+    cardinality = [item[0] for item in greedy_track.items()]
+    plt.plot(cardinality, utility, label = 'Greedy Algorithm')
+    plt.xlabel('Cardinality')
+    plt.ylabel('Utility')
+    plt.legend()
+    plt.savefig('results/plots/GreedyAlgorithmEpinions100IM.png')
     #sampler_obj = eval(open('sampler_obj.txt', 'r').read())
     #iterations1 = list(range(1, len(sampler_obj) + 1))
 
     #poly_obj = eval(open('poly_obj.txt', 'r').read())
     #iterations2 = list(range(1, len(poly_obj) + 1))
 
-    plt.plot(time_ax, utility_ax, label = '2nd degree Polynomial Estimator around 0.0')
+    #plt.plot(time_ax, utility_ax, label = '2nd degree Polynomial Estimator around 0.0')
     #plt.plot(iterations1, sampler_obj, 'g^', label = 'Sampler Estimator')
-    plt.xlabel('Time')
-    plt.ylabel('Utility')
-    plt.legend()
-    plt.savefig('results/plots/2ndDegreePolynomialEstimatorAround00.png')
+    #plt.xlabel('Time')
+    #plt.ylabel('Utility')
+    #plt.legend()
+    #plt.savefig('results/plots/2ndDegreePolynomialEstimatorAround00.png')
 
     #sampler_time = np.log(eval(open('sampler_time.txt', 'r').read()))
     #poly_time = np.log(eval(open('poly_time.txt', 'r').read()))
