@@ -184,7 +184,6 @@ class PartitionMatroidSolver(LinearSolver):
             filtered_gradient = {key: gradient[key] for key in self.partitioned_set[partition]}
             selection = uniform_solver.solve(filtered_gradient)
             result[partition] = selection
-
         return result
 
 
