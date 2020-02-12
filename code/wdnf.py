@@ -1,15 +1,15 @@
 import math
 import numpy as np
 from scipy.misc import comb
-from decimal import *
 import sys
 
 
 def merge(t1, t2):
-    """Merge two tuples (in this context, keys) into a sorted tuple by taking
+    """
+    Merge two tuples (in this context, keys) into a sorted tuple by taking
     the set union of them.
     """
-    if type(t1) is int and type(t2) is int and t1 == t2:  # len({t1}.union({t2})) == 1:
+    if type(t1) is int and type(t2) is int and t1 == t2:
         key = t1
     elif type(t1) is int and type(t2) is int and t1 != t2:
         key = tuple(sorted([t1, t2]))
@@ -22,14 +22,16 @@ def merge(t1, t2):
     return key
 
 
-class WDNF():
-    """A class implementing a polynomial in Weighted Disjunctive Normal Form
+class WDNF:
+    """
+    A class implementing a polynomial in Weighted Disjunctive Normal Form
     (WDNF) consisting of monomials with (a) negative or positive literals and
     (b) integer terms.
     """
 
     def __init__(self, coefficients={}, sign=-1):
-        """ Coefficients is a dictionary containing tuples with indexes of the
+        """
+        Coefficients is a dictionary containing tuples with indexes of the
         set elements as keys and coefficients as values. Sign denotes whether
         the WDNF formed with negative literals or positive literals.
         e.g: WDNF({(1, 3): 2.0, (2, 4): 10.0, (3, 4): 3.0}) =
@@ -59,7 +61,8 @@ class WDNF():
         return dependencies
 
     def __call__(self, x):
-        """ Given a dictionary x, evaluate WDNF(x) at the values x.
+        """
+        Given a dictionary x, evaluate WDNF(x) at the values x.
         """
         sum_so_far = 0.0
         for key in self.coefficients:
@@ -74,7 +77,8 @@ class WDNF():
         return sum_so_far
 
     def __add__(self, other):
-        """ Add two polynomials in WDNF and return the resulting WDNF
+        """
+        Add two polynomials in WDNF and return the resulting WDNF
         """
         assert self.sign == other.sign, 'Two WDNF polynomials of different signs cannot be added!'
         new_coefficients = self.coefficients.copy()  # empty dict for empty WDNF
@@ -135,7 +139,7 @@ class WDNF():
         return func(self(x))
 
 
-class poly():
+class Poly:
     """A class for defining univariate polynomials with the largest degree and
     the coefficients list of size (largest degree + 1) where coefficients are
     stored as [coef_0 coef_1 ... coef_n]
@@ -150,23 +154,23 @@ class poly():
         self.degree = degree
 
     def __add__(self, other):
-        """Adds two univariate polynomials and returns the sum as another poly
+        """Adds two univariate polynomials and returns the sum as another Poly
         object.
         """
         if self.degree >= other.degree:
             poly_coef = list(np.array(self.poly_coef) + np.array(other.poly_coef + [0] * (self.degree - other.degree)))
         else:
             return other + self
-        return poly(self.degree, poly_coef)
+        return Poly(self.degree, poly_coef)
 
     def __sub__(self, other):
         """Subtracts two univariate polynomials and returns the difference as
-        another poly object.
+        another Poly object.
         """
         return self + ((-1) * other)
 
     def __mul__(self, other):
-        """Multiplies two polynomials and return the product as another poly
+        """Multiplies two polynomials and return the product as another Poly
         object.
         """
         degree = self.degree + other.degree
@@ -174,24 +178,24 @@ class poly():
         for i in range(len(self.poly_coef)):
             for j in range(len(other.poly_coef)):
                 poly_coef[i + j] += self.poly_coef[i] * other.poly_coef[j]
-        return poly(degree, poly_coef)
+        return Poly(degree, poly_coef)
 
     def __rmul__(self, scalar):
         """Multiplies a polynomial with a scalar.
         """
-        return poly(self.degree, list(np.array(self.poly_coef) * scalar))
+        return Poly(self.degree, list(np.array(self.poly_coef) * scalar))
 
     def compose(self, my_wdnf):
         """ Given a one-dimensional polynomial function f with degree k and coefficients
         stored in coef_list, computes f(self) and returns the result in WDNF.
         """
-        wdnfSoFar = WDNF({(): 1}, my_wdnf.sign)
-        result = self.poly_coef[0] * wdnfSoFar
-        wdnfSoFar = my_wdnf
-        result += self.poly_coef[1] * wdnfSoFar
+        wdnf_so_far = WDNF({(): 1}, my_wdnf.sign)
+        result = self.poly_coef[0] * wdnf_so_far
+        wdnf_so_far = my_wdnf
+        result += self.poly_coef[1] * wdnf_so_far
         for i in range(2, self.degree + 1):
-            wdnfSoFar *= my_wdnf
-            result += self.poly_coef[i] * wdnfSoFar
+            wdnf_so_far *= my_wdnf
+            result += self.poly_coef[i] * wdnf_so_far
         return result
 
     def __call__(self, x):
@@ -203,7 +207,7 @@ class poly():
         return output
 
 
-class taylor(poly):
+class Taylor(Poly):
     """ A class computing the Taylor expansion of a function"""
 
     def __init__(self, degree, derivatives, center):
@@ -224,7 +228,7 @@ class taylor(poly):
                     # print(poly_coef[i])
                 else:
                     poly_coef[i] += derivatives[j] * comb(j, i, True) / math.factorial(j)
-        poly.__init__(self, degree, poly_coef)
+        super(Taylor, self).__init__(degree, poly_coef)
 
 
 if __name__ == "__main__":
@@ -241,12 +245,12 @@ if __name__ == "__main__":
     # x = {1:1, 2:1, 3:1, 4:0}
     # print(wdnf1(x))
 
-    # poly1 = poly(2, [3, 4, 0])
-    # poly2 = poly(2, [8, 1, 1])
+    # poly1 = Poly(2, [3, 4, 0])
+    # poly2 = Poly(2, [8, 1, 1])
     # poly3 = poly2 + poly1
     # wdnf4 = poly2.compose(wdnf1)
 
-    myTaylor = taylor(8, [1, 1, 1, 1, 1, 1, 1, 1, 1], 0)
+    myTaylor = Taylor(8, [1, 1, 1, 1, 1, 1, 1, 1, 1], 0)
     # myTaylor.expand()
 
     new_wdnf1 = myTaylor.compose(wdnf1)
