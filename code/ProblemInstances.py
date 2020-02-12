@@ -161,7 +161,7 @@ class Problem(object):  # For Python 3, replace object with ABCMeta
         """
         self.problemSize = 0
         self.groundSet = set()
-        self.utility_function()
+        # self.utility_function()
 
     def utility_function(self, y={}):
         pass
@@ -176,10 +176,10 @@ class Problem(object):  # For Python 3, replace object with ABCMeta
         """
         pass
 
-    def get_sampler_estimator(self, num_of_samples):
+    def get_sampler_estimator(self, num_of_samples, dependencies={}):
         """
         """
-        return SamplerEstimator(self.utility_function, num_of_samples)
+        return SamplerEstimator(self.utility_function, num_of_samples, dependencies)
 
     def get_polynomial_estimator(self, center, degree):
         """
@@ -191,10 +191,10 @@ class Problem(object):  # For Python 3, replace object with ABCMeta
         """
         pass
 
-    def sampler_continuous_greedy(self, num_of_samples, iterations):
+    def sampler_continuous_greedy(self, num_of_samples, iterations, dependencies={}):
         """
         """
-        new_cg = ContinuousGreedy(self.get_solver(), self.get_sampler_estimator(num_of_samples),
+        new_cg = ContinuousGreedy(self.get_solver(), self.get_sampler_estimator(num_of_samples, dependencies),
                                   self.get_initial_point())
         return new_cg.fw(iterations, False)
 
@@ -325,7 +325,7 @@ class InfluenceMaximization(Problem):
             self.edges = graphs[i].edges()  # edges are different for each graph
             p = dict()
             wdnf_list = dict()
-            dependencies = set()
+            dependencies = dict()
             paths = nx.algorithms.dag.transitive_closure(graphs[i])
             wdnf_so_far = WDNF(dict(), -1)
             for node in self.groundSet:
@@ -335,10 +335,13 @@ class InfluenceMaximization(Problem):
 #            # given_partitions[i] = p.copy() #given_partitions is a dictionary of (v: P_v) pairs where v is a node in
             #            graph and P_v is the set of all nodes having a (directed) path to v (in tuple format)
             wdnf_dict[i] = wdnf_so_far  # prod(1 - x_u) for all u in P_v
-            dependencies = dependencies.union(wdnfSoFar.find_dependencies())
+            dependencies.update(wdnf_so_far.find_dependencies())
+            # sys.stderr.write("dependencies are: " + str(dependencies) + '\n')
+        # sys.stderr.write("dependencies are: " + str(dependencies) + '\n')
         self.wdnf_dict = wdnf_dict
         # self.utility_function()
         self.dependencies = dependencies
+
 
     def utility_function(self, y):
         """
@@ -357,15 +360,6 @@ class InfluenceMaximization(Problem):
         else:
             solver = PartitionMatroidSolver(self.target_partitions, self.constraints)
         return solver
-
-#    def func(self, x):
-#        output = 0.0
-#        for i in range(self.instancesSize):
-#            sum = 0.0
-#            for node in self.groundSet:
-#                sum += 1.0 - self.wdnf_dict[i][node](x)
-#            output += np.log1p(sum / self.problemSize)
-#        return output / (self.instancesSize * 1.0)
 
     def get_polynomial_estimator(self, center, degree):
         """

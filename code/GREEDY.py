@@ -147,7 +147,7 @@ def greedy(problem):
     k = cardinality
     start = time()
     track[0] = (start, objective0)
-    dependencies = problem.dependencies
+    dependencies = problem.dependencies.keys()
     while cardinality > 0:
         max_delta = 0.0
         for element in unchosen_elements:

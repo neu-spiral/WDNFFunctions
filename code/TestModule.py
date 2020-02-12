@@ -1,16 +1,16 @@
-# from ContinuousGreedy import SamplerEstimator, PolynomialEstimator, ContinuousGreedy
-from helpers import load
-from networkx import Graph, DiGraph
-from networkx.algorithms import bipartite
-from networkx.convert import to_edgelist
-from networkx.readwrite.edgelist import read_edgelist
-from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, log, findDerivatives
-from wdnf import WDNF, taylor
+from helpers import save, load
+# from networkx import Graph, DiGraph
+# from networkx.algorithms import bipartite
+# from networkx.convert import to_edgelist
+# from networkx.readwrite.edgelist import read_edgelist
+from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation
+# from wdnf import WDNF, Taylor
 import argparse
 import logging
-import numpy as np
+# import numpy as np
 import os
 import pickle
+import sys
 
 
 if __name__ == "__main__":
@@ -29,9 +29,9 @@ if __name__ == "__main__":
                         help='Input file that stores targeted partitions of the ground set')
     parser.add_argument('--constraints', default=1, type=int,
                         help='Constraints dictionary with {type:cardinality} pairs')
-    parser.add_argument('--estimator', default="sampler", type=str, help='Type of the estimator',
+    parser.add_argument('--estimator', default="samplerWithDependencies", type=str, help='Type of the estimator',
                         choices=['sampler', 'polynomial', 'samplerWithDependencies'])
-    parser.add_argument('--iterations', default=1000, type=int,
+    parser.add_argument('--iterations', default=100, type=int,
                         help='Number of iterations used in the Frank-Wolfe algorithm')
     parser.add_argument('--degree', default=8, type=int, help='Degree of the polynomial estimator')
     parser.add_argument('--center', default=0.0, type=float,
@@ -90,23 +90,32 @@ if __name__ == "__main__":
         logging.info('Defining an InfluenceMaximization problem...')
         newProblem = InfluenceMaximization(graphs, args.constraints)
         logging.info('...done. %d seeds will be selected' % args.constraints)
-        output = directory_output + args.problemType + "_Epinions100_" + str(args.constraints) + "_seeds_" + \
-            args.estimator + "_" + str(args.iterations) + "_FW"
+        output = directory_output + args.problemType + "_Epinions100_" + args.estimator + "_" + str(args.iterations) \
+                                  + "_FW"
 
     if args.estimator == 'polynomial':
         logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
-        y, track, bases = newProblem.PolynomialContinuousGreedy(float(args.center), int(args.degree),
+        y, track, bases = newProblem.polynomial_continuous_greedy(float(args.center), int(args.degree),
                                                                 int(args.iterations))
         output += "_" + str(args.degree) + "th_degree_around_" + str(args.center)
 
     if args.estimator == 'sampler':
         logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
-        y, track, bases = newProblem.SamplerContinuousGreedy(args.samples, args.iterations)
+        y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations)
         output += "_" + str(args.samples) + "samples"
         save(output, (track[args.iterations - 1][0], newProblem.utility_function(y)))
 
     if args.estimator == 'samplerWithDependencies':
-        pass
+        logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
+        # sys.stderr.write("dependencies are: " + str(newProblem.dependencies) + '\n')
+        y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations, newProblem.dependencies)
+        output += "_" + str(args.samples) + "samples"
+        if os.path.exists(output):
+            results = load(output)
+            results.append((args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y)))
+        else:
+            results = [(args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y))]
+        save(output, results)
 
 #    if args.problemType == 'IM':
 #        objective = 0.0

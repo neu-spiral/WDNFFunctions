@@ -3,7 +3,7 @@ from heapq import nlargest
 from time import time
 import logging
 import numpy as np
-# import sys
+import sys
 
 
 def generate_samples(y, dependencies={}):
@@ -15,6 +15,7 @@ def generate_samples(y, dependencies={}):
     samples = dict.fromkeys(y.iterkeys(), 0.0)
     p = dict.fromkeys(y.iterkeys(), np.random.rand())
     if dependencies != {}:
+        # sys.stderr.write("dependencies are: " + str(y))
         indices = [element for element in dependencies.keys() if y[element] > p[element]]
         samples.update(dict.fromkeys(indices, 1))
     else:
@@ -69,7 +70,7 @@ class SamplerEstimator(GradientEstimator):
         grad = dict.fromkeys(y.iterkeys(), 0.0)
         for j in range(self.numOfSamples):
             logging.info('Generating ' + str(j + 1) + '. sample... \n')
-            x = generate_samples(y).copy()
+            x = generate_samples(y, self.dependencies).copy()
             for i in y.keys():
                 x1 = x.copy()
                 x1[i] = 1

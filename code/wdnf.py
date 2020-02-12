@@ -9,7 +9,7 @@ def merge(t1, t2):
     Merge two tuples (in this context, keys) into a sorted tuple by taking
     the set union of them.
     """
-    if type(t1) is int and type(t2) is int and t1 == t2:
+    if type(t1) is int and type(t2) is int and t1 == t2:  # if else conditions may be redundant if all keys are tuples
         key = t1
     elif type(t1) is int and type(t2) is int and t1 != t2:
         key = tuple(sorted([t1, t2]))
@@ -42,22 +42,20 @@ class WDNF:
 
     def find_dependencies(self):
         dependencies = {}
-        for key in self.coefficients:
-            try:
-                for var in key:
-                    dependencies[var] = dependencies[var] + (key,) if var in dependencies else [key]
-                    # if var in dependencies:
-                    #     dependencies[var].append(key)
-                    # else:
-                    #     dependencies[var] = [key]
-                    #     break
-                    break
-            except (TypeError, KeyError):
-                # if key in dependencies:
-                #     dependencies[key].append(key)
-                # else:
-                #     dependencies[key] = [key]
-                dependencies[key] = dependencies[key] + (key,) if key in dependencies else [key]
+        # for key in self.coefficients:
+        #    for var in key:
+        dependencies = {var: dependencies[var] + key if var in dependencies else key for key in self.coefficients
+                        for var in key}
+        # if var in dependencies:
+        #    dependencies[var] + key
+        # else:
+        #    dependencies[var] = key
+        # except (TypeError, KeyError):
+        # if key in dependencies:
+        #    dependencies[key].append(key)
+        # else:
+        #    dependencies[key] = [key]
+        #  dependencies[key] = dependencies[key] + [key] if key in dependencies else [key]
         return dependencies
 
     def __call__(self, x):
@@ -234,11 +232,11 @@ class Taylor(Poly):
 if __name__ == "__main__":
     wdnf0 = WDNF({(): 1}, -1)
 
-    wdnf1 = WDNF({2: 1, 3: 1}, -1)
-    # wdnf2 = WDNF({(1, 2): 4.0, (1, 3): 5.0})
+    wdnf1 = WDNF({(2, ): 1, (3, ): 1}, -1)
+    wdnf2 = WDNF({(1, 2): 4.0, (1, 3): 5.0})
     # wdnf3 = wdnf1 * wdnf2
     wdnf4 = wdnf0 + (-1) * wdnf1
-    sys.stderr.write(str(wdnf4.coefficients))
+    sys.stderr.write(str(wdnf2.find_dependencies()))
     # wdnf5 = 4 * wdnf1
     # wdnf6 = wdnf1**2
     # wdnf7 = wdnf0 + wdnf1
@@ -250,8 +248,8 @@ if __name__ == "__main__":
     # poly3 = poly2 + poly1
     # wdnf4 = poly2.compose(wdnf1)
 
-    myTaylor = Taylor(8, [1, 1, 1, 1, 1, 1, 1, 1, 1], 0)
+    # myTaylor = Taylor(8, [1, 1, 1, 1, 1, 1, 1, 1, 1], 0)
     # myTaylor.expand()
 
-    new_wdnf1 = myTaylor.compose(wdnf1)
+    # new_wdnf1 = myTaylor.compose(wdnf1)
     # print(new_wdnf1.coefficients)
