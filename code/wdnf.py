@@ -1,6 +1,8 @@
 import math
 import numpy as np
 from scipy.misc import comb
+# from ProblemInstances import InfluenceMaximization
+# from helpers import load
 import sys
 
 
@@ -65,12 +67,8 @@ class WDNF:
         sum_so_far = 0.0
         for key in self.coefficients:
             prod = self.coefficients[key]  # beta
-            try:
-                monomials = [1.0 - x[var] if self.sign == -1 else x[var] for var in key]
-                prod *= np.prod(monomials)
-                break
-            except (TypeError, KeyError):
-                prod = prod * (1.0 - x[key]) if self.sign == -1 else prod * x[key]
+            monomials = [1.0 - x[var] if self.sign == -1 else x[var] for var in key]
+            prod *= np.prod(monomials)
             sum_so_far += prod
         return sum_so_far
 
@@ -236,7 +234,12 @@ if __name__ == "__main__":
     wdnf2 = WDNF({(1, 2): 4.0, (1, 3): 5.0})
     # wdnf3 = wdnf1 * wdnf2
     wdnf4 = wdnf0 + (-1) * wdnf1
-    sys.stderr.write(str(wdnf2.find_dependencies()))
+
+
+
+
+
+
     # wdnf5 = 4 * wdnf1
     # wdnf6 = wdnf1**2
     # wdnf7 = wdnf0 + wdnf1

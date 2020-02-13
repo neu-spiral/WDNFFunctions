@@ -327,30 +327,37 @@ class InfluenceMaximization(Problem):
             wdnf_list = dict()
             dependencies = dict()
             paths = nx.algorithms.dag.transitive_closure(graphs[i])
-            wdnf_so_far = WDNF(dict(), -1)
+            # wdnf_so_far = WDNF(dict(), -1)
             for node in self.groundSet:
                 p[node] = tuple(sorted([node] + list(paths.predecessors(node))))  # p is {v, P_v} pairs
-                # wdnf_list[node1] = WDNF({p[node1]: 1}, -1)
-                wdnf_so_far += (1.0 / self.problemSize) * (WDNF({(): 1.0}, -1) + ((-1.0) * WDNF({p[node]: 1.0}, -1)))
+                wdnf_list[node] = WDNF({p[node]: 1.0}, -1)
+                dependencies.update(wdnf_list[node].find_dependencies())
+                # sys.stderr.write("wdnf_dict[" + str(i) + "][" + str(node) + "]: " + str(wdnf_list[node].coefficients) + '\n')
+                # wdnf_so_far += (1.0 / self.problemSize) * (WDNF({(): 1.0}, -1) + ((-1.0) * WDNF({p[node]: 1.0}, -1)))
 #            # given_partitions[i] = p.copy() #given_partitions is a dictionary of (v: P_v) pairs where v is a node in
             #            graph and P_v is the set of all nodes having a (directed) path to v (in tuple format)
-            wdnf_dict[i] = wdnf_so_far  # prod(1 - x_u) for all u in P_v
-            dependencies.update(wdnf_so_far.find_dependencies())
+            wdnf_dict[i] = wdnf_list  # prod(1 - x_u) for all u in P_v
             # sys.stderr.write("dependencies are: " + str(dependencies) + '\n')
         # sys.stderr.write("dependencies are: " + str(dependencies) + '\n')
         self.wdnf_dict = wdnf_dict
         # self.utility_function()
         self.dependencies = dependencies
 
-
     def utility_function(self, y):
         """
         :param y:
         :return:
         """
-        objective = [(1.0 / self.instancesSize) * np.log1p(self.wdnf_dict[graph](y))
-                     for graph in range(self.instancesSize)]
-        return sum(objective)
+        output = 0.0
+        # sys.stderr.write("y: " + str(y) + '\n')
+        for graph in range(self.instancesSize):
+            objective = [(1.0 - self.wdnf_dict[graph][node](y)) for node in self.groundSet]
+            # sys.stderr.write("objective: " + str(objective) + '\n')
+            output += np.log1p(sum(objective) / self.problemSize)
+            # sys.stderr.write("output: " + str(output) + '\n')
+        # for graph in range(self.instancesSize):
+        #    sys.stderr.write("inside wdnf: " + str(self.wdnf_dict[graph].coefficients) + '\n')
+        return output / self.instancesSize
 
     def get_solver(self):
         """

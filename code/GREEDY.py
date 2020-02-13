@@ -2,6 +2,7 @@ from helpers import load, save
 from time import time
 #from Toplogy_gen  import Problem, Demand
 from ProblemInstances import InfluenceMaximization
+from networkx import Graph, DiGraph
 import argparse
 #from cvxopt import matrix
 #from Continuous_Greedy import write
@@ -137,11 +138,12 @@ import sys
 
 def greedy(problem):
     y = dict.fromkeys(problem.groundSet, 0.0)
-    sys.stderr.write("y is: " + str(y))
+    # sys.stderr.write("y is: " + str(y))
     unchosen_elements = dict(filter(lambda element: element[1] == 0.0, y.items()))
-    sys.stderr.write("unchosen_elements are: " + str(unchosen_elements))
+    # sys.stderr.write("unchosen_elements are: " + str(unchosen_elements))
     objective0 = problem.utility_function(y)
     objective = objective0
+    # sys.stderr.write("objective is: " + str(objective0) + "\n")
     cardinality = problem.problemSize
     track = dict()
     k = cardinality
@@ -150,12 +152,13 @@ def greedy(problem):
     dependencies = problem.dependencies.keys()
     while cardinality > 0:
         max_delta = 0.0
+        objective0 = problem.utility_function(y)
         for element in unchosen_elements:
             if element in dependencies:
                 y[element] = 1
-                #sys.stderr.write("y is: " + str(y))
+                # sys.stderr.write("y is: " + str(y))
                 objective = problem.utility_function(y)
-                #sys.stderr.write("objective is: " + str(objective))
+                # sys.stderr.write("objective is: " + str(objective) + "\n")
                 y[element] = 0
                 delta = objective - objective0
                 if delta > max_delta:
@@ -163,7 +166,7 @@ def greedy(problem):
                     max_delta = delta
         if max_delta > 0.0:
             del unchosen_elements[selection]
-            logging.info('...' + str(selection) + 'is just selected...')
+            logging.info('...' + str(selection) + ' is just selected...' + "\n")
             y[selection] = 1
             objective += max_delta
             cardinality -= 1
@@ -193,7 +196,7 @@ if __name__=="__main__":
     parser.add_argument('--query_nodes', default=10, type=int, help='Number of nodes generating queries')
     parser.add_argument('--order_moment', default=2, type=int, help='Order of moment for the expected cost', choices=[1,2,3,4])
     parser.add_argument('--queue_type', default='MMInfty', type=str, help='Type of queue', choices=['MMInfty', 'Info'])
-    args  = parser.parse_args()
+    args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
     #problem_instance = "problem_" + args.graph_type + "_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_" + str(
@@ -216,11 +219,16 @@ if __name__=="__main__":
 
     if args.problem_type == "IM":
         logging.info('Problem Type is selected as Influence Maximization...')
-        problem_instance = "IM_" + "epinions100"
+        problem_instance = "IM_" + "epinions100_recalc"
         logging.info('Loading graphs list...')
         graphs = load("datasets/smaller_graphs_file")
+        # new_graph = DiGraph()
+        # new_graph.add_nodes_from([1, 2, 3, 4, 5, 6])
+        # new_graph.add_edges_from([(1, 2), (1, 3), (1, 4), (2, 3), (3, 4), (4, 5), (4, 6), (6, 3)])
+        # graphs = [new_graph]
+        # sys.stderr.write("graphs is: " + str(graphs))
         logging.info('...done. Initiating the Influence Maximization Problem...')
-        newProblem = InfluenceMaximization(graphs, 10)
+        newProblem = InfluenceMaximization(graphs, 3)
         logging.info('...done. Starting the greedy algorithm...')
         y, track = greedy(newProblem)
         logging.info('...done.')

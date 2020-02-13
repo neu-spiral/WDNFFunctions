@@ -14,13 +14,16 @@ def generate_samples(y, dependencies={}):
     """
     samples = dict.fromkeys(y.iterkeys(), 0.0)
     p = dict.fromkeys(y.iterkeys(), np.random.rand())
+    # sys.stderr.write("p: " + str(p) + "\n")
+    # sys.stderr.write("y: " + str(y) + "\n")
     if dependencies != {}:
         # sys.stderr.write("dependencies are: " + str(y))
         indices = [element for element in dependencies.keys() if y[element] > p[element]]
-        samples.update(dict.fromkeys(indices, 1))
+        samples.update(dict.fromkeys(indices, 1.0))
     else:
         indices = [key for key in y.keys() if y[key] > p[key]]
-        samples.update(dict.fromkeys(indices, 1))
+        samples.update(dict.fromkeys(indices, 1.0))
+    # sys.stderr.write("samples: " + str(samples) + "\n")
     return samples
 
 
@@ -71,12 +74,17 @@ class SamplerEstimator(GradientEstimator):
         for j in range(self.numOfSamples):
             logging.info('Generating ' + str(j + 1) + '. sample... \n')
             x = generate_samples(y, self.dependencies).copy()
-            for i in y.keys():
+            # sys.stderr.write("sample is: " + str(x) + '\n')
+            for i in y.keys():  # add dependencies
                 x1 = x.copy()
-                x1[i] = 1
+                x1[i] = 1.0
+                # sys.stderr.write("x1 is: " + str(x1) + '\n')
                 x0 = x.copy()
-                x0[i] = 0
+                x0[i] = 0.0
+                # sys.stderr.write("x0 is: " + str(x0) + '\n')
                 grad[i] += self.utility_function(x1) - self.utility_function(x0)
+                # if grad[i] != 0.0:
+                #     sys.stderr.write("grad[" + str(i) + "] is: " + str(grad[i]) + '\n')
         grad = {key: grad[key] / self.numOfSamples for key in grad.keys()}
         return grad
 
@@ -220,6 +228,7 @@ class ContinuousGreedy:
             logging.info('iteration #' + str(t) + "\n")
             gradient = self.estimator.estimate(y)
             mk = self.linear_solver.solve(gradient)  # finds maximum
+            # sys.stderr.write("mk: " + str(mk))
             try:
                 for value in mk.values():  # updates y
                     for i in value:
@@ -232,4 +241,5 @@ class ContinuousGreedy:
                 new_y = y.copy()
                 track[t] = (time_passed, new_y)
             bases.append(mk)
+        # sys.stderr.write("y: " + str(y))
         return y, track, bases
