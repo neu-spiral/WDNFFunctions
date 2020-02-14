@@ -16,11 +16,11 @@ if __name__ == "__main__":
 
     #time_ax = eval(open("results/IM_on_smaller_Epinions_dataset_with10seeds_polynomialestimator_300_FW_2th_degree_around_0.0_time", "r").read())
     #utility_ax = eval(open("results/IM_on_smaller_Epinions_dataset_with10seeds_polynomialestimator_300_FW_2th_degree_around_0.0_utilities", "r").read())
-    greedy_track = load("results/greedy/IM_epinions100_recalc_")
+    greedy_track = load("results/greedy/IM_epinions100_recalc")
     sys.stderr.write("greedy track is: " + str(greedy_track))
     utility = [item[1][1] for item in greedy_track.items()]
     cardinality = [item[0] for item in greedy_track.items()]
-    plt.plot(cardinality, utility, label = 'Greedy Algorithm')
+    plt.plot(cardinality, utility, label='Greedy Algorithm')
     plt.xlabel('Cardinality')
     plt.ylabel('Utility')
     plt.legend()

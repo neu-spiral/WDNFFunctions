@@ -29,14 +29,14 @@ if __name__ == "__main__":
                         help='Input file that stores targeted partitions of the ground set')
     parser.add_argument('--constraints', default=1, type=int,
                         help='Constraints dictionary with {type:cardinality} pairs')
-    parser.add_argument('--estimator', default="samplerWithDependencies", type=str, help='Type of the estimator',
+    parser.add_argument('--estimator', default='polynomial', type=str, help='Type of the estimator',
                         choices=['sampler', 'polynomial', 'samplerWithDependencies'])
-    parser.add_argument('--iterations', default=10, type=int,
+    parser.add_argument('--iterations', default=100, type=int,
                         help='Number of iterations used in the Frank-Wolfe algorithm')
     parser.add_argument('--degree', default=8, type=int, help='Degree of the polynomial estimator')
     parser.add_argument('--center', default=0.0, type=float,
                         help='The point around which Taylor approximation is calculated')
-    parser.add_argument('--samples', default=10, type=int,
+    parser.add_argument('--samples', default=300, type=int,
                         help='Number of samples used to calculate the sampler estimator')
 #    parser.add_argument('--timeOutput', default = "sampler_time.txt",
     #    help = 'File in which time of each iteration is stored')
@@ -95,9 +95,8 @@ if __name__ == "__main__":
 
     if args.estimator == 'polynomial':
         logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
-        y, track, bases = newProblem.polynomial_continuous_greedy(float(args.center), int(args.degree),
-                                                                int(args.iterations))
-        output += "_" + str(args.degree) + "th_degree_around_" + str(args.center)
+        y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations))
+        output += "_degree_" + str(args.degree) + "_around_" + str(args.center)
 
     if args.estimator == 'sampler':
         logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
@@ -111,12 +110,12 @@ if __name__ == "__main__":
         sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
         output += "_" + str(args.samples) + "samples"
 
-        # if os.path.exists(output):
-        #    results = load(output)
-        #    results.append((args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y)))
-        # else:
-        #     results = [(args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y))]
-        # save(output, results)
+    if os.path.exists(output):
+        results = load(output)
+        results.append((args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y)))
+    else:
+        results = [(args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y))]
+    save(output, results)
 
 
 #    if args.problemType == 'IM':

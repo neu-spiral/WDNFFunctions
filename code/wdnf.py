@@ -135,7 +135,7 @@ class WDNF:
         return func(self(x))
 
 
-class Poly:
+class Poly(object):
     """A class for defining univariate polynomials with the largest degree and
     the coefficients list of size (largest degree + 1) where coefficients are
     stored as [coef_0 coef_1 ... coef_n]
