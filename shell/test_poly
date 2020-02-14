@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#SBATCH --output=slurm_logs/pIM%j.out
+
+#SBATCH --error=slurm_logs/pIM%j.err
+
+#SBATCH --job-name=pIM
+
+#SBATCH --partition=ioannidis
+
+#SBATCH --time=48:00:00
+
+#SBATCH --parsable
+
+srun python code/TestModule.py --estimator polynomial --degree $1 --center $2
