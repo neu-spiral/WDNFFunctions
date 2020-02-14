@@ -1,8 +1,6 @@
 import math
 import numpy as np
 from scipy.misc import comb
-# from ProblemInstances import InfluenceMaximization
-# from helpers import load
 import sys
 
 
@@ -90,6 +88,14 @@ class WDNF:
         #        new_coefficients[key] = new_coefficients[key]+other.coefficients[key] \
         #                                if key in self.coefficients.keys() else other.coefficients[key]
         return WDNF(new_coefficients, self.sign)
+
+    def __radd__(self, other):
+        """
+        useful for sum()
+        :param other:
+        :return:
+        """
+        return self
 
     def __mul__(self, other):
         """ Multiply two polynomials in WDNF and return the resulting WDNF
@@ -231,14 +237,11 @@ if __name__ == "__main__":
     wdnf0 = WDNF({(): 1}, -1)
 
     wdnf1 = WDNF({(2, ): 1, (3, ): 1}, -1)
-    wdnf2 = WDNF({(1, 2): 4.0, (1, 3): 5.0})
+    wdnf2 = WDNF({(1, 2): 4.0, (1, 3): 5.0}, -1)
     # wdnf3 = wdnf1 * wdnf2
     wdnf4 = wdnf0 + (-1) * wdnf1
-
-
-
-
-
+    wdnf_list = [wdnf1, wdnf2]
+    sys.stderr.write("wdnf_list: " + str() + "\n")
 
     # wdnf5 = 4 * wdnf1
     # wdnf6 = wdnf1**2

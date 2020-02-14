@@ -99,8 +99,10 @@ class PolynomialEstimator(GradientEstimator):
         """
         my_wdnf is the resulting wdnf object after compose.
         """
+        logging.info('Creating the PolynomialEstimator object...')
         super(PolynomialEstimator, self).__init__()
         self.my_wdnf = my_wdnf
+        logging.info('...done.')
 
     def estimate(self, y):
         """
@@ -151,9 +153,11 @@ class UniformMatroidSolver(LinearSolver):
         groundSet is a set of elements and k is an integer denoting the
         cardinality.
         """
+        logging.info('Creating UniformMatroidSolver object...')
         super(LinearSolver, self).__init__()
         self.ground_set = ground_set
         self.k = k
+        logging.info('...done.')
 
     def solve(self, gradient):
         """
@@ -176,9 +180,11 @@ class PartitionMatroidSolver(LinearSolver):
         partitionedSet is a dictionary of sets with {partitionName : set} pairs,
         k_list is a dictionary of cardinalities with {partitionName : int} pairs.
         """
+        logging.info('Creating PartitionMatroidSolver object...')
         super(LinearSolver, self).__init__()
         self.partitioned_set = partitioned_set
         self.k_list = k_list
+        logging.info('...done.')
 
     def solve(self, gradient):
         """
@@ -233,9 +239,11 @@ class ContinuousGreedy:
                 for value in mk.values():  # updates y
                     for i in value:
                         y[i] += gamma
+                # y = {i: y[i] + gamma for value in mk.values() for i in value}
             except AttributeError:
                 for i in mk:
                     y[i] += gamma
+                # y = {i: y[i] + gamma for i in mk}
             if keep_track or t == iterations - 1:
                 time_passed = time() - start
                 new_y = y.copy()

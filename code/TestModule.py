@@ -18,25 +18,25 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default='IM', type=str, help='Type of the problem instance',
                         choices=['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default='datasets/smaller_graphs_file', type=str,
+    parser.add_argument('--input', default='datasets/test_graphs_file', type=str,
                         help='Data input for the InfluenceMaximization problem')
-    parser.add_argument('--cascades', default=1000, type=int,
-                        help='Number of cascades used in the Independent Cascade model')
-    parser.add_argument('--p', default=0.02, type=float, help='Infection probability')
-    parser.add_argument('--rewardsInput', default="rewards.txt", help='Input file that stores rewards')
-    parser.add_argument('--partitionsInput', default="givenPartitions.txt", help='Input file that stores partitions')
-    parser.add_argument('--typesInput', default="types.txt",
-                        help='Input file that stores targeted partitions of the ground set')
-    parser.add_argument('--constraints', default=1, type=int,
+    # parser.add_argument('--cascades', default=1000, type=int,
+    #                     help='Number of cascades used in the Independent Cascade model')
+    # parser.add_argument('--p', default=0.02, type=float, help='Infection probability')
+    # parser.add_argument('--rewardsInput', default="rewards.txt", help='Input file that stores rewards')
+    # parser.add_argument('--partitionsInput', default="givenPartitions.txt", help='Input file that stores partitions')
+    # parser.add_argument('--typesInput', default="types.txt",
+    #                     help='Input file that stores targeted partitions of the ground set')
+    parser.add_argument('--constraints', default=4, type=int,
                         help='Constraints dictionary with {type:cardinality} pairs')
     parser.add_argument('--estimator', default='polynomial', type=str, help='Type of the estimator',
                         choices=['sampler', 'polynomial', 'samplerWithDependencies'])
     parser.add_argument('--iterations', default=100, type=int,
                         help='Number of iterations used in the Frank-Wolfe algorithm')
-    parser.add_argument('--degree', default=8, type=int, help='Degree of the polynomial estimator')
+    parser.add_argument('--degree', default=2, type=int, help='Degree of the polynomial estimator')
     parser.add_argument('--center', default=0.0, type=float,
                         help='The point around which Taylor approximation is calculated')
-    parser.add_argument('--samples', default=300, type=int,
+    parser.add_argument('--samples', default=30, type=int,
                         help='Number of samples used to calculate the sampler estimator')
 #    parser.add_argument('--timeOutput', default = "sampler_time.txt",
     #    help = 'File in which time of each iteration is stored')
@@ -90,22 +90,23 @@ if __name__ == "__main__":
         logging.info('Defining an InfluenceMaximization problem...')
         newProblem = InfluenceMaximization(graphs, args.constraints)
         logging.info('...done. %d seeds will be selected' % args.constraints)
-        output = directory_output + args.problemType + "_Epinions100_" + args.estimator + "_" + str(args.iterations) \
+        output = directory_output + args.problemType + "test_case" + args.estimator + "_" + str(args.iterations) \
                                   + "_FW"
 
     if args.estimator == 'polynomial':
         logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
         y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations))
+        sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
         output += "_degree_" + str(args.degree) + "_around_" + str(args.center)
 
     if args.estimator == 'sampler':
         logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
         y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations)
         output += "_" + str(args.samples) + "samples"
-        save(output, (track[args.iterations - 1][0], newProblem.utility_function(y)))
+        sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
 
     if args.estimator == 'samplerWithDependencies':
-        logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
+        logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator with Dependencies...')
         y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations, newProblem.dependencies)
         sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
         output += "_" + str(args.samples) + "samples"

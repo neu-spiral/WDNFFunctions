@@ -1,15 +1,13 @@
 #!/bin/bash
 
-#SBATCH --output=slurm_logs/pIM%j.out
+#SBATCH --output=slurm_logs/swdIM%j.out
 
-#SBATCH --error=slurm_logs/pIM%j.err
+#SBATCH --error=slurm_logs/swdIM%j.err
 
-#SBATCH --job-name=pIM
+#SBATCH --job-name=swdIM
 
 #SBATCH --partition=ioannidis
 
 #SBATCH --time=48:00:00
 
-#SBATCH --parsable
-
-srun python code/TestModule.py --estimator polynomial --degree $1 --center $2
+srun python code/TestModule.py --estimator samplerWithDependencies --constraints $1

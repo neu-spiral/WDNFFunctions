@@ -6,6 +6,7 @@ from networkx.algorithms import bipartite
 from time import time
 from wdnf import WDNF, Taylor
 import argparse
+import logging
 import math
 import networkx as nx
 import numpy as np
@@ -161,9 +162,8 @@ class Problem(object):  # For Python 3, replace object with ABCMeta
         """
         self.problemSize = 0
         self.groundSet = set()
-        # self.utility_function()
 
-    def utility_function(self, y={}):
+    def utility_function(self, y):
         pass
 
     def get_solver(self):
@@ -201,8 +201,10 @@ class Problem(object):  # For Python 3, replace object with ABCMeta
     def polynomial_continuous_greedy(self, center, degree, iterations):
         """
         """
+        logging.info('Creating the ContinuousGreedy object...')
         new_cg = ContinuousGreedy(self.get_solver(), self.get_polynomial_estimator(center, degree),
                                   self.get_initial_point())
+        logging.info('done.')
         return new_cg.fw(iterations, False)
 
 
@@ -313,34 +315,24 @@ class InfluenceMaximization(Problem):
         {type : int} pairs if over partition matroids.
         """
         super(InfluenceMaximization, self).__init__()
-#        self.graphs = graphs
         self.groundSet = set(graphs[0].nodes())  # all graphs share the same set of nodes
         self.problemSize = graphs[0].number_of_nodes()  # |V|
         self.instancesSize = len(graphs)  # |G|
         self.constraints = constraints  # number of seeds aka k
         self.target_partitions = target_partitions
-#        given_partitions = dict()
         wdnf_dict = dict()
+        dependencies = dict()
+        my_wdnf = WDNF({(): 1}, -1)
         for i in range(self.instancesSize):
-            self.edges = graphs[i].edges()  # edges are different for each graph
-            p = dict()
-            wdnf_list = dict()
-            dependencies = dict()
             paths = nx.algorithms.dag.transitive_closure(graphs[i])
-            # wdnf_so_far = WDNF(dict(), -1)
-            for node in self.groundSet:
-                p[node] = tuple(sorted([node] + list(paths.predecessors(node))))  # p is {v, P_v} pairs
-                wdnf_list[node] = WDNF({p[node]: 1.0}, -1)
-                dependencies.update(wdnf_list[node].find_dependencies())
-                # sys.stderr.write("wdnf_dict[" + str(i) + "][" + str(node) + "]: " + str(wdnf_list[node].coefficients) + '\n')
-                # wdnf_so_far += (1.0 / self.problemSize) * (WDNF({(): 1.0}, -1) + ((-1.0) * WDNF({p[node]: 1.0}, -1)))
-#            # given_partitions[i] = p.copy() #given_partitions is a dictionary of (v: P_v) pairs where v is a node in
-            #            graph and P_v is the set of all nodes having a (directed) path to v (in tuple format)
-            wdnf_dict[i] = wdnf_list  # prod(1 - x_u) for all u in P_v
-            # sys.stderr.write("dependencies are: " + str(dependencies) + '\n')
-        # sys.stderr.write("dependencies are: " + str(dependencies) + '\n')
+            wdnf_list = [WDNF({tuple(sorted([node] + list(paths.predecessors(node)))): -1.0 / self.problemSize}, -1)
+                         for node in self.groundSet]
+            resulting_wdnf = sum(wdnf_list) + WDNF({(): 2.0}, -1)
+            my_wdnf *= resulting_wdnf
+            dependencies.update(resulting_wdnf.find_dependencies())
+            wdnf_dict[i] = resulting_wdnf  # prod(1 - x_u) for all u in P_v
+        self.my_wdnf = my_wdnf
         self.wdnf_dict = wdnf_dict
-        # self.utility_function()
         self.dependencies = dependencies
 
     def utility_function(self, y):
@@ -348,39 +340,38 @@ class InfluenceMaximization(Problem):
         :param y:
         :return:
         """
-        output = 0.0
-        # sys.stderr.write("y: " + str(y) + '\n')
-        for graph in range(self.instancesSize):
-            objective = [(1.0 - self.wdnf_dict[graph][node](y)) for node in self.groundSet]
-            # sys.stderr.write("objective: " + str(objective) + '\n')
-            output += np.log1p(sum(objective) / self.problemSize)
-            # sys.stderr.write("output: " + str(output) + '\n')
-        # for graph in range(self.instancesSize):
-        #    sys.stderr.write("inside wdnf: " + str(self.wdnf_dict[graph].coefficients) + '\n')
-        return output / self.instancesSize
+        objective = [self.wdnf_dict[graph](y) ** (1.0 / self.instancesSize)
+                     for graph in range(self.instancesSize)]
+        return np.log(np.prod(objective))
 
     def get_solver(self):
         """
         """
+        logging.info('Getting solver...')
         if self.target_partitions is None:
             solver = UniformMatroidSolver(self.groundSet, self.constraints)
         else:
             solver = PartitionMatroidSolver(self.target_partitions, self.constraints)
+        logging.info('...done.')
         return solver
 
     def get_polynomial_estimator(self, center, degree):
         """
         """
+        logging.info('Getting polynomial estimator...')
         derivatives = find_derivatives(log, center, degree)
         my_taylor = Taylor(degree, derivatives, center)
-        final_wdnf = WDNF(dict(), -1)
-        for i in range(self.instancesSize):
-            wdnf_so_far = WDNF(dict(), -1)
-            for node in self.groundSet:
-                wdnf_so_far += WDNF({(): 1.0}, -1) + ((-1.0) * self.wdnf_dict[i][node])  # edit here
-            my_wdnf = my_taylor.compose((1.0 / self.problemSize) * wdnf_so_far + WDNF({(): 1.0}, -1))
-            final_wdnf += my_wdnf
-        return PolynomialEstimator((1.0 / self.instancesSize) * final_wdnf)
+        # objective = [(WDNF({(): 2.0}, -1) + self.wdnf_dict[graph]) for graph in range(self.instancesSize)]
+        # my_wdnf = np.prod(objective)
+        final_wdnf = (1.0 / self.instancesSize) * my_taylor.compose(self.my_wdnf)
+        # for i in range(self.instancesSize):
+        #     wdnf_so_far = WDNF(dict(), -1)
+        #     for node in self.groundSet:
+        #         wdnf_so_far += WDNF({(): 1.0}, -1) + ((-1.0) * self.wdnf_dict[i][node])  # edit here
+        #     my_wdnf = my_taylor.compose((1.0 / self.problemSize) * wdnf_so_far + WDNF({(): 1.0}, -1))
+        #     final_wdnf += my_wdnf
+        logging.info('...done.')
+        return PolynomialEstimator(final_wdnf)
 
     def get_initial_point(self):
         """
@@ -417,7 +408,7 @@ class FacilityLocation(Problem):
             wdnf_dict[y] = wdnf_so_far
         self.wdnf_dict = wdnf_dict
 
-    def utility_function(self):
+    def utility_function(self, y):
         pass
 
     def get_solver(self):

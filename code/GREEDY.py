@@ -219,9 +219,9 @@ if __name__=="__main__":
 
     if args.problem_type == "IM":
         logging.info('Problem Type is selected as Influence Maximization...')
-        problem_instance = "IM_" + "epinions100_recalc"
+        problem_instance = "IM_" + "epinions100_recall"
         logging.info('Loading graphs list...')
-        graphs = load("datasets/smaller_graphs_file")
+        graphs = load("datasets/test_graphs_file")
         # new_graph = DiGraph()
         # new_graph.add_nodes_from([1, 2, 3, 4, 5, 6])
         # new_graph.add_edges_from([(1, 2), (1, 3), (1, 4), (2, 3), (3, 4), (4, 5), (4, 6), (6, 3)])
