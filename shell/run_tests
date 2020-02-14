@@ -1,9 +1,0 @@
-#!/bin/bash
-
-for degree in 4 5 6
-do
-	for center in 0.0 0.50
-	do
- 		sbatch shell/test_IM $degree $center
-	done
-done
