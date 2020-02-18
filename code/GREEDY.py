@@ -143,7 +143,7 @@ def greedy(problem):
     # sys.stderr.write("unchosen_elements are: " + str(unchosen_elements))
     objective0 = problem.utility_function(y)
     objective = objective0
-    # sys.stderr.write("objective is: " + str(objective0) + "\n")
+    sys.stderr.write("initial objective is: " + str(objective0) + "\n")
     cardinality = problem.problemSize
     track = dict()
     k = cardinality
@@ -157,10 +157,11 @@ def greedy(problem):
             if element in dependencies:
                 y[element] = 1
                 # sys.stderr.write("y is: " + str(y))
-                objective = problem.utility_function(y)
+                current_objective = problem.utility_function(y)
                 # sys.stderr.write("objective is: " + str(objective) + "\n")
                 y[element] = 0
-                delta = objective - objective0
+                delta = current_objective - objective0
+                sys.stderr.write(str(element) + ": " + str(delta) + "\n")
                 if delta > max_delta:
                     selection = element
                     max_delta = delta
@@ -172,6 +173,7 @@ def greedy(problem):
             cardinality -= 1
             elapsed_time = time() - start
             track[k - cardinality] = (elapsed_time, objective)
+            sys.stderr.write(str(k - cardinality) + ": " + str((max_delta, objective)) + "\n")
         else:
             break
     return y, track

@@ -75,7 +75,7 @@ class SamplerEstimator(GradientEstimator):
             logging.info('Generating ' + str(j + 1) + '. sample... \n')
             x = generate_samples(y, self.dependencies).copy()
             # sys.stderr.write("sample is: " + str(x) + '\n')
-            for i in y.keys():  # add dependencies
+            for i in self.dependencies.keys():  # add dependencies
                 x1 = x.copy()
                 x1[i] = 1.0
                 # sys.stderr.write("x1 is: " + str(x1) + '\n')
