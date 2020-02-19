@@ -20,6 +20,10 @@ if __name__ == "__main__":
                         choices=['DR', 'QS', 'FL', 'IM'])
     parser.add_argument('--input', default='datasets/test_graphs_file', type=str,
                         help='Data input for the InfluenceMaximization problem')
+    parser.add_argument('--testMode', default=False, type=bool, help='Tests the quality of the estimations if selected')
+    parser.add_argument('--fractionalVector', type=dict,
+                        help='If testMode is selected, checks the quality of the estimations according to this '
+                             'fractional vector')
     # parser.add_argument('--cascades', default=1000, type=int,
     #                     help='Number of cascades used in the Independent Cascade model')
     # parser.add_argument('--p', default=0.02, type=float, help='Infection probability')
@@ -92,35 +96,58 @@ if __name__ == "__main__":
         logging.info('...done. %d seeds will be selected' % args.constraints)
         output = directory_output + args.problemType + "test_case_diff_samples" + args.estimator + "_" + str(args.iterations) \
                                   + "_FW"
+    if args.testMode is False:
+        if args.estimator == 'polynomial':
+            logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
+            y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations))
+            sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
+            output += "_degree_" + str(args.degree) + "_around_" + str(args.center)
 
-    if args.estimator == 'polynomial':
-        logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
-        y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations))
-        sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
-        output += "_degree_" + str(args.degree) + "_around_" + str(args.center)
+        if args.estimator == 'sampler':
+            logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
+            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations)
+            # output += "_" + str(args.samples) + "samples"
+            sys.stderr.write("number of samples: " + str(args.samples) + '\n')
+            sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
+            sys.stderr.write("y is: " + str(y) + '\n')
 
-    if args.estimator == 'sampler':
-        logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
-        y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations)
-        # output += "_" + str(args.samples) + "samples"
-        sys.stderr.write("number of samples: " + str(args.samples) + '\n')
-        sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
-        sys.stderr.write("y is: " + str(y) + '\n')
+        if args.estimator == 'samplerWithDependencies':
+            logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator with Dependencies...')
+            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations, newProblem.dependencies)
+            sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
+            output += "_" + str(args.samples) + "samples"
 
-    if args.estimator == 'samplerWithDependencies':
-        logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator with Dependencies...')
-        y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations, newProblem.dependencies)
-        sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
-        output += "_" + str(args.samples) + "samples"
+        if os.path.exists(output):
+            results = load(output)
+            # results.append((args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y)))
+            results.append((args.samples, y, newProblem.utility_function(y)))
+        else:
+            # results = [(args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y))]
+            results = [(args.samples, y, newProblem.utility_function(y))]
+        save(output, results)
 
-    if os.path.exists(output):
-        results = load(output)
-        # results.append((args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y)))
-        results.append((args.samples, y, newProblem.utility_function(y)))
     else:
-        # results = [(args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y))]
-        results = [(args.samples, y, newProblem.utility_function(y))]
-    save(output, results)
+        if args.estimator == 'polynomial':
+            poly_output = directory_output + args.problemType + 'test_case' + '_polynomial_estimation'
+            poly_grad, poly_estimation = newProblem.get_polynomial_estimator(args.center, args.degree)\
+                .estimate(args.fractionalVector)
+            if os.path.exists(poly_output):
+                poly_results = load(poly_output)
+                poly_results.append((args.fractionalVector, args.degree, poly_estimation))
+            else:
+                poly_results = [(args.fractionalVector, args.degree, poly_estimation)]
+            save(poly_output, poly_results)
+
+        if args.estimator == 'sampler':
+            sampler_output = directory_output + args.problemType + 'test_case' + '_sampler_estimation'
+            sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples)\
+                        .estimate(args.fractionalVector)
+            if os.path.exists(sampler_output):
+                sampler_results = load(sampler_output)
+                sampler_results.append((args.fractionalVector, args.samples, sampler_estimation))
+            else:
+                sampler_results = [(args.fractionalVector, args.samples, sampler_estimation)]
+            save(sampler_output, sampler_results)
 
 
 #    if args.problemType == 'IM':

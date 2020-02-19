@@ -71,9 +71,11 @@ class SamplerEstimator(GradientEstimator):
         {item: value} pairs representing the fractional vector.
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
+        estimation = 0.0  # this variable will be used for testing purposes, might be deleted later
         for j in range(self.numOfSamples):
             logging.info('Generating ' + str(j + 1) + '. sample... \n')
             x = generate_samples(y, self.dependencies).copy()
+            estimation += self.utility_function(x)  # might be deleted later
             # sys.stderr.write("sample is: " + str(x) + '\n')
             for i in self.dependencies.keys():  # add dependencies
                 x1 = x.copy()
@@ -86,7 +88,8 @@ class SamplerEstimator(GradientEstimator):
                 # if grad[i] != 0.0:
                 #     sys.stderr.write("grad[" + str(i) + "] is: " + str(grad[i]) + '\n')
         grad = {key: grad[key] / self.numOfSamples for key in grad.keys()}
-        return grad
+        estimation = estimation / self.numOfSamples  # might be deleted later
+        return grad, estimation
 
 
 class PolynomialEstimator(GradientEstimator):
@@ -110,6 +113,7 @@ class PolynomialEstimator(GradientEstimator):
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
         dependencies = self.my_wdnf.find_dependencies()
+        estimation = self.my_wdnf(y)  # this variable will be used for testing purposes, might be deleted later
         for key in dependencies.keys():
             y1 = y.copy()
             y1[key] = 1
@@ -120,7 +124,7 @@ class PolynomialEstimator(GradientEstimator):
             grad0 = self.my_wdnf(y0)
             delta = grad1 - grad0
             grad[key] = delta
-        return grad
+        return grad, estimation
 
 
 class LinearSolver(object):  # For Python 3, replace object with ABCMeta
