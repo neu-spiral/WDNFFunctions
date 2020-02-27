@@ -13,7 +13,7 @@ def generate_samples(y, dependencies={}):
     samples for dependant terms.
     """
     samples = dict.fromkeys(y.iterkeys(), 0.0)
-    p = dict(zip(y.iterkeys(), np.random.rand(1, len(y))))
+    p = dict(zip(y.iterkeys(), np.random.rand(len(y)).tolist()))
     # sys.stderr.write("p: " + str(p) + "\n")
     # sys.stderr.write("y: " + str(y) + "\n")
     if dependencies != {}:
@@ -98,14 +98,13 @@ class PolynomialEstimator(GradientEstimator):
     approximation.
     """
 
-    def __init__(self, utility_function, my_wdnf):
+    def __init__(self, my_wdnf):
         """
         my_wdnf is the resulting wdnf object after compose.
         """
         logging.info('Creating the PolynomialEstimator object...')
         super(PolynomialEstimator, self).__init__()
         self.my_wdnf = my_wdnf
-        self.utility_function = utility_function
         logging.info('...done.')
 
     def estimate(self, y):

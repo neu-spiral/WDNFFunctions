@@ -14,7 +14,7 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default='IM', type=str, help='Type of the problem instance',
                         choices=['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default='datasets/one_graph_file', type=str,
+    parser.add_argument('--input', default='datasets/mini_graphs_file', type=str,
                         help='Data input for the InfluenceMaximization problem')
     parser.add_argument('--testMode', default=False, type=bool, help='Tests the quality of the estimations if selected')
     # parser.add_argument('--fractionalVector', type=dict,
@@ -124,8 +124,9 @@ if __name__ == "__main__":
 
     else:
         y = {1: 0.5, 2: 0.5, 3: 0.5}
+        # y = {1: 0.02881619988067241, 2: 0.8720933356599558, 3: 0.9149300322150012}
         if args.estimator == 'polynomial':
-            poly_output = directory_output + args.problemType + '_timed_test_case' + '_polynomial_estimation'
+            poly_output = directory_output + args.problemType + '_timed_test' + '_polynomial_estimation'
             start = time()
             poly_grad, poly_estimation = newProblem.get_polynomial_estimator(args.center, args.degree)\
                 .estimate(y)
@@ -140,7 +141,7 @@ if __name__ == "__main__":
             save(poly_output, poly_results)
 
         if args.estimator == 'sampler':
-            sampler_output = directory_output + args.problemType + '_timed_test_case' + '_sampler_estimation'
+            sampler_output = directory_output + args.problemType + '_timed_test' + '_sampler_estimation'
             start = time()
             sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples)\
                                                          .estimate(y)
@@ -154,7 +155,7 @@ if __name__ == "__main__":
             save(sampler_output, sampler_results)
 
         if args.estimator == 'samplerWithDependencies':
-            sampler_output = directory_output + args.problemType + '_timed_test_case' + '_sampler_with_dep_estimation'
+            sampler_output = directory_output + args.problemType + '_timed_test' + '_sampler_with_dep_estimation'
             start = time()
             sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples, newProblem.dependencies)\
                                                          .estimate(y)

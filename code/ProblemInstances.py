@@ -45,13 +45,13 @@ def derive(function_type, x, degree):
         if degree == 0:
             return np.log1p(x)  # log1p(x) is ln(x+1)
         else:
-            return (((-1.0) ** degree) * math.factorial(degree - 1)) / ((1.0 + x) ** degree)
+            return (((-1.0) ** (degree - 1)) * math.factorial(degree - 1)) / ((1.0 + x) ** degree)
 
     if function_type == log:
         if degree == 0:
             return np.log(x)
         else:
-            return (((-1.0) ** degree) * math.factorial(degree - 1)) / (x ** degree)
+            return (((-1.0) ** (degree - 1)) * math.factorial(degree - 1)) / (x ** degree)
 
     if function_type == qs:
         if degree == 0:
@@ -377,7 +377,6 @@ class InfluenceMaximization(Problem):
         sys.stderr.write("my_taylor of the problem is: " + str(my_taylor.poly_coef) + '\n')
         # objective = [(WDNF({(): 2.0}, -1) + self.wdnf_dict[graph]) for graph in range(self.instancesSize)]
         # my_wdnf = np.prod(objective)
-
         final_wdnf = [(1.0 / self.instancesSize) * my_taylor.compose(self.wdnf_dict[graph])
                       for graph in range(self.instancesSize)]
         final_wdnf = sum(final_wdnf)
@@ -389,7 +388,7 @@ class InfluenceMaximization(Problem):
         #     my_wdnf = my_taylor.compose((1.0 / self.problemSize) * wdnf_so_far + WDNF({(): 1.0}, -1))
         #     final_wdnf += my_wdnf
         logging.info('...done.')
-        return PolynomialEstimator(self.utility_function, final_wdnf)
+        return PolynomialEstimator(final_wdnf)
 
     def get_initial_point(self):
         """

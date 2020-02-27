@@ -72,7 +72,7 @@ if __name__ == "__main__":
     plt.legend(fontsize='xx-small')
     plt.xlabel('Number of Samples')
     plt.ylabel('Utility')
-    plt.savefig('results/plots/numOfSamplesVSUtilityOnSamplerAndDepSampler.png')
+    plt.savefig('results/plots/doubleCheckNumOfSamplesVSUtilityOnSamplerAndDepSampler.png')
 
     plt.figure()
     utility3 = []
@@ -83,11 +83,12 @@ if __name__ == "__main__":
         utility3.append(-item[2])
         degrees.append(item[1])
         time3.append(np.log(item[0]))
+    print(utility3)
     plt.plot(degrees, utility3, "^", label="Polynomial Estimation")
     plt.legend()
     plt.xlabel('Degree of the expansion')
     plt.ylabel('Utility')
-    plt.savefig('results/plots/DegreeVSUtility.png')
+    plt.savefig('results/plots/doubleCheckDegreeVSUtility.png')
 
     plt.figure()
     plt.plot(time1, utility1, "g^", label="Sampler", markersize=5)
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     plt.legend(fontsize='xx-small')
     plt.xlabel('Time')
     plt.ylabel('Utility')
-    plt.savefig('results/plots/LogTimeVSUtilityOnSamplerAndDepSamplerAndPolynomial.png')
+    plt.savefig('results/plots/doubleCheckLogTimeVSUtilityOnSamplerAndDepSamplerAndPolynomial.png')
 
 
     # sampler_obj = eval(open('sampler_obj.txt', 'r').read())
