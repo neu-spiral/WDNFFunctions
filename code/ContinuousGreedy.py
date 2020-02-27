@@ -98,13 +98,14 @@ class PolynomialEstimator(GradientEstimator):
     approximation.
     """
 
-    def __init__(self, my_wdnf):
+    def __init__(self, utility_function, my_wdnf):
         """
         my_wdnf is the resulting wdnf object after compose.
         """
         logging.info('Creating the PolynomialEstimator object...')
         super(PolynomialEstimator, self).__init__()
         self.my_wdnf = my_wdnf
+        self.utility_function = utility_function
         logging.info('...done.')
 
     def estimate(self, y):
@@ -113,7 +114,6 @@ class PolynomialEstimator(GradientEstimator):
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
         dependencies = self.my_wdnf.find_dependencies()
-        estimation = self.my_wdnf(y)  # this variable will be used for testing purposes, might be deleted later
         for key in dependencies.keys():
             y1 = y.copy()
             y1[key] = 1
@@ -124,6 +124,7 @@ class PolynomialEstimator(GradientEstimator):
             grad0 = self.my_wdnf(y0)
             delta = grad1 - grad0
             grad[key] = delta
+        estimation = self.my_wdnf(y)  # this variable will be used for testing purposes, might be deleted later
         return grad, estimation
 
 

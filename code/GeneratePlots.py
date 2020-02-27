@@ -51,17 +51,23 @@ if __name__ == "__main__":
     # plt.legend(fontsize='xx-small')
     # plt.savefig('results/plots/sample_vs_poly_on_test_graphs.png')
 
-    utility = []
-    samples = []
-    cont_greedy_track = load("results/continuous_greedy/IMtest_case_diff_samplessampler_10_FW")
-    for item in cont_greedy_track:
-        utility.append(item[2])
-        samples.append(item[0])
-    plt.plot(samples, utility, "^")
+    utility1 = []
+    samples1 = []
+    cont_greedy_track1 = load("results/continuous_greedy/IMtest_case_sampler_estimation")
+    for item in cont_greedy_track1:
+        utility1.append(item[2])
+        samples1.append(item[1])
+    utility2 = []
+    samples2 = []
+    cont_greedy_track2 = load("results/continuous_greedy/IMtest_case_sampler_with_dep_estimation")
+    for item in cont_greedy_track2:
+        utility2.append(item[2])
+        samples2.append(item[1])
+    plt.plot(samples1, utility1, "^", samples2, utility2, "ro")
     # plt.legend(fontsize='xx-small')
     plt.xlabel('Number of Samples')
     plt.ylabel('Utility')
-    plt.savefig('results/plots/numOfSamplesVSUtility.png')
+    plt.savefig('results/plots/numOfSamplesVSUtilityOnSamplerAndDepSampler.png')
 
     # sampler_obj = eval(open('sampler_obj.txt', 'r').read())
     # iterations1 = list(range(1, len(sampler_obj) + 1))

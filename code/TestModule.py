@@ -18,12 +18,12 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default='IM', type=str, help='Type of the problem instance',
                         choices=['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default='datasets/test_graphs_file', type=str,
+    parser.add_argument('--input', default='datasets/mini_graphs_file', type=str,
                         help='Data input for the InfluenceMaximization problem')
     parser.add_argument('--testMode', default=False, type=bool, help='Tests the quality of the estimations if selected')
-    parser.add_argument('--fractionalVector', type=dict,
-                        help='If testMode is selected, checks the quality of the estimations according to this '
-                             'fractional vector')
+    # parser.add_argument('--fractionalVector', type=dict,
+    #                     help='If testMode is selected, checks the quality of the estimations according to this '
+    #                          'fractional vector')
     # parser.add_argument('--cascades', default=1000, type=int,
     #                     help='Number of cascades used in the Independent Cascade model')
     # parser.add_argument('--p', default=0.02, type=float, help='Infection probability')
@@ -127,26 +127,42 @@ if __name__ == "__main__":
         save(output, results)
 
     else:
+        y = {1: 0.5, 2: 0.5, 3: 0.5, 4: 0.5, 5: 0.5, 6: 0.5, 7: 0.5, 8: 0.5, 9: 0.5, 10: 0.5}
         if args.estimator == 'polynomial':
             poly_output = directory_output + args.problemType + 'test_case' + '_polynomial_estimation'
             poly_grad, poly_estimation = newProblem.get_polynomial_estimator(args.center, args.degree)\
-                .estimate(args.fractionalVector)
+                .estimate(y)
+            sys.stderr.write("estimated grad is: " + str(poly_grad) + '\n')
+            sys.stderr.write("estimated value of the function is: " + str(poly_estimation) + '\n')
             if os.path.exists(poly_output):
                 poly_results = load(poly_output)
-                poly_results.append((args.fractionalVector, args.degree, poly_estimation))
+                poly_results.append((y, args.degree, poly_estimation))
             else:
-                poly_results = [(args.fractionalVector, args.degree, poly_estimation)]
+                poly_results = [(y, args.degree, poly_estimation)]
             save(poly_output, poly_results)
 
         if args.estimator == 'sampler':
             sampler_output = directory_output + args.problemType + 'test_case' + '_sampler_estimation'
             sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples)\
-                        .estimate(args.fractionalVector)
+                                                         .estimate(y)
+            sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
             if os.path.exists(sampler_output):
                 sampler_results = load(sampler_output)
-                sampler_results.append((args.fractionalVector, args.samples, sampler_estimation))
+                sampler_results.append((y, args.samples, sampler_estimation))
             else:
-                sampler_results = [(args.fractionalVector, args.samples, sampler_estimation)]
+                sampler_results = [(y, args.samples, sampler_estimation)]
+            save(sampler_output, sampler_results)
+
+        if args.estimator == 'samplerWithDependencies':
+            sampler_output = directory_output + args.problemType + 'test_case' + '_sampler_with_dep_estimation'
+            sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples, newProblem.dependencies)\
+                                                         .estimate(y)
+            sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
+            if os.path.exists(sampler_output):
+                sampler_results = load(sampler_output)
+                sampler_results.append((y, args.samples, sampler_estimation))
+            else:
+                sampler_results = [(y, args.samples, sampler_estimation)]
             save(sampler_output, sampler_results)
 
 

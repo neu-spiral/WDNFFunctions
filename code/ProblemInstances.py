@@ -41,17 +41,25 @@ def derive(function_type, x, degree):
     degree and the center of the Taylor expansion with the type of the functions
     returns the value of the function's derivative at the given center point.
     """
-    if function_type == log:
+    if function_type == np.log1p:
         if degree == 0:
             return np.log1p(x)  # log1p(x) is ln(x+1)
         else:
             return (((-1.0) ** degree) * math.factorial(degree - 1)) / ((1.0 + x) ** degree)
+
+    if function_type == log:
+        if degree == 0:
+            return np.log(x)
+        else:
+            return (((-1.0) ** degree) * math.factorial(degree - 1)) / (x ** degree)
+
     if function_type == qs:
         if degree == 0:
             return qs(x)
         else:
             return math.factorial(degree) / ((1.0 - x) ** (degree + 1))
-    if function_type == id:
+
+    if function_type == id:  # idle delete later
         if degree == 0:
             return x
         elif degree == 1:
@@ -61,7 +69,7 @@ def derive(function_type, x, degree):
 
 
 def find_derivatives(function_type, center, degree):
-    """Type is either 'log' or 'queue_size', helper function to create the
+    """Type is either 'log1p' or 'queue_size', helper function to create the
     derivatives list of Taylor objects.
     """
     derivatives = [derive(function_type, center, i) for i in range(degree + 1)]
@@ -215,7 +223,7 @@ class DiversityReward(Problem):
     def __init__(self, rewards, given_partitions, fun, types, k_list):
         """ rewards is a dictionary containing {word: reward} pairs,
         given_partitions is a dictionary containing {partition: word tuples}, fun
-        is either log or queue_size, types is a dictionary containing {word: type} pairs,
+        is either log1p or queue_size, types is a dictionary containing {word: type} pairs,
         k_list is a dictionary of {type: cardinality} pairs.
         """
         super(DiversityReward, self).__init__()
@@ -325,14 +333,18 @@ class InfluenceMaximization(Problem):
         my_wdnf = WDNF({(): 1}, -1)
         for i in range(self.instancesSize):
             paths = nx.algorithms.dag.transitive_closure(graphs[i])
+            sys.stderr.write("paths of cascade " + str(i) + " are:" + str(graphs[i].edges()) + '\n')
             wdnf_list = [WDNF({tuple(sorted([node] + list(paths.predecessors(node)))): -1.0 / self.problemSize}, -1)
                          for node in self.groundSet]
-            resulting_wdnf = sum(wdnf_list) + WDNF({(): 2.0}, -1)
-            my_wdnf *= resulting_wdnf
+            resulting_wdnf = sum(wdnf_list) + WDNF({(): 1.0}, -1)
+            # my_wdnf *= resulting_wdnf
             dependencies.update(resulting_wdnf.find_dependencies())
             wdnf_dict[i] = resulting_wdnf  # prod(1 - x_u) for all u in P_v
-        self.my_wdnf = my_wdnf
+        # self.my_wdnf = my_wdnf
+        # sys.stderr.write("my_wdnf of the problem is: " + str(my_wdnf.coefficients) + '\n')
         self.wdnf_dict = wdnf_dict
+        for key in wdnf_dict:
+            sys.stderr.write("wdnf_dict[" + str(key) + "]: " + str(wdnf_dict[key].coefficients) + '\n')
         self.dependencies = dependencies
 
     def utility_function(self, y):
@@ -340,7 +352,7 @@ class InfluenceMaximization(Problem):
         :param y:
         :return:
         """
-        objective = [self.wdnf_dict[graph](y) ** (1.0 / self.instancesSize)
+        objective = [(self.wdnf_dict[graph](y) + 1) ** (1.0 / self.instancesSize)
                      for graph in range(self.instancesSize)]
         return np.log(np.prod(objective))
 
@@ -359,11 +371,17 @@ class InfluenceMaximization(Problem):
         """
         """
         logging.info('Getting polynomial estimator...')
-        derivatives = find_derivatives(log, center, degree)
+        derivatives = find_derivatives(np.log1p, center, degree)
+        sys.stderr.write("derivatives are: " + str(derivatives) + '\n')
         my_taylor = Taylor(degree, derivatives, center)
+        sys.stderr.write("my_taylor of the problem is: " + str(my_taylor.poly_coef) + '\n')
         # objective = [(WDNF({(): 2.0}, -1) + self.wdnf_dict[graph]) for graph in range(self.instancesSize)]
         # my_wdnf = np.prod(objective)
-        final_wdnf = (1.0 / self.instancesSize) * my_taylor.compose(self.my_wdnf)
+
+        final_wdnf = [(1.0 / self.instancesSize) * my_taylor.compose(self.wdnf_dict[graph])
+                      for graph in range(self.instancesSize)]
+        final_wdnf = sum(final_wdnf)
+        sys.stderr.write("final_wdnf of the problem is: " + str(final_wdnf.coefficients) + '\n')
         # for i in range(self.instancesSize):
         #     wdnf_so_far = WDNF(dict(), -1)
         #     for node in self.groundSet:
@@ -371,7 +389,7 @@ class InfluenceMaximization(Problem):
         #     my_wdnf = my_taylor.compose((1.0 / self.problemSize) * wdnf_so_far + WDNF({(): 1.0}, -1))
         #     final_wdnf += my_wdnf
         logging.info('...done.')
-        return PolynomialEstimator(final_wdnf)
+        return PolynomialEstimator(self.utility_function, final_wdnf)
 
     def get_initial_point(self):
         """
@@ -428,7 +446,7 @@ class FacilityLocation(Problem):
     def get_polynomial_estimator(self, center, degree):
         """
         """
-        derivatives = find_derivatives(log, center, degree)
+        derivatives = find_derivatives(log1p, center, degree)
         my_taylor = Taylor(degree, derivatives, center)
         wdnf_so_far = WDNF(dict(), -1)
         for y in self.Y:
