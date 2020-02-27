@@ -53,21 +53,51 @@ if __name__ == "__main__":
 
     utility1 = []
     samples1 = []
-    cont_greedy_track1 = load("results/continuous_greedy/IMtest_case_sampler_estimation")
+    time1 = []
+    cont_greedy_track1 = load("results/continuous_greedy/IM_timed_test_case_sampler_estimation")
     for item in cont_greedy_track1:
         utility1.append(item[2])
         samples1.append(item[1])
+        time1.append(np.log(item[0]))
     utility2 = []
     samples2 = []
-    cont_greedy_track2 = load("results/continuous_greedy/IMtest_case_sampler_with_dep_estimation")
+    time2 = []
+    cont_greedy_track2 = load("results/continuous_greedy/IM_timed_test_case_sampler_with_dep_estimation")
     for item in cont_greedy_track2:
         utility2.append(item[2])
         samples2.append(item[1])
-    plt.plot(samples1, utility1, "^", samples2, utility2, "ro")
-    # plt.legend(fontsize='xx-small')
+        time2.append(np.log(item[0]))
+    plt.plot(samples1, utility1, "^", label="Sampler")
+    plt.plot(samples2, utility2, "ro", label="Sampler with Dependencies")
+    plt.legend(fontsize='xx-small')
     plt.xlabel('Number of Samples')
     plt.ylabel('Utility')
     plt.savefig('results/plots/numOfSamplesVSUtilityOnSamplerAndDepSampler.png')
+
+    plt.figure()
+    utility3 = []
+    degrees = []
+    time3 = []
+    cont_greedy_track3 = load("results/continuous_greedy/IM_timed_test_case_polynomial_estimation")
+    for item in cont_greedy_track3:
+        utility3.append(-item[2])
+        degrees.append(item[1])
+        time3.append(np.log(item[0]))
+    plt.plot(degrees, utility3, "^", label="Polynomial Estimation")
+    plt.legend()
+    plt.xlabel('Degree of the expansion')
+    plt.ylabel('Utility')
+    plt.savefig('results/plots/DegreeVSUtility.png')
+
+    plt.figure()
+    plt.plot(time1, utility1, "g^", label="Sampler", markersize=5)
+    plt.plot(time2, utility2, "ro", label="Sampler with Dependencies", markersize=5)
+    plt.plot(time3, utility3, "bx", label="Polynomial", markersize=5)
+    plt.legend(fontsize='xx-small')
+    plt.xlabel('Time')
+    plt.ylabel('Utility')
+    plt.savefig('results/plots/LogTimeVSUtilityOnSamplerAndDepSamplerAndPolynomial.png')
+
 
     # sampler_obj = eval(open('sampler_obj.txt', 'r').read())
     # iterations1 = list(range(1, len(sampler_obj) + 1))

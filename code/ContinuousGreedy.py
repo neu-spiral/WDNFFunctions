@@ -13,7 +13,7 @@ def generate_samples(y, dependencies={}):
     samples for dependant terms.
     """
     samples = dict.fromkeys(y.iterkeys(), 0.0)
-    p = dict.fromkeys(y.iterkeys(), np.random.rand())
+    p = dict(zip(y.iterkeys(), np.random.rand(1, len(y))))
     # sys.stderr.write("p: " + str(p) + "\n")
     # sys.stderr.write("y: " + str(y) + "\n")
     if dependencies != {}:

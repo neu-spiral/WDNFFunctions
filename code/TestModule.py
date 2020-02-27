@@ -1,10 +1,6 @@
 from helpers import save, load
-# from networkx import Graph, DiGraph
-# from networkx.algorithms import bipartite
-# from networkx.convert import to_edgelist
-# from networkx.readwrite.edgelist import read_edgelist
 from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation
-# from wdnf import WDNF, Taylor
+from time import time
 import argparse
 import logging
 import numpy as np
@@ -18,7 +14,7 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default='IM', type=str, help='Type of the problem instance',
                         choices=['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default='datasets/mini_graphs_file', type=str,
+    parser.add_argument('--input', default='datasets/one_graph_file', type=str,
                         help='Data input for the InfluenceMaximization problem')
     parser.add_argument('--testMode', default=False, type=bool, help='Tests the quality of the estimations if selected')
     # parser.add_argument('--fractionalVector', type=dict,
@@ -127,42 +123,48 @@ if __name__ == "__main__":
         save(output, results)
 
     else:
-        y = {1: 0.5, 2: 0.5, 3: 0.5, 4: 0.5, 5: 0.5, 6: 0.5, 7: 0.5, 8: 0.5, 9: 0.5, 10: 0.5}
+        y = {1: 0.5, 2: 0.5, 3: 0.5}
         if args.estimator == 'polynomial':
-            poly_output = directory_output + args.problemType + 'test_case' + '_polynomial_estimation'
+            poly_output = directory_output + args.problemType + '_timed_test_case' + '_polynomial_estimation'
+            start = time()
             poly_grad, poly_estimation = newProblem.get_polynomial_estimator(args.center, args.degree)\
                 .estimate(y)
+            elapsed_time = time() - start
             sys.stderr.write("estimated grad is: " + str(poly_grad) + '\n')
             sys.stderr.write("estimated value of the function is: " + str(poly_estimation) + '\n')
             if os.path.exists(poly_output):
                 poly_results = load(poly_output)
-                poly_results.append((y, args.degree, poly_estimation))
+                poly_results.append((elapsed_time, args.degree, poly_estimation))
             else:
-                poly_results = [(y, args.degree, poly_estimation)]
+                poly_results = [(elapsed_time, args.degree, poly_estimation)]
             save(poly_output, poly_results)
 
         if args.estimator == 'sampler':
-            sampler_output = directory_output + args.problemType + 'test_case' + '_sampler_estimation'
+            sampler_output = directory_output + args.problemType + '_timed_test_case' + '_sampler_estimation'
+            start = time()
             sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples)\
                                                          .estimate(y)
+            elapsed_time = time() - start
             sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
             if os.path.exists(sampler_output):
                 sampler_results = load(sampler_output)
-                sampler_results.append((y, args.samples, sampler_estimation))
+                sampler_results.append((elapsed_time, args.samples, sampler_estimation))
             else:
-                sampler_results = [(y, args.samples, sampler_estimation)]
+                sampler_results = [(elapsed_time, args.samples, sampler_estimation)]
             save(sampler_output, sampler_results)
 
         if args.estimator == 'samplerWithDependencies':
-            sampler_output = directory_output + args.problemType + 'test_case' + '_sampler_with_dep_estimation'
+            sampler_output = directory_output + args.problemType + '_timed_test_case' + '_sampler_with_dep_estimation'
+            start = time()
             sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples, newProblem.dependencies)\
                                                          .estimate(y)
+            elapsed_time = time() - start
             sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
             if os.path.exists(sampler_output):
                 sampler_results = load(sampler_output)
-                sampler_results.append((y, args.samples, sampler_estimation))
+                sampler_results.append((elapsed_time, args.samples, sampler_estimation))
             else:
-                sampler_results = [(y, args.samples, sampler_estimation)]
+                sampler_results = [(elapsed_time, args.samples, sampler_estimation)]
             save(sampler_output, sampler_results)
 
 
