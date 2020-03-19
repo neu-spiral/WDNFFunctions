@@ -1,5 +1,5 @@
 from helpers import save, load
-from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation
+from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, derive
 from time import time
 import argparse
 import logging
@@ -14,9 +14,10 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--problemType', default='IM', type=str, help='Type of the problem instance',
                         choices=['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default='datasets/mini_graphs_file', type=str,
+    parser.add_argument('--input', default='datasets/one_graph_file', type=str,
                         help='Data input for the InfluenceMaximization problem')
-    parser.add_argument('--testMode', default=False, type=bool, help='Tests the quality of the estimations if selected')
+    parser.add_argument('--testMode', default='noTest', type=str, help='Tests the quality of the estimations from '
+                        'different aspects', choices=['noTest', 'differentiation', 'estimation'])
     # parser.add_argument('--fractionalVector', type=dict,
     #                     help='If testMode is selected, checks the quality of the estimations according to this '
     #                          'fractional vector')
@@ -29,14 +30,14 @@ if __name__ == "__main__":
     #                     help='Input file that stores targeted partitions of the ground set')
     parser.add_argument('--constraints', default=4, type=int,
                         help='Constraints dictionary with {type:cardinality} pairs')
-    parser.add_argument('--estimator', default='polynomial', type=str, help='Type of the estimator',
-                        choices=['sampler', 'polynomial', 'samplerWithDependencies'])
+    parser.add_argument('--estimator', default='sampler', type=str, help='Type of the estimator',
+                        choices=['polynomial', 'sampler', 'samplerWithDependencies'])
     parser.add_argument('--iterations', default=10, type=int,
                         help='Number of iterations used in the Frank-Wolfe algorithm')
-    parser.add_argument('--degree', default=2, type=int, help='Degree of the polynomial estimator')
-    parser.add_argument('--center', default=0.0, type=float,
+    parser.add_argument('--degree', default=10, type=int, help='Degree of the polynomial estimator')
+    parser.add_argument('--center', default=0.5, type=float,
                         help='The point around which Taylor approximation is calculated')
-    parser.add_argument('--samples', default=1, type=int,
+    parser.add_argument('--samples', default=100, type=int,
                         help='Number of samples used to calculate the sampler estimator')
 #    parser.add_argument('--timeOutput', default = "sampler_time.txt",
     #    help = 'File in which time of each iteration is stored')
@@ -92,7 +93,7 @@ if __name__ == "__main__":
         logging.info('...done. %d seeds will be selected' % args.constraints)
         output = directory_output + args.problemType + "test_case_diff_samples" + args.estimator + "_" + str(args.iterations) \
                                   + "_FW"
-    if args.testMode is False:
+    if args.testMode == 'noTest':
         if args.estimator == 'polynomial':
             logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
             y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations))
@@ -122,11 +123,34 @@ if __name__ == "__main__":
             results = [(args.samples, y, newProblem.utility_function(y))]
         save(output, results)
 
-    else:
+    elif args.testMode == 'estimation':
         y = {1: 0.5, 2: 0.5, 3: 0.5}
+        # y = {1: 0.0, 2: 0.0, 3: 0.0}
         # y = {1: 0.02881619988067241, 2: 0.8720933356599558, 3: 0.9149300322150012}
+        out = 0.0
+        for x1 in range(2):
+            for x2 in range(2):
+                for x3 in range(2):
+                    x = {1: x1, 2: x2, 3: x3}
+                    if x1 == 0 and x2 == 0 and x3 == 0:
+                        out += newProblem.utility_function(x) * (1.0 - y[1]) * (1.0 - y[2]) * (1.0 - y[3])
+                    elif x1 == 0 and x2 == 0 and x3 == 1:
+                        out += newProblem.utility_function(x) * (1.0 - y[1]) * (1.0 - y[2]) * y[3]
+                    elif x1 == 0 and x2 == 1 and x3 == 0:
+                        out += newProblem.utility_function(x) * (1.0 - y[1]) * y[2] * (1.0 - y[3])
+                    elif x1 == 0 and x2 == 1 and x3 == 1:
+                        out += newProblem.utility_function(x) * (1.0 - y[1]) * y[2] * y[3]
+                    elif x1 == 1 and x2 == 0 and x3 == 0:
+                        out += newProblem.utility_function(x) * y[1] * (1.0 - y[2]) * (1.0 - y[3])
+                    elif x1 == 1 and x2 == 0 and x3 == 1:
+                        out += newProblem.utility_function(x) * y[1] * (1.0 - y[2]) * y[3]
+                    elif x1 == 1 and x2 == 1 and x3 == 0:
+                        out += newProblem.utility_function(x) * y[1] * y[2] * (1.0 - y[3])
+                    else:
+                        out += newProblem.utility_function(x) * y[1] * y[2] * y[3]
+        sys.stderr.write("multilinear relaxation is: " + str(out) + '\n')
         if args.estimator == 'polynomial':
-            poly_output = directory_output + args.problemType + '_timed_test' + '_polynomial_estimation'
+            poly_output = directory_output + args.problemType + '_1_graph_y0.5' + '_poly0.5'
             start = time()
             poly_grad, poly_estimation = newProblem.get_polynomial_estimator(args.center, args.degree)\
                 .estimate(y)
@@ -135,13 +159,13 @@ if __name__ == "__main__":
             sys.stderr.write("estimated value of the function is: " + str(poly_estimation) + '\n')
             if os.path.exists(poly_output):
                 poly_results = load(poly_output)
-                poly_results.append((elapsed_time, args.degree, poly_estimation))
+                poly_results.append((elapsed_time, args.degree, poly_estimation, out))
             else:
-                poly_results = [(elapsed_time, args.degree, poly_estimation)]
+                poly_results = [(elapsed_time, args.degree, poly_estimation, out)]
             save(poly_output, poly_results)
 
         if args.estimator == 'sampler':
-            sampler_output = directory_output + args.problemType + '_timed_test' + '_sampler_estimation'
+            sampler_output = directory_output + args.problemType + '_1_graph_y0.5' + '_samp'
             start = time()
             sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples)\
                                                          .estimate(y)
@@ -149,13 +173,13 @@ if __name__ == "__main__":
             sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
             if os.path.exists(sampler_output):
                 sampler_results = load(sampler_output)
-                sampler_results.append((elapsed_time, args.samples, sampler_estimation))
+                sampler_results.append((elapsed_time, args.samples, sampler_estimation, out))
             else:
-                sampler_results = [(elapsed_time, args.samples, sampler_estimation)]
+                sampler_results = [(elapsed_time, args.samples, sampler_estimation, out)]
             save(sampler_output, sampler_results)
 
         if args.estimator == 'samplerWithDependencies':
-            sampler_output = directory_output + args.problemType + '_timed_test' + '_sampler_with_dep_estimation'
+            sampler_output = directory_output + args.problemType + '_1_graph_y0.5' + '_samp_with_dep_estimation'
             start = time()
             sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples, newProblem.dependencies)\
                                                          .estimate(y)
@@ -163,10 +187,36 @@ if __name__ == "__main__":
             sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
             if os.path.exists(sampler_output):
                 sampler_results = load(sampler_output)
-                sampler_results.append((elapsed_time, args.samples, sampler_estimation))
+                sampler_results.append((elapsed_time, args.samples, sampler_estimation, out))
             else:
-                sampler_results = [(elapsed_time, args.samples, sampler_estimation)]
+                sampler_results = [(elapsed_time, args.samples, sampler_estimation, out)]
             save(sampler_output, sampler_results)
+
+    elif args.testMode == 'differentiation':
+        def estimate_grad(fun, x, delta):
+            """ Given a real-valued function fun, estimate its gradient numerically.
+            """
+            d = len(x)
+            grad = np.zeros(d)
+            for i in range(d):
+                e = np.zeros(d)
+                e[i] = 1.0
+                grad[i] = (fun(x + delta * e) - fun(x)) / delta
+            return grad
+        n = 1000
+        y = np.random.rand(n).tolist()
+        total = 0.0
+        f_prime = np.log1p
+        for degree in range(100):
+            for j in range(n):
+                numerical = estimate_grad(f_prime, y[j], 0.001)
+                f_prime = derive(np.log1p, y[j], degree)
+                total += abs(numerical - f_prime)
+            sys.stdout.write("Numerical error between derivatives of degree %d: " % degree +
+                             str(total/(n * 1.0)) + '\n')
+
+
+
 
 
 #    if args.problemType == 'IM':

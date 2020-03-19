@@ -43,25 +43,25 @@ def derive(function_type, x, degree):
     """
     if function_type == np.log1p:
         if degree == 0:
-            return np.log1p(x)  # log1p(x) is ln(x+1)
+            return 0  # np.log1p(x)  # log1p(x) is ln(x+1)
         else:
             return (((-1.0) ** (degree - 1)) * math.factorial(degree - 1)) / ((1.0 + x) ** degree)
 
     if function_type == log:
         if degree == 0:
-            return np.log(x)
+            return 0  # np.log(x)
         else:
             return (((-1.0) ** (degree - 1)) * math.factorial(degree - 1)) / (x ** degree)
 
     if function_type == qs:
         if degree == 0:
-            return qs(x)
+            return 0  # qs(x)
         else:
             return math.factorial(degree) / ((1.0 - x) ** (degree + 1))
 
     if function_type == id:  # idle delete later
         if degree == 0:
-            return x
+            return 0  # x
         elif degree == 1:
             return 1
         else:
@@ -377,7 +377,7 @@ class InfluenceMaximization(Problem):
         sys.stderr.write("my_taylor of the problem is: " + str(my_taylor.poly_coef) + '\n')
         # objective = [(WDNF({(): 2.0}, -1) + self.wdnf_dict[graph]) for graph in range(self.instancesSize)]
         # my_wdnf = np.prod(objective)
-        final_wdnf = [(1.0 / self.instancesSize) * my_taylor.compose(self.wdnf_dict[graph])
+        final_wdnf = [(1.0 / self.instancesSize) * (my_taylor.compose(self.wdnf_dict[graph]) + WDNF({(): sum(my_taylor.poly_coef)}, -1))
                       for graph in range(self.instancesSize)]
         final_wdnf = sum(final_wdnf)
         sys.stderr.write("final_wdnf of the problem is: " + str(final_wdnf.coefficients) + '\n')

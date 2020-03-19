@@ -54,7 +54,8 @@ if __name__ == "__main__":
     utility1 = []
     samples1 = []
     time1 = []
-    cont_greedy_track1 = load("results/continuous_greedy/IM_timed_test_case_sampler_estimation")
+    out = []
+    cont_greedy_track1 = load("results/continuous_greedy/IM_1_graph_y0.5_samp")
     for item in cont_greedy_track1:
         utility1.append(item[2])
         samples1.append(item[1])
@@ -62,42 +63,45 @@ if __name__ == "__main__":
     utility2 = []
     samples2 = []
     time2 = []
-    cont_greedy_track2 = load("results/continuous_greedy/IM_timed_test_case_sampler_with_dep_estimation")
+    cont_greedy_track2 = load("results/continuous_greedy/IM_1_graph_y0.5_samp_with_dep_estimation")
     for item in cont_greedy_track2:
         utility2.append(item[2])
         samples2.append(item[1])
         time2.append(np.log(item[0]))
+        out.append(item[3])
     plt.plot(samples1, utility1, "^", label="Sampler")
     plt.plot(samples2, utility2, "ro", label="Sampler with Dependencies")
     plt.legend(fontsize='xx-small')
     plt.xlabel('Number of Samples')
     plt.ylabel('Utility')
-    plt.savefig('results/plots/doubleCheckNumOfSamplesVSUtilityOnSamplerAndDepSampler.png')
+    plt.savefig('results/plots/oneGraphOldNumOfSamplesVSUtilityOnSamplerAndDepSampler.png')
 
     plt.figure()
     utility3 = []
     degrees = []
     time3 = []
-    cont_greedy_track3 = load("results/continuous_greedy/IM_timed_test_case_polynomial_estimation")
+    cont_greedy_track3 = load("results/continuous_greedy/IM_1_graph_y0.5_poly0.5")
     for item in cont_greedy_track3:
-        utility3.append(-item[2])
-        degrees.append(item[1])
-        time3.append(np.log(item[0]))
-    print(utility3)
+        if item[1] < 70:
+            utility3.append(item[2])
+            degrees.append(item[1])
+            time3.append(np.log(item[0]))
+            print(item)
     plt.plot(degrees, utility3, "^", label="Polynomial Estimation")
     plt.legend()
     plt.xlabel('Degree of the expansion')
     plt.ylabel('Utility')
-    plt.savefig('results/plots/doubleCheckDegreeVSUtility.png')
+    plt.savefig('results/plots/1Graph_y0.5_poly0.5_DegreeVSUtility.png')
 
     plt.figure()
     plt.plot(time1, utility1, "g^", label="Sampler", markersize=5)
     plt.plot(time2, utility2, "ro", label="Sampler with Dependencies", markersize=5)
     plt.plot(time3, utility3, "bx", label="Polynomial", markersize=5)
+    plt.plot(time2, out, label="Multilinear Relaxation")
     plt.legend(fontsize='xx-small')
     plt.xlabel('Time')
     plt.ylabel('Utility')
-    plt.savefig('results/plots/doubleCheckLogTimeVSUtilityOnSamplerAndDepSamplerAndPolynomial.png')
+    plt.savefig('results/plots/1Graph_y0.5LogTimeVSUtilityOnSamplerAndDepSamplerAndPolynomial.png')
 
 
     # sampler_obj = eval(open('sampler_obj.txt', 'r').read())
