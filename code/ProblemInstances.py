@@ -43,7 +43,7 @@ def derive(function_type, x, degree):
     """
     if function_type == np.log1p:
         if degree == 0:
-            return 0  # np.log1p(x)  # log1p(x) is ln(x+1)
+            return np.log1p(x)  # log1p(x) is ln(x+1)
         else:
             return (((-1.0) ** (degree - 1)) * math.factorial(degree - 1)) / ((1.0 + x) ** degree)
 
@@ -372,15 +372,15 @@ class InfluenceMaximization(Problem):
         """
         logging.info('Getting polynomial estimator...')
         derivatives = find_derivatives(np.log1p, center, degree)
-        sys.stderr.write("derivatives are: " + str(derivatives) + '\n')
+        # sys.stderr.write("derivatives are: " + str(derivatives) + '\n')
         my_taylor = Taylor(degree, derivatives, center)
-        sys.stderr.write("my_taylor of the problem is: " + str(my_taylor.poly_coef) + '\n')
+        # sys.stderr.write("my_taylor of the problem is: " + str(my_taylor.poly_coef) + '\n')
         # objective = [(WDNF({(): 2.0}, -1) + self.wdnf_dict[graph]) for graph in range(self.instancesSize)]
         # my_wdnf = np.prod(objective)
-        final_wdnf = [(1.0 / self.instancesSize) * (my_taylor.compose(self.wdnf_dict[graph]) + WDNF({(): sum(my_taylor.poly_coef)}, -1))
+        final_wdnf = [(1.0 / self.instancesSize) * (my_taylor.compose(self.wdnf_dict[graph]))
                       for graph in range(self.instancesSize)]
         final_wdnf = sum(final_wdnf)
-        sys.stderr.write("final_wdnf of the problem is: " + str(final_wdnf.coefficients) + '\n')
+        # sys.stderr.write("final_wdnf of the problem is: " + str(final_wdnf.coefficients) + '\n')
         # for i in range(self.instancesSize):
         #     wdnf_so_far = WDNF(dict(), -1)
         #     for node in self.groundSet:

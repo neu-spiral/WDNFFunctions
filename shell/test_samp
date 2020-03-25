@@ -1,17 +1,17 @@
 #!/bin/bash
 
-#SBATCH --output=slurm_logs/samplertestIM%j.out
+#SBATCH --output=slurm_logs/1_graph_poly_test%j.out
 
-#SBATCH --error=slurm_logs/samplertestIM%j.err
+#SBATCH --error=slurm_logs/1_graph_poly_test%j.err
 
-#SBATCH --job-name=samplertestIM
+#SBATCH --job-name=1_graph_poly_test
 
 #SBATCH --partition=ioannidis
 
-#SBATCH --mem=256Gb
+#SBATCH --mem=10Gb
 
-#SBATCH --time=48:00:00
+#SBATCH --time=01:30:00
 
 #SBATCH --constraint=E5-2680v4@2.40GHz
 
-srun python code/TestModule.py --estimator polynomial --constraints $1 --degree $2 --center $3
+srun python code/TestModule.py --testMode True --estimator polynomial --center 0.5 --degree $1

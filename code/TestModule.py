@@ -16,8 +16,8 @@ if __name__ == "__main__":
                         choices=['DR', 'QS', 'FL', 'IM'])
     parser.add_argument('--input', default='datasets/one_graph_file', type=str,
                         help='Data input for the InfluenceMaximization problem')
-    parser.add_argument('--testMode', default='noTest', type=str, help='Tests the quality of the estimations from '
-                        'different aspects', choices=['noTest', 'differentiation', 'estimation'])
+    parser.add_argument('--testMode', default=False, type=bool, help='Tests the quality of the estimations from '
+                        'different aspects')
     # parser.add_argument('--fractionalVector', type=dict,
     #                     help='If testMode is selected, checks the quality of the estimations according to this '
     #                          'fractional vector')
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         logging.info('...done. %d seeds will be selected' % args.constraints)
         output = directory_output + args.problemType + "test_case_diff_samples" + args.estimator + "_" + str(args.iterations) \
                                   + "_FW"
-    if args.testMode == 'noTest':
+    if args.testMode is False:
         if args.estimator == 'polynomial':
             logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
             y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations))
@@ -123,7 +123,7 @@ if __name__ == "__main__":
             results = [(args.samples, y, newProblem.utility_function(y))]
         save(output, results)
 
-    elif args.testMode == 'estimation':
+    else:
         y = {1: 0.5, 2: 0.5, 3: 0.5}
         # y = {1: 0.0, 2: 0.0, 3: 0.0}
         # y = {1: 0.02881619988067241, 2: 0.8720933356599558, 3: 0.9149300322150012}
@@ -191,32 +191,6 @@ if __name__ == "__main__":
             else:
                 sampler_results = [(elapsed_time, args.samples, sampler_estimation, out)]
             save(sampler_output, sampler_results)
-
-    elif args.testMode == 'differentiation':
-        def estimate_grad(fun, x, delta):
-            """ Given a real-valued function fun, estimate its gradient numerically.
-            """
-            d = len(x)
-            grad = np.zeros(d)
-            for i in range(d):
-                e = np.zeros(d)
-                e[i] = 1.0
-                grad[i] = (fun(x + delta * e) - fun(x)) / delta
-            return grad
-        n = 1000
-        y = np.random.rand(n).tolist()
-        total = 0.0
-        f_prime = np.log1p
-        for degree in range(100):
-            for j in range(n):
-                numerical = estimate_grad(f_prime, y[j], 0.001)
-                f_prime = derive(np.log1p, y[j], degree)
-                total += abs(numerical - f_prime)
-            sys.stdout.write("Numerical error between derivatives of degree %d: " % degree +
-                             str(total/(n * 1.0)) + '\n')
-
-
-
 
 
 #    if args.problemType == 'IM':

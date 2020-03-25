@@ -102,17 +102,19 @@ class WDNF:
         """
         assert self.sign == other.sign, 'Two WDNF polynomials of different signs cannot be multiplied!'
         new_coefficients = dict()
-        # for key1 in self.coefficients:
-        #     for key2 in other.coefficients:
-        #         new_key = merge(key1, key2)
-        new_coefficients = {merge(key1, key2): self.coefficients[key1] * other.coefficients[key2]
-                            if merge(key1, key2) not in new_coefficients
-                            else new_coefficients[merge(key1, key2)] + self.coefficients[key1]*other.coefficients[key2]
-                            for key1 in self.coefficients for key2 in other.coefficients}
-        #         if new_key in new_coefficients:
-        #             new_coefficients[new_key] += self.coefficients[key1] * other.coefficients[key2]
-        #         else:
-        #            new_coefficients[new_key] = self.coefficients[key1] * other.coefficients[key2]
+        for key1 in self.coefficients:
+            for key2 in other.coefficients:
+                new_key = merge(key1, key2)
+        # the code segment below should work but it doesn't. I couldn't figure it out why.
+        # new_coefficients = {merge(key1, key2): (new_coefficients[merge(key1, key2)] + (self.coefficients[key1] *
+        #                                                                                other.coefficients[key2]))
+        #                     if merge(key1, key2) in new_coefficients else (self.coefficients[key1] *
+        #                                                                    other.coefficients[key2])
+        #                     for key1 in self.coefficients for key2 in other.coefficients}
+                if new_key in new_coefficients:
+                    new_coefficients[new_key] += self.coefficients[key1] * other.coefficients[key2]
+                else:
+                    new_coefficients[new_key] = self.coefficients[key1] * other.coefficients[key2]
         return WDNF(new_coefficients, self.sign)
 
     def __rmul__(self, scalar):
