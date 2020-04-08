@@ -1,15 +1,14 @@
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+from helpers import load
 import argparse
-from matplotlib.transforms import Bbox
-import numpy as np
-from matplotlib.dates import date2num
 import datetime
+import numpy as np
 import os
 import sys
-from helpers import load
-
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib.dates import date2num
+import matplotlib.pyplot as plt
+from matplotlib.transforms import Bbox
 
 
 if __name__ == "__main__":
@@ -51,58 +50,106 @@ if __name__ == "__main__":
     # plt.legend(fontsize='xx-small')
     # plt.savefig('results/plots/sample_vs_poly_on_test_graphs.png')
 
-    utility1 = []
-    samples1 = []
-    time1 = []
-    out = []
-    cont_greedy_track1 = load("results/continuous_greedy/IM_1_graph_y0.5_samp")
+    # utility1 = []
+    # samples1 = []
+    # time1 = []
+    # degrees1 = []
+    # out = []
+    # cont_greedy_track1 = load("results/continuous_greedy/IM_random10_sampler_y_random")
+    # for item in cont_greedy_track1:
+    #     #if item[1] < 21:
+    #     utility1.append(item[2])
+    #     # degrees1.append(item[1])
+    #     #samples1.append(item[1])
+    #     time1.append(np.log(item[0]))
+    #
+    # utility2 = []
+    # samples2 = []
+    # time2 = []
+    # degrees2 = []
+    # cont_greedy_track2 = load("results/continuous_greedy/IM_random10_polynomial_0.5_y_random")
+    # for item in cont_greedy_track2:
+    #     #if item[1] < 21:
+    #     utility2.append(item[2])
+    #     #degrees2.append(item[1])
+    #         #samples2.append(item[1])
+    #     time2.append(np.log(item[0]))
+    #     out.append(item[3])
+    #     #iterations2.append(item[0])
+    #     #mlr2.append(item[1])
+    # # print(out)
+    # # plt.plot(time1, utility1, "^", label="Sampler")
+    # # plt.plot(iterations2, mlr2, "ro", label="Sampler with Dependencies")
+    # # plt.legend(fontsize='xx-small')
+    # # plt.xlabel('Iterations')
+    # # plt.ylabel('Multilinear Relaxation')
+    # # plt.savefig('results/plots/multivsiterations.png')
+    #
+    # # plt.figure()
+    # # utility3 = []
+    # # degrees = []
+    # # time3 = []
+    # # cont_greedy_track3 = load("results/continuous_greedy/IM_1_graph_y_rand2_poly0.0")
+    # # for item in cont_greedy_track3:
+    # #    utility3.append(item[2])
+    # #    degrees.append(item[1])
+    # #    time3.append(np.log(item[0]))
+    # #    print(item)
+    # # plt.plot(degrees, utility3, "^", label="Polynomial Estimation")
+    # # plt.legend()
+    # # plt.xlabel('Degree of the expansion')
+    # # plt.ylabel('Utility')
+    # # plt.savefig('results/plots/1Graph_y_rand2_poly0.5_DegreeVSUtility.png')
+    #
+    # plt.figure()
+    # plt.plot(time1, utility1, "g^", label="Sampler", markersize=5)
+    # # plt.plot(time2, utility2, "ro", label="Sampler with Dependencies", markersize=5)
+    # plt.plot(time2, utility2, "bx", label="Polynomial", markersize=5)
+    # plt.plot(time2, out, label="Multilinear Relaxation")
+    # plt.legend(fontsize='xx-small')
+    # plt.xlabel('Time')
+    # plt.ylabel('Utility')
+    # plt.savefig('results/plots/Random10_y_random_LogTimeVSUtilityOnSamplerAndDepSamplerAndPolynomial05.png')
+
+    ## UNCOMMENT HERE FOR COMPARING POLYNOMIAL ESTIMATORS CENTERED AROUND DIFFERENT POINTS #
+    # plt.figure()
+    # plt.plot(degrees1, utility1, "g^", label="Polynomial around 0.0", markersize=5)
+    # plt.plot(degrees2, utility2, "ro", label="Polynomial around 0.5", markersize=5)
+    # # plt.plot(time3, utility3, "bx", label="Polynomial", markersize=5)
+    # plt.plot(degrees2, out, label="Multilinear Relaxation")
+    # plt.legend(fontsize='xx-small')
+    # plt.xlabel('Degree')
+    # plt.ylabel('Utility')
+    # plt.title('Comparison of polynomial estimators around 0.0 and 0.5')
+    # plt.savefig('results/plots/1Graph_y_05_DegreeVSUtilityOnPolynomials00and05.png')
+    ##STOP UNCOMMENTING HERE #
+
+    # UNCOMMENT HERE FOR COMPARING MLR RESULTS OF ESTIMATORS #
+    iterations1 = []
+    mlr1 = []
+    cont_greedy_track1 = load("results/continuous_greedy/DR_epinions_20_polynomial_50_FW_degree_4_around_0.5")
     for item in cont_greedy_track1:
-        utility1.append(item[2])
-        samples1.append(item[1])
-        time1.append(np.log(item[0]))
-    utility2 = []
-    samples2 = []
-    time2 = []
-    cont_greedy_track2 = load("results/continuous_greedy/IM_1_graph_y0.5_samp_with_dep_estimation")
+        iterations1.append(item[0])
+        mlr1.append(item[1])
+
+    iterations2 = []
+    mlr2 = []
+    cont_greedy_track2 = load("results/continuous_greedy/DR_epinions_20_sampler_50_FW_500_samples")
     for item in cont_greedy_track2:
-        utility2.append(item[2])
-        samples2.append(item[1])
-        time2.append(np.log(item[0]))
-        out.append(item[3])
-    plt.plot(samples1, utility1, "^", label="Sampler")
-    plt.plot(samples2, utility2, "ro", label="Sampler with Dependencies")
+        iterations2.append(item[0])
+        mlr2.append(item[1])
+
+    x_lims = [0, 50]
+    x1 = np.linspace(x_lims[0], x_lims[1], 1000)
+
+    plt.plot(iterations1, mlr1, "^", label="Polynomial Estimator")
+    plt.plot(iterations2, mlr2, "ro", label="Sampler Estimator")
+    # plt.plot(x1, np.log1p(x1/50.0), label='log(x + 1)')
     plt.legend(fontsize='xx-small')
-    plt.xlabel('Number of Samples')
-    plt.ylabel('Utility')
-    plt.savefig('results/plots/oneGraphOldNumOfSamplesVSUtilityOnSamplerAndDepSampler.png')
-
-    plt.figure()
-    utility3 = []
-    degrees = []
-    time3 = []
-    cont_greedy_track3 = load("results/continuous_greedy/IM_1_graph_y0.5_poly0.5")
-    for item in cont_greedy_track3:
-        if item[1] < 70:
-            utility3.append(item[2])
-            degrees.append(item[1])
-            time3.append(np.log(item[0]))
-            print(item)
-    plt.plot(degrees, utility3, "^", label="Polynomial Estimation")
-    plt.legend()
-    plt.xlabel('Degree of the expansion')
-    plt.ylabel('Utility')
-    plt.savefig('results/plots/1Graph_y0.5_poly0.5_DegreeVSUtility.png')
-
-    plt.figure()
-    plt.plot(time1, utility1, "g^", label="Sampler", markersize=5)
-    plt.plot(time2, utility2, "ro", label="Sampler with Dependencies", markersize=5)
-    plt.plot(time3, utility3, "bx", label="Polynomial", markersize=5)
-    plt.plot(time2, out, label="Multilinear Relaxation")
-    plt.legend(fontsize='xx-small')
-    plt.xlabel('Time')
-    plt.ylabel('Utility')
-    plt.savefig('results/plots/1Graph_y0.5LogTimeVSUtilityOnSamplerAndDepSamplerAndPolynomial.png')
-
+    plt.xlabel('Iterations')
+    plt.ylabel('Multilinear Relaxation')
+    plt.savefig('results/plots/multivsiterationsDR0.png')
+    #STOP UNCOMMENTING HERE #
 
     # sampler_obj = eval(open('sampler_obj.txt', 'r').read())
     # iterations1 = list(range(1, len(sampler_obj) + 1))

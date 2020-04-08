@@ -14,26 +14,10 @@ import sys
 # import matplotlib.pyplot as plt
 
 
-def log(wdnf_list, x):
-    """ Given a list of wdnf objects and a vector x as a dictionary, returns the
-    f(x) = sum_{i=1}^K log(sum_j r_j x_{j} + 1)
-    """
-    output_list = [np.log1p(wdnf_object(x)) for wdnf_object in wdnf_list]
-    return sum(output_list)
-
-
 def qs(x):
     """Given rho returns rho / (1 - rho)
     """
     return x / (1.0 - x)
-
-
-def queue_size(wdnf_list, x):
-    """ Given a list of wdnf objects and a vector x as a dictionary, returns the
-    f(x) = sum_{i=1}^K qs(sum_j r_j x_{j} + 1)
-    """
-    output_list = [qs(wdnf_object(x)) for wdnf_object in wdnf_list]
-    return sum(output_list)
 
 
 def derive(function_type, x, degree):
@@ -74,14 +58,6 @@ def find_derivatives(function_type, center, degree):
     """
     derivatives = [derive(function_type, center, i) for i in range(degree + 1)]
     return derivatives
-
-
-def evaluate_all(taylor_instance, wdnf_list):  # might be redundant
-    # my_wdnf = WDNF(dict(), wdnf_list[0].sign)
-    # for wdnf_instance in wdnf_list:
-    #     my_wdnf += taylor_instance.compose(wdnf_instance)
-    composed_wdnf_list = [taylor_instance.compose(wdnf_instance) for wdnf_instance in wdnf_list]
-    return sum(composed_wdnf_list)
 
 
 def ro_uv(edges, demands, x):
@@ -204,7 +180,7 @@ class Problem(object):  # For Python 3, replace object with ABCMeta
         """
         new_cg = ContinuousGreedy(self.get_solver(), self.get_sampler_estimator(num_of_samples, dependencies),
                                   self.get_initial_point())
-        return new_cg.fw(iterations, False)
+        return new_cg.fw(iterations, True)
 
     def polynomial_continuous_greedy(self, center, degree, iterations):
         """
@@ -213,21 +189,20 @@ class Problem(object):  # For Python 3, replace object with ABCMeta
         new_cg = ContinuousGreedy(self.get_solver(), self.get_polynomial_estimator(center, degree),
                                   self.get_initial_point())
         logging.info('done.')
-        return new_cg.fw(iterations, False)
+        return new_cg.fw(iterations, True)
 
 
 class DiversityReward(Problem):
     """
     """
 
-    def __init__(self, rewards, given_partitions, fun, types, k_list):
+    def __init__(self, rewards, given_partitions, types, k_list):
         """ rewards is a dictionary containing {word: reward} pairs,
-        given_partitions is a dictionary containing {partition: word tuples}, fun
-        is either log1p or queue_size, types is a dictionary containing {word: type} pairs,
-        k_list is a dictionary of {type: cardinality} pairs.
+        given_partitions is a dictionary containing {partition: word tuples}, types is a dictionary containing
+        {word: type} pairs, k_list is a dictionary of {type: cardinality} pairs.
         """
         super(DiversityReward, self).__init__()
-        wdnf_list = []
+        wdnf_dict = dict()
         partitioned_set = {}
         for i in given_partitions:
             coefficients = {}
@@ -237,37 +212,31 @@ class DiversityReward(Problem):
                     partitioned_set[types[j]].add(j)
                 else:
                     partitioned_set[types[j]] = {j}
-            new_wdnf = wdnf(coefficients, 1)
-            wdnf_list.append(new_wdnf)
+            new_wdnf = WDNF(coefficients, 1)
+            wdnf_dict[i] = new_wdnf
         self.rewards = rewards
-        self.wdnf_list = wdnf_list
+        self.wdnf_dict = wdnf_dict
         self.partitioned_set = partitioned_set
-        self.fun = fun
         self.k_list = k_list
-#        self.utility_function()
         self.problem_size = len(rewards)  # revise
 
     def utility_function(self, y):
-        pass
+        objective = [np.log1p(self.wdnf_dict[partition](y)) for partition in self.wdnf_dict]
+        return sum(objective)
 
     def get_solver(self):
         """
         """
         return PartitionMatroidSolver(self.partitioned_set, self.k_list)
 
-    def func(self, x):
-        """
-        """
-        return self.fun(self.wdnf_list, x)
-
     def get_polynomial_estimator(self, center, degree):
         """
         """
-        derivatives = find_derivatives(self.fun, center, degree)
+        derivatives = find_derivatives(np.log1p, center, degree)
         my_taylor = Taylor(degree, derivatives, center)
-        my_wdnf = evaluate_all(my_taylor, self.wdnf_list)
-        print('my_wdnf:' + str(my_wdnf.coefficients))
-        return PolynomialEstimator(my_wdnf)
+        final_wdnf = [my_taylor.compose(self.wdnf_dict[partition]) for partition in self.wdnf_dict]
+        final_wdnf = sum(final_wdnf)
+        return PolynomialEstimator(final_wdnf)
 
     def get_initial_point(self):
         """
@@ -330,7 +299,6 @@ class InfluenceMaximization(Problem):
         self.target_partitions = target_partitions
         wdnf_dict = dict()
         dependencies = dict()
-        my_wdnf = WDNF({(): 1}, -1)
         for i in range(self.instancesSize):
             paths = nx.algorithms.dag.transitive_closure(graphs[i])
             sys.stderr.write("paths of cascade " + str(i) + " are:" + str(graphs[i].edges()) + '\n')
@@ -340,8 +308,6 @@ class InfluenceMaximization(Problem):
             # my_wdnf *= resulting_wdnf
             dependencies.update(resulting_wdnf.find_dependencies())
             wdnf_dict[i] = resulting_wdnf  # prod(1 - x_u) for all u in P_v
-        # self.my_wdnf = my_wdnf
-        # sys.stderr.write("my_wdnf of the problem is: " + str(my_wdnf.coefficients) + '\n')
         self.wdnf_dict = wdnf_dict
         for key in wdnf_dict:
             sys.stderr.write("wdnf_dict[" + str(key) + "]: " + str(wdnf_dict[key].coefficients) + '\n')
@@ -352,9 +318,8 @@ class InfluenceMaximization(Problem):
         :param y:
         :return:
         """
-        objective = [(self.wdnf_dict[graph](y) + 1) ** (1.0 / self.instancesSize)
-                     for graph in range(self.instancesSize)]
-        return np.log(np.prod(objective))
+        objective = [np.log1p(self.wdnf_dict[g](y)) * (1.0 / self.instancesSize) for g in self.wdnf_dict]
+        return sum(objective)
 
     def get_solver(self):
         """
@@ -372,21 +337,10 @@ class InfluenceMaximization(Problem):
         """
         logging.info('Getting polynomial estimator...')
         derivatives = find_derivatives(np.log1p, center, degree)
-        # sys.stderr.write("derivatives are: " + str(derivatives) + '\n')
         my_taylor = Taylor(degree, derivatives, center)
-        # sys.stderr.write("my_taylor of the problem is: " + str(my_taylor.poly_coef) + '\n')
-        # objective = [(WDNF({(): 2.0}, -1) + self.wdnf_dict[graph]) for graph in range(self.instancesSize)]
-        # my_wdnf = np.prod(objective)
         final_wdnf = [(1.0 / self.instancesSize) * (my_taylor.compose(self.wdnf_dict[graph]))
                       for graph in range(self.instancesSize)]
         final_wdnf = sum(final_wdnf)
-        # sys.stderr.write("final_wdnf of the problem is: " + str(final_wdnf.coefficients) + '\n')
-        # for i in range(self.instancesSize):
-        #     wdnf_so_far = WDNF(dict(), -1)
-        #     for node in self.groundSet:
-        #         wdnf_so_far += WDNF({(): 1.0}, -1) + ((-1.0) * self.wdnf_dict[i][node])  # edit here
-        #     my_wdnf = my_taylor.compose((1.0 / self.problemSize) * wdnf_so_far + WDNF({(): 1.0}, -1))
-        #     final_wdnf += my_wdnf
         logging.info('...done.')
         return PolynomialEstimator(final_wdnf)
 
@@ -461,21 +415,6 @@ class FacilityLocation(Problem):
 
 if __name__ == "__main__":
 
-    # graph = DiGraph()
-    # graph.add_nodes_from([1, 2, 3, 4, 5, 6])
-    # graph.add_edges_from([(1, 2), (1, 3), (1, 4), (2, 3), (3, 4), (4, 5), (4, 6), (6, 3)])
-    # newProblem = InfluenceMaximization([graph], 3)
-    Y1, track1, bases1 = newProblem.polynomial_continuous_greedy(0.0, 5, 100)
-    print(Y1)
-#    for i in newProblem.given_partitions.keys():
-    #    print(newProblem.given_partitions[i].coefficients)
-    # x = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0}
-
-#    sum = 0.0
-#    for node in newProblem.groundSet:
-    #    sum += 1 - newProblem.wdnf_list[node - 1](x)
-#    print(sum)
-#    print(newProblem.groundSet)
     B = Graph()
     B.add_nodes_from([1, 2, 3, 4, 5, 6], bipartite=0)
     B.add_nodes_from(['a', 'b'], bipartite=1)

@@ -1,3 +1,4 @@
+from ContinuousGreedy import multilinear_relaxation
 from helpers import save, load
 from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, derive
 from time import time
@@ -10,11 +11,11 @@ import sys
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Generate a random rewards dataset',
+    parser = argparse.ArgumentParser(description='Test Module for ...',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--problemType', default='IM', type=str, help='Type of the problem instance',
+    parser.add_argument('--problemType', default='DR', type=str, help='Type of the problem instance',
                         choices=['DR', 'QS', 'FL', 'IM'])
-    parser.add_argument('--input', default='datasets/one_graph_file', type=str,
+    parser.add_argument('--input', default='datasets/epinions_20', type=str,
                         help='Data input for the InfluenceMaximization problem')
     parser.add_argument('--testMode', default=False, type=bool, help='Tests the quality of the estimations from '
                         'different aspects')
@@ -24,20 +25,20 @@ if __name__ == "__main__":
     # parser.add_argument('--cascades', default=1000, type=int,
     #                     help='Number of cascades used in the Independent Cascade model')
     # parser.add_argument('--p', default=0.02, type=float, help='Infection probability')
-    # parser.add_argument('--rewardsInput', default="rewards.txt", help='Input file that stores rewards')
-    # parser.add_argument('--partitionsInput', default="givenPartitions.txt", help='Input file that stores partitions')
-    # parser.add_argument('--typesInput', default="types.txt",
-    #                     help='Input file that stores targeted partitions of the ground set')
-    parser.add_argument('--constraints', default=4, type=int,
+    parser.add_argument('--rewardsInput', default="datasets/DR_rewards0", help='Input file that stores rewards')
+    parser.add_argument('--partitionsInput', default="datasets/DR_givenPartitions0", help='Input file that stores partitions')
+    parser.add_argument('--typesInput', default="datasets/DR_types0",
+                        help='Input file that stores targeted partitions of the ground set')
+    parser.add_argument('--constraints', default="datasets/DR_k_list0",
                         help='Constraints dictionary with {type:cardinality} pairs')
     parser.add_argument('--estimator', default='sampler', type=str, help='Type of the estimator',
                         choices=['polynomial', 'sampler', 'samplerWithDependencies'])
-    parser.add_argument('--iterations', default=10, type=int,
+    parser.add_argument('--iterations', default=50, type=int,
                         help='Number of iterations used in the Frank-Wolfe algorithm')
-    parser.add_argument('--degree', default=10, type=int, help='Degree of the polynomial estimator')
+    parser.add_argument('--degree', default=4, type=int, help='Degree of the polynomial estimator')
     parser.add_argument('--center', default=0.5, type=float,
                         help='The point around which Taylor approximation is calculated')
-    parser.add_argument('--samples', default=100, type=int,
+    parser.add_argument('--samples', default=500, type=int,
                         help='Number of samples used to calculate the sampler estimator')
 #    parser.add_argument('--timeOutput', default = "sampler_time.txt",
     #    help = 'File in which time of each iteration is stored')
@@ -51,17 +52,12 @@ if __name__ == "__main__":
         os.makedirs(directory_output)
     logging.info('...output directory is created...')
 
-#    rewards = {1: 0.3, 2: 0.2, 3: 0.1, 4: 0.6, 5: 0.5, 6: 0.4} #{x_i: r_i} pairs
-#    givenPartitions = {'fruits': (1, 5), 'things': (2, 3), 'actions': (4, 6)} #{P_i: (x_j)} pairs where x_j in P_i
-#    types = {1: 'noun', 2: 'noun', 3: 'noun', 4: 'verb', 5: 'noun', 6: 'verb'} #{x_i: type} pairs
-#    k_list = {'verb': 1, 'noun': 2}
-
     if args.problemType == 'DR':
-        rewards = eval(open(args.rewardsInput, 'r').read())
-        givenPartitions = eval(open(args.partitionsInput, 'r').read())
-        types = eval(open(args.typesInput, 'r').read())
-        k_list = args.constraints
-        newProblem = DiversityReward(rewards, givenPartitions, log, types, k_list)
+        rewards = load(args.rewardsInput)
+        givenPartitions = load(args.partitionsInput)
+        types = load(args.typesInput)
+        k_list = load(args.constraints)
+        newProblem = DiversityReward(rewards, givenPartitions, types, k_list)
 
     if args.problemType == 'QS':
         pass
@@ -73,26 +69,13 @@ if __name__ == "__main__":
         logging.info('Reading edge lists...')
         graphs = load(args.input)
         logging.info('...just read %d edge list' % (len(graphs)))
-#        numOfNodes = G.number_of_nodes()
-#        numOfEdges = G.number_of_edges()
-#        logging.info('...done. Created a directed graph with %d nodes and %d edges' % (numOfNodes, numOfEdges))
-
-#        logging.info('Creating cascades...')
-#        newG = DiGraph()
-#        newG.add_nodes_from(G.nodes())
-#        graphs = [newG] * args.cascades
-#        for cascade in range(args.cascades):
-#            choose = np.array([np.random.uniform(0, 1, G.number_of_edges()) < args.p, ] * 2).transpose()
-#            chosen_edges = np.extract(choose, G.edges())
-#            chosen_edges = zip(chosen_edges[0::2], chosen_edges[1::2])
-#            graphs[cascade].add_edges_from(chosen_edges)
-#        logging.info('...done. Created %d cascades with %s infection probability.' % (len(graphs), args.p))
-
         logging.info('Defining an InfluenceMaximization problem...')
         newProblem = InfluenceMaximization(graphs, args.constraints)
         logging.info('...done. %d seeds will be selected' % args.constraints)
-        output = directory_output + args.problemType + "test_case_diff_samples" + args.estimator + "_" + str(args.iterations) \
-                                  + "_FW"
+
+    output = directory_output + args.problemType + "_" + args.input.split("/")[-1] + "_" + args.estimator + "_" \
+                              + str(args.iterations) + "_FW"
+
     if args.testMode is False:
         if args.estimator == 'polynomial':
             logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
@@ -103,7 +86,7 @@ if __name__ == "__main__":
         if args.estimator == 'sampler':
             logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
             y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations)
-            # output += "_" + str(args.samples) + "samples"
+            output += "_" + str(args.samples) + "_samples"
             sys.stderr.write("number of samples: " + str(args.samples) + '\n')
             sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
             sys.stderr.write("y is: " + str(y) + '\n')
@@ -117,69 +100,60 @@ if __name__ == "__main__":
         if os.path.exists(output):
             results = load(output)
             # results.append((args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y)))
-            results.append((args.samples, y, newProblem.utility_function(y)))
+            for key in track:
+                results.append((key, multilinear_relaxation(newProblem.utility_function, track[key][1])))
         else:
             # results = [(args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y))]
-            results = [(args.samples, y, newProblem.utility_function(y))]
+            # results = [(args.samples, y, newProblem.utility_function(y))]
+            results = []
+            for key in track:
+                results.append((key, multilinear_relaxation(newProblem.utility_function, track[key][1])))
         save(output, results)
 
     else:
-        y = {1: 0.5, 2: 0.5, 3: 0.5}
-        # y = {1: 0.0, 2: 0.0, 3: 0.0}
-        # y = {1: 0.02881619988067241, 2: 0.8720933356599558, 3: 0.9149300322150012}
-        out = 0.0
-        for x1 in range(2):
-            for x2 in range(2):
-                for x3 in range(2):
-                    x = {1: x1, 2: x2, 3: x3}
-                    if x1 == 0 and x2 == 0 and x3 == 0:
-                        out += newProblem.utility_function(x) * (1.0 - y[1]) * (1.0 - y[2]) * (1.0 - y[3])
-                    elif x1 == 0 and x2 == 0 and x3 == 1:
-                        out += newProblem.utility_function(x) * (1.0 - y[1]) * (1.0 - y[2]) * y[3]
-                    elif x1 == 0 and x2 == 1 and x3 == 0:
-                        out += newProblem.utility_function(x) * (1.0 - y[1]) * y[2] * (1.0 - y[3])
-                    elif x1 == 0 and x2 == 1 and x3 == 1:
-                        out += newProblem.utility_function(x) * (1.0 - y[1]) * y[2] * y[3]
-                    elif x1 == 1 and x2 == 0 and x3 == 0:
-                        out += newProblem.utility_function(x) * y[1] * (1.0 - y[2]) * (1.0 - y[3])
-                    elif x1 == 1 and x2 == 0 and x3 == 1:
-                        out += newProblem.utility_function(x) * y[1] * (1.0 - y[2]) * y[3]
-                    elif x1 == 1 and x2 == 1 and x3 == 0:
-                        out += newProblem.utility_function(x) * y[1] * y[2] * (1.0 - y[3])
-                    else:
-                        out += newProblem.utility_function(x) * y[1] * y[2] * y[3]
-        sys.stderr.write("multilinear relaxation is: " + str(out) + '\n')
+        # y = dict.fromkeys(newProblem.groundSet, 0.5)
+        if os.path.exists("random_y"):
+            y = load("random_y")
+        else:
+            y = dict(zip(newProblem.groundSet, np.random.rand(newProblem.problemSize).tolist()))
+            print(y)
+            save("random_y", y)
+
+        out = multilinear_relaxation(y)
+        sys.stderr.write("multilinear relaxation is: " + str() + '\n')
         if args.estimator == 'polynomial':
-            poly_output = directory_output + args.problemType + '_1_graph_y0.5' + '_poly0.5'
+            output = directory_output + args.problemType + "_" + args.input.split("/")[-1] + "_" + args.estimator \
+                                      + "_" + str(args.center) + "_y_random"
             start = time()
             poly_grad, poly_estimation = newProblem.get_polynomial_estimator(args.center, args.degree)\
                 .estimate(y)
             elapsed_time = time() - start
             sys.stderr.write("estimated grad is: " + str(poly_grad) + '\n')
             sys.stderr.write("estimated value of the function is: " + str(poly_estimation) + '\n')
-            if os.path.exists(poly_output):
-                poly_results = load(poly_output)
+            if os.path.exists(output):
+                poly_results = load(output)
                 poly_results.append((elapsed_time, args.degree, poly_estimation, out))
             else:
                 poly_results = [(elapsed_time, args.degree, poly_estimation, out)]
-            save(poly_output, poly_results)
+            save(output, poly_results)
 
         if args.estimator == 'sampler':
-            sampler_output = directory_output + args.problemType + '_1_graph_y0.5' + '_samp'
+            output = directory_output + args.problemType + "_" + args.input.split("/")[-1] + "_" + args.estimator \
+                                      + "_y_random"
             start = time()
             sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples)\
                                                          .estimate(y)
             elapsed_time = time() - start
             sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
-            if os.path.exists(sampler_output):
-                sampler_results = load(sampler_output)
+            if os.path.exists(output):
+                sampler_results = load(output)
                 sampler_results.append((elapsed_time, args.samples, sampler_estimation, out))
             else:
                 sampler_results = [(elapsed_time, args.samples, sampler_estimation, out)]
-            save(sampler_output, sampler_results)
+            save(output, sampler_results)
 
         if args.estimator == 'samplerWithDependencies':
-            sampler_output = directory_output + args.problemType + '_1_graph_y0.5' + '_samp_with_dep_estimation'
+            sampler_output = directory_output + args.problemType + '_1_graph_y_rand2' + '_samp_with_dep_estimation'
             start = time()
             sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples, newProblem.dependencies)\
                                                          .estimate(y)

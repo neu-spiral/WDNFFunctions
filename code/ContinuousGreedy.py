@@ -15,7 +15,7 @@ def generate_samples(y, dependencies={}):
     samples = dict.fromkeys(y.iterkeys(), 0.0)
     # p = dict.fromkeys(y.iterkeys(), np.random.rand())
     p = dict(zip(y.iterkeys(), np.random.rand(len(y)).tolist()))
-    sys.stderr.write("p: " + str(p) + "\n")
+    # sys.stderr.write("p: " + str(p) + "\n")
     # sys.stderr.write("y: " + str(y) + "\n")
     if dependencies != {}:
         # sys.stderr.write("dependencies are: " + str(y))
@@ -26,6 +26,26 @@ def generate_samples(y, dependencies={}):
         samples.update(dict.fromkeys(indices, 1.0))
     # sys.stderr.write("samples: " + str(samples) + "\n")
     return samples
+
+
+def multilinear_relaxation(utility_function, y):
+    out = 0.0
+    print(y)
+    for i in range(2 ** len(y)):
+        binary_vector = map(int, list(bin(i)[2:]))
+        if len(binary_vector) < len(y):
+            binary_vector = [0] * (len(y) - len(binary_vector)) + binary_vector
+        x = dict(zip(y.iterkeys(), binary_vector))
+        print(x)
+        new_term = utility_function(x)
+        for key in y:
+            if x[key] == 0:
+                new_term *= (1.0 - y[key])
+            else:
+                new_term *= y[key]
+        out += new_term
+    sys.stderr.write("multilinear relaxation is: " + str(out) + '\n')
+    return out
 
 
 class GradientEstimator(object):  # For Python 3, replace object with ABCMeta
@@ -49,13 +69,56 @@ class GradientEstimator(object):  # For Python 3, replace object with ABCMeta
         pass
 
 
+class TrueGradientCalculator(GradientEstimator):
+    """
+
+    """
+
+    def __init__(self, utility_function, dependencies={}):
+        """
+
+        :param utility_function:
+        """
+        super(TrueGradientCalculator, self).__init__()
+        self.utility_function = utility_function
+        self.dependencies = dependencies
+
+    def estimate(self, y):
+        """ It calculates the true value of the gradient of the Multilinear Relaxation of the utility function.
+        :param y:
+        :return:
+        """
+        grad = dict()
+        if self.dependencies != {}:
+            for i in self.dependencies.keys():
+                y1 = y.copy()
+                y1[i] = 1.0
+
+                y0 = y.copy()
+                y0[i] = 0.0
+                grad[i] = multilinear_relaxation(self.utility_function, y1) \
+                    - multilinear_relaxation(self.utility_function, y0)
+        else:
+            for i in y.keys():
+                y1 = y.copy()
+                y1[i] = 1.0
+
+                y0 = y.copy()
+                y0[i] = 0.0
+                grad[i] = multilinear_relaxation(self.utility_function, y1) \
+                    - multilinear_relaxation(self.utility_function, y0)
+
+        multilinear_extension = multilinear_relaxation(self.utility_function, y)
+        return grad, multilinear_extension
+
+
 class SamplerEstimator(GradientEstimator):
     """
     Calculates the expectation by evaluating the given function at randomly
     generated samples and taking the average of them.
     """
 
-    def __init__(self, utility_function, numOfSamples, dependencies={}):
+    def __init__(self, utility_function, num_of_samples, dependencies={}):
         """
         utility_function is the function whose expectation is going to be estimated and
         numOfSamples is an integer. If dependencies is a non-empty dictionary,
@@ -63,7 +126,7 @@ class SamplerEstimator(GradientEstimator):
         """
         super(SamplerEstimator, self).__init__()
         self.utility_function = utility_function
-        self.numOfSamples = numOfSamples
+        self.num_of_samples = num_of_samples
         self.dependencies = dependencies
 
     def estimate(self, y):
@@ -73,23 +136,40 @@ class SamplerEstimator(GradientEstimator):
         """
         grad = dict.fromkeys(y.iterkeys(), 0.0)
         estimation = 0.0  # this variable will be used for testing purposes, might be deleted later
-        for j in range(self.numOfSamples):
-            logging.info('Generating ' + str(j + 1) + '. sample... \n')
-            x = generate_samples(y, self.dependencies).copy()
-            estimation += self.utility_function(x)  # might be deleted later
-            # sys.stderr.write("sample is: " + str(x) + '\n')
-            for i in self.dependencies.keys():  # add dependencies
-                x1 = x.copy()
-                x1[i] = 1.0
-                # sys.stderr.write("x1 is: " + str(x1) + '\n')
-                x0 = x.copy()
-                x0[i] = 0.0
-                # sys.stderr.write("x0 is: " + str(x0) + '\n')
-                grad[i] += self.utility_function(x1) - self.utility_function(x0)
-                # if grad[i] != 0.0:
-                #     sys.stderr.write("grad[" + str(i) + "] is: " + str(grad[i]) + '\n')
-        grad = {key: grad[key] / self.numOfSamples for key in grad.keys()}
-        estimation = estimation / self.numOfSamples  # might be deleted later
+        if self.dependencies != {}:
+            for j in range(self.num_of_samples):
+                logging.info('Generating ' + str(j + 1) + '. sample... \n')
+                x = generate_samples(y, self.dependencies).copy()
+                estimation += self.utility_function(x)  # might be deleted later
+                # sys.stderr.write("sample is: " + str(x) + '\n')
+                for i in self.dependencies.keys():  # add dependencies
+                    x1 = x.copy()
+                    x1[i] = 1.0
+                    # sys.stderr.write("x1 is: " + str(x1) + '\n')
+                    x0 = x.copy()
+                    x0[i] = 0.0
+                    # sys.stderr.write("x0 is: " + str(x0) + '\n')
+                    grad[i] += self.utility_function(x1) - self.utility_function(x0)
+                    # if grad[i] != 0.0:
+                    #     sys.stderr.write("grad[" + str(i) + "] is: " + str(grad[i]) + '\n')
+        else:
+            for j in range(self.num_of_samples):
+                logging.info('Generating ' + str(j + 1) + '. sample... \n')
+                x = generate_samples(y).copy()
+                estimation += self.utility_function(x)  # might be deleted later
+                # sys.stderr.write("sample is: " + str(x) + '\n')
+                for i in y.keys():
+                    x1 = x.copy()
+                    x1[i] = 1.0
+                    # sys.stderr.write("x1 is: " + str(x1) + '\n')
+                    x0 = x.copy()
+                    x0[i] = 0.0
+                    # sys.stderr.write("x0 is: " + str(x0) + '\n')
+                    grad[i] += self.utility_function(x1) - self.utility_function(x0)
+                    # if grad[i] != 0.0:
+                    #     sys.stderr.write("grad[" + str(i) + "] is: " + str(grad[i]) + '\n')
+        grad = {key: grad[key] / self.num_of_samples for key in grad.keys()}
+        estimation = estimation / self.num_of_samples  # might be deleted later
         return grad, estimation
 
 
@@ -237,7 +317,7 @@ class ContinuousGreedy:
         logging.info('Starting Frank-Wolfe...')
         for t in range(iterations):
             logging.info('iteration #' + str(t) + "\n")
-            gradient = self.estimator.estimate(y)
+            gradient = self.estimator.estimate(y)[0]
             mk = self.linear_solver.solve(gradient)  # finds maximum
             # sys.stderr.write("mk: " + str(mk))
             try:

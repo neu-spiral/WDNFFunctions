@@ -9,20 +9,20 @@ import sys
 
 if __name__ == "__main__":
 
-    logging.basicConfig(level = logging.INFO)
+    logging.basicConfig(level=logging.INFO)
     logging.info('Reading graph...')
-    # G = read_edgelist("soc-Epinions1.txt", comments='#', create_using=DiGraph(), nodetype=int)
+    # G = read_edgelist("datasets/soc-Epinions1.txt", comments='#', create_using=DiGraph(), nodetype=int)
     # degrees = dict(list(G.out_degree(G.nodes())))
     # descending_degrees = sorted(degrees.values(), reverse=True)
     # indices = sorted(range(1, len(degrees.values()) + 1), key=lambda k: degrees.values()[k - 1], reverse=True)
-    # top10000_indices = indices[:10001]
-    # top100_indices = indices[:100]
-    # G = G.subgraph(top100_indices)
+    # n = 10
+    # top_n_indices = indices[:n]
+    # G = G.subgraph(top_n_indices).copy()
     G = DiGraph()
-    G.add_nodes_from([1, 2, 3])
-    G.add_edges_from([(1, 2), (2, 3)])
-    # G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    # G.add_edges_from([(1, 2), (2, 3), (4, 5), (4, 6), (6, 3), (10, 9), (10, 3), (7, 8)])
+    # G.add_nodes_from([1, 2, 3])
+    # G.add_edges_from([(1, 2), (2, 3)])
+    G.add_nodes_from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    G.add_edges_from([(1, 2), (2, 3), (4, 5), (4, 6), (6, 3), (10, 9), (10, 3), (7, 8)])
     # graphs = [new_graph]
     numOfNodes = G.number_of_nodes()
     numOfEdges = G.number_of_edges()
@@ -51,9 +51,10 @@ if __name__ == "__main__":
         # G = read_edgelist("edge_lists/" + cascade, create_using=DiGraph(), nodetype=int)
         # graphs.append(G)
 
-    graphs = [DiGraph()]
-    graphs[0].add_nodes_from([1, 2, 3])
-    graphs[0].add_edges_from([(1, 2), (2, 3)])
+    graphs = [G]
+    # graphs = [DiGraph()]
+    # graphs[0].add_nodes_from([1, 2, 3])
+    # graphs[0].add_edges_from([(1, 2), (2, 3)])
     # graphs.append(DiGraph())
     # graphs[1].add_nodes_from([1, 2, 3])
     # graphs.append(DiGraph())
@@ -80,5 +81,7 @@ if __name__ == "__main__":
     # for i in range(10):
     #     sys.stderr.write("edge list of graph #" + str(i) + " : " + str(graphs[i].edges()) + '\n')
 
-    with open("datasets/one_graph_file", "w") as f:
+    # with open("datasets/epinions_" + str(n), "w") as f:
+    with open("datasets/random10", "w") as f:
         pickle.dump(graphs, f)
+

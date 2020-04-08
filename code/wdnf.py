@@ -42,20 +42,22 @@ class WDNF:
 
     def find_dependencies(self):
         dependencies = {}
-        # for key in self.coefficients:
-        #    for var in key:
-        dependencies = {var: dependencies[var] + key if var in dependencies else key for key in self.coefficients
-                        for var in key}
-        # if var in dependencies:
-        #    dependencies[var] + key
-        # else:
-        #    dependencies[var] = key
-        # except (TypeError, KeyError):
-        # if key in dependencies:
-        #    dependencies[key].append(key)
-        # else:
-        #    dependencies[key] = [key]
-        #  dependencies[key] = dependencies[key] + [key] if key in dependencies else [key]
+        for key in self.coefficients:
+            try:
+                for var in key:
+        # dependencies = {var: dependencies[var] + key if var in dependencies else key for key in self.coefficients
+        #                 for var in key}
+                    if var in dependencies:
+                        dependencies[var] + key
+                    else:
+                        dependencies[var] = key
+            except (TypeError, KeyError):
+                if key in dependencies:
+                    dependencies[key].append(key)
+                else:
+                    dependencies[key] = [key]
+        #dependencies[key] = dependencies[key] + [key] if key in dependencies else [key]
+        print(dependencies)
         return dependencies
 
     def __call__(self, x):
@@ -64,8 +66,22 @@ class WDNF:
         """
         sum_so_far = 0.0
         for key in self.coefficients:
+            print(key)
             prod = self.coefficients[key]  # beta
-            monomials = [1.0 - x[var] if self.sign == -1 else x[var] for var in key]
+            # monomials = [1.0 - x[var] if self.sign == -1 else x[var] for var in key]
+            monomials = []
+            try:
+                for var in key:
+                    print(var)
+                    if self.sign == -1:
+                        monomials.append(1.0 - x[var])
+                    else:
+                        monomials.append(x[var])
+            except (TypeError, KeyError):
+                if self.sign == -1:
+                    monomials.append(1.0 - x[key])
+                else:
+                    monomials.append(x[key])
             prod *= np.prod(monomials)
             sum_so_far += prod
         return sum_so_far

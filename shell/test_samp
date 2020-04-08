@@ -1,17 +1,17 @@
 #!/bin/bash
 
-#SBATCH --output=slurm_logs/1_graph_poly_test%j.out
+#SBATCH --output=slurm_logs/random10_pol_random_test%j.out
 
-#SBATCH --error=slurm_logs/1_graph_poly_test%j.err
+#SBATCH --error=slurm_logs/random10_pol_random_test%j.err
 
-#SBATCH --job-name=1_graph_poly_test
+#SBATCH --job-name=random10_pol_random_test
 
 #SBATCH --partition=ioannidis
 
 #SBATCH --mem=10Gb
 
-#SBATCH --time=01:30:00
+#SBATCH --time=3:30:00
 
 #SBATCH --constraint=E5-2680v4@2.40GHz
 
-srun python code/TestModule.py --testMode True --estimator polynomial --center 0.5 --degree $1
+srun python code/TestModule.py --input "datasets/random10" --testMode True --estimator polynomial --center 0.5 --degree $1
