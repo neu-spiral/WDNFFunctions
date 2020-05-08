@@ -13,24 +13,25 @@ import sys
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test Module for ...',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--problem', type=str, help='If the problem instance is created before, provide it here to save'
+                                                    ' time instead of recreating it.')
     parser.add_argument('--problemType', default='DR', type=str, help='Type of the problem instance',
                         choices=['DR', 'QS', 'FL', 'IM'])
     parser.add_argument('--input', default='datasets/epinions_20', type=str,
                         help='Data input for the InfluenceMaximization problem')
+    parser.add_argument('--partitions', default='datasets/epinions_20', type=str,
+                        help='Partitions input for the InfluenceMaximization problem')
     parser.add_argument('--testMode', default=False, type=bool, help='Tests the quality of the estimations from '
                         'different aspects')
     # parser.add_argument('--fractionalVector', type=dict,
     #                     help='If testMode is selected, checks the quality of the estimations according to this '
     #                          'fractional vector')
-    # parser.add_argument('--cascades', default=1000, type=int,
-    #                     help='Number of cascades used in the Independent Cascade model')
-    # parser.add_argument('--p', default=0.02, type=float, help='Infection probability')
     parser.add_argument('--rewardsInput', default="datasets/DR_rewards0", help='Input file that stores rewards')
     parser.add_argument('--partitionsInput', default="datasets/DR_givenPartitions0", help='Input file that stores partitions')
     parser.add_argument('--typesInput', default="datasets/DR_types0",
                         help='Input file that stores targeted partitions of the ground set')
-    parser.add_argument('--constraints', default="datasets/DR_k_list0",
-                        help='Constraints dictionary with {type:cardinality} pairs')
+    parser.add_argument('--constraints', default=3, type=int,
+                        help='Number of constraints for each partition')
     parser.add_argument('--estimator', default='sampler', type=str, help='Type of the estimator',
                         choices=['polynomial', 'sampler', 'samplerWithDependencies'])
     parser.add_argument('--iterations', default=50, type=int,
@@ -47,70 +48,59 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
-    directory_output = "results/continuous_greedy/"
+
+    if args.problem is not None:
+        newProblem = load(args.problem)
+        args.problemType = args.problem.split("_")[0].split("/")[-1]
+        args.input = args.problem.split("_")[1] + "_" + args.problem.split("_")[2] + "_" + args.problem.split("_")[3]
+        args.constraints = int(args.problem.split("_")[-1])
+
+    else:
+        if args.problemType == 'DR':
+            rewards = load(args.rewardsInput)
+            givenPartitions = load(args.partitionsInput)
+            types = load(args.typesInput)
+            k_list = load(args.constraints)
+            newProblem = DiversityReward(rewards, givenPartitions, types, k_list)
+
+        elif args.problemType == 'QS':
+            pass
+
+        elif args.problemType == 'FL':
+            logging.info('Loading movie ratings...')
+            bipartite_graph = load(args.input)
+            target_partitions = load(args.partitions)
+            k_list = dict.fromkeys(target_partitions.iterkeys(), args.constraints)
+            logging.info('...done. Defining a FacilityLocation Problem...')
+            newProblem = FacilityLocation(bipartite_graph, k_list, target_partitions)
+            logging.info('...done. %d seeds will be selected from each partition.' % args.constraints)
+
+        elif args.problemType == 'IM':
+            logging.info('Loading cascades...')
+            graphs = load(args.input)
+            target_partitions = load(args.partitions)
+            k_list = dict.fromkeys(target_partitions.iterkeys(), args.constraints)
+            logging.info('...done. Just loaded %d cascades.' % (len(graphs)))
+            logging.info('Defining an InfluenceMaximization problem...')
+            newProblem = InfluenceMaximization(graphs, k_list, target_partitions)
+            logging.info('...done. %d seeds will be selected from each partition.' % args.constraints)
+
+        problem_dir = "problems/"
+        if not os.path.exists(problem_dir):
+            os.makedirs(problem_dir)
+        save(problem_dir + args.problemType + "_" + args.input.split("/")[-1] + "_k_" + str(args.constraints),
+             newProblem)
+
+    directory_output = "results/continuous_greedy/" + args.problemType + "/" + args.input.split("/")[-1] + "/k_" \
+                       + str(args.constraints) + "_" + str(args.iterations) + "_FW" + "/"
+
     if not os.path.exists(directory_output):
         os.makedirs(directory_output)
     logging.info('...output directory is created...')
+    output = directory_output + args.estimator
 
-    if args.problemType == 'DR':
-        rewards = load(args.rewardsInput)
-        givenPartitions = load(args.partitionsInput)
-        types = load(args.typesInput)
-        k_list = load(args.constraints)
-        newProblem = DiversityReward(rewards, givenPartitions, types, k_list)
-
-    if args.problemType == 'QS':
-        pass
-
-    if args.problemType == 'FL':
-        pass
-
-    if args.problemType == 'IM':
-        logging.info('Reading edge lists...')
-        graphs = load(args.input)
-        logging.info('...just read %d edge list' % (len(graphs)))
-        logging.info('Defining an InfluenceMaximization problem...')
-        newProblem = InfluenceMaximization(graphs, args.constraints)
-        logging.info('...done. %d seeds will be selected' % args.constraints)
-
-    output = directory_output + args.problemType + "_" + args.input.split("/")[-1] + "_" + args.estimator + "_" \
-                              + str(args.iterations) + "_FW"
-
-    if args.testMode is False:
-        if args.estimator == 'polynomial':
-            logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
-            y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations))
-            sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
-            output += "_degree_" + str(args.degree) + "_around_" + str(args.center)
-
-        if args.estimator == 'sampler':
-            logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
-            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations)
-            output += "_" + str(args.samples) + "_samples"
-            sys.stderr.write("number of samples: " + str(args.samples) + '\n')
-            sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
-            sys.stderr.write("y is: " + str(y) + '\n')
-
-        if args.estimator == 'samplerWithDependencies':
-            logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator with Dependencies...')
-            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations, newProblem.dependencies)
-            sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
-            output += "_" + str(args.samples) + "samples"
-
-        if os.path.exists(output):
-            results = load(output)
-            # results.append((args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y)))
-            for key in track:
-                results.append((key, multilinear_relaxation(newProblem.utility_function, track[key][1])))
-        else:
-            # results = [(args.constraints, track[args.iterations - 1][0], newProblem.utility_function(y))]
-            # results = [(args.samples, y, newProblem.utility_function(y))]
-            results = []
-            for key in track:
-                results.append((key, multilinear_relaxation(newProblem.utility_function, track[key][1])))
-        save(output, results)
-
-    else:
+    if args.testMode is True:
+        print(args.testMode is True)
         # y = dict.fromkeys(newProblem.groundSet, 0.5)
         if os.path.exists("random_y"):
             y = load("random_y")
@@ -118,8 +108,8 @@ if __name__ == "__main__":
             y = dict(zip(newProblem.groundSet, np.random.rand(newProblem.problemSize).tolist()))
             print(y)
             save("random_y", y)
-
-        out = multilinear_relaxation(y)
+        print(args.testMode is True)
+        out = multilinear_relaxation(newProblem.utility_function, y)
         sys.stderr.write("multilinear relaxation is: " + str() + '\n')
         if args.estimator == 'polynomial':
             output = directory_output + args.problemType + "_" + args.input.split("/")[-1] + "_" + args.estimator \
@@ -165,6 +155,89 @@ if __name__ == "__main__":
             else:
                 sampler_results = [(elapsed_time, args.samples, sampler_estimation, out)]
             save(sampler_output, sampler_results)
+
+    else:
+        if args.estimator == 'polynomial':
+            logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
+            sys.stderr.write('output directory is:' + output)
+            y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations))
+            # sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
+            output += "_degree_" + str(args.degree) + "_around_" + str(args.center).replace(".", "")
+            print(output)
+            results = []
+            for key in track:
+                # results.append((key, track[key][0], track[key][1],
+                #                 multilinear_relaxation(newProblem.utility_function, track[key][1]), args.estimator,
+                #                 args.degree, args.center))
+                results.append((key, track[key][0], track[key][1],
+                                newProblem.utility_function(track[key][1]), args.estimator,
+                                args.degree, args.center))
+            # results = [track, newProblem.utility_function, args.estimator, args.degree, args.center]
+
+        if args.estimator == 'sampler':
+            logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
+            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations)
+            output += "_" + str(args.samples) + "_samples"
+            print(output)
+            results = []
+            for key in track:
+                # results.append((key, track[key][0], track[key][1],
+                #                 multilinear_relaxation(newProblem.utility_function, track[key][1]), args.estimator,
+                #                 args.samples))
+                results.append((key, track[key][0], track[key][1],
+                                newProblem.utility_function(track[key][1]), args.estimator,
+                                args.samples))
+            # sys.stderr.write("number of samples: " + str(args.samples) + '\n')
+            # sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
+            # sys.stderr.write("y is: " + str(y) + '\n')
+
+        if args.estimator == 'samplerWithDependencies':
+            logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator with Dependencies...')
+            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations,
+                                                                   newProblem.dependencies)
+            # sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
+            output += "_" + str(args.samples) + "_samples"
+            print(output)
+            results = []
+            for key in track:
+                # results.append((key, track[key][0], track[key][1],
+                #                 multilinear_relaxation(newProblem.utility_function, track[key][1]), args.estimator,
+                #                 args.samples))
+                results.append((key, track[key][0], track[key][1],
+                                newProblem.utility_function(track[key][1]), args.estimator,
+                                args.samples))
+
+        # uncomment here for pareto
+        # if os.path.exists(output):
+        #     results = load(output)
+        #     if args.estimator == 'polynomial':
+        #         results.append((y, newProblem.utility_function(y),
+        #                         track[args.iterations - 1][0], args.iterations, args.estimator, args.degree,
+        #                         args.center))
+        #         print('\n' + str([args.iterations, args.degree, args.center]))
+        #     else:
+        #         results.append((y, newProblem.utility_function(y),
+        #                         track[args.iterations - 1][0], args.iterations, args.estimator, args.samples))
+        #     # for key in track:
+        #         # results.append((key, multilinear_relaxation(newProblem.utility_function, track[key][1])))
+        # else:
+        #     results = []
+        #     if args.estimator == 'polynomial':
+        #         results.append((y, newProblem.utility_function(y),
+        #                         track[args.iterations - 1][0], args.iterations, args.estimator, args.degree,
+        #                         args.center))
+        #         print('\n' + str([args.iterations, args.degree, args.center]))
+        #     else:
+        #         results.append((y, newProblem.utility_function(y),
+        #                         track[args.iterations - 1][0], args.iterations, args.estimator, args.samples))
+        #     # results = [(args.samples, y, newProblem.utility_function(y))]
+        #     # results = []
+        #     # for key in track:
+        #     #    results.append((key, multilinear_relaxation(newProblem.utility_function, track[key][1])))
+        # print(len(results))
+        # stop uncommenting here
+
+        save(output, results)
 
 
 #    if args.problemType == 'IM':

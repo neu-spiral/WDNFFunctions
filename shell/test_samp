@@ -1,17 +1,17 @@
 #!/bin/bash
 
-#SBATCH --output=slurm_logs/random10_pol_random_test%j.out
+#SBATCH --output=slurm_logs/ratings_swd_cons%j.out
 
-#SBATCH --error=slurm_logs/random10_pol_random_test%j.err
+#SBATCH --error=slurm_logs/ratings_swd_cons%j.err
 
-#SBATCH --job-name=random10_pol_random_test
+#SBATCH --job-name='ratings_swd'
 
 #SBATCH --partition=ioannidis
 
-#SBATCH --mem=10Gb
+#SBATCH --mem=124Gb
 
-#SBATCH --time=3:30:00
+#SBATCH --time=300:30:00
 
-#SBATCH --constraint=E5-2680v4@2.40GHz
+#SBATCH --constraint=E5-2680v2@2.80GHz
 
-srun python code/TestModule.py --input "datasets/random10" --testMode True --estimator polynomial --center 0.5 --degree $1
+srun python code/TestModule.py --problem problems/FL_ratings_100_k_1 --estimator samplerWithDependencies --iterations 1000 --samples $1

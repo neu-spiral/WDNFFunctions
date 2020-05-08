@@ -57,7 +57,7 @@ class WDNF:
                 else:
                     dependencies[key] = [key]
         #dependencies[key] = dependencies[key] + [key] if key in dependencies else [key]
-        print(dependencies)
+        # print(dependencies)
         return dependencies
 
     def __call__(self, x):
@@ -66,13 +66,11 @@ class WDNF:
         """
         sum_so_far = 0.0
         for key in self.coefficients:
-            print(key)
             prod = self.coefficients[key]  # beta
             # monomials = [1.0 - x[var] if self.sign == -1 else x[var] for var in key]
             monomials = []
             try:
                 for var in key:
-                    print(var)
                     if self.sign == -1:
                         monomials.append(1.0 - x[var])
                     else:

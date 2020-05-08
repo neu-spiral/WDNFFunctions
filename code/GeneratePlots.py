@@ -1,3 +1,4 @@
+from ContinuousGreedy import multilinear_relaxation
 from helpers import load
 import argparse
 import datetime
@@ -12,10 +13,180 @@ from matplotlib.transforms import Bbox
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Plotter for results',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--input', default='results/continuous_greedy/IM/epinions_100_10cascades/k_10_100_FW', type=str,
+                        help='Input file for the plots')
+    parser.add_argument('--type', default='SEEDSvsUTILITY', type=str, help='Type of the plot',
+                        choices=['TIMEvsUTILITY', 'LOGTIMEvsUTILITY', 'ITERATIONSvsUTILITY', 'SEEDSvsUTILITY'])
+    args = parser.parse_args()
+
+    path = args.input  # "results/continuous_greedy/FL/ratings_10/k_3_100_FW"
+    # "results/continuous_greedy/IM/random10/k_4_100_FW"
+    files = os.listdir(path)
+    if args.type == 'TIMEvsUTILITY':
+        plt.figure()
+        for file in files:
+            result = load(path + '/' + file)  # result is a file with a list with lines in the form (key, track[key][0],
+            # track[key][1], multilinear_relaxation(newProblem.utility_function, track[key][1]), args.estimator,
+            # args.samples)
+            # track = result[0]
+            # utility_function = result[1]
+            solutions = []  # fractional vectors y
+            objectives = []  # F(y) where F is the multilinear relaxation or F^(y) where F^ is the best estimator
+            time = []  # time it took to compute the fractional vector y
+            FW_iterations = []
+            degree = []  # degree of the polynomial estimator
+            center = []  # point where the polynomial estimator is centered
+            samples = []  # number of samples used in the sampler estimator
+            for item in result:
+                FW_iterations.append(item[0])
+                time.append(item[1])
+                solutions.append(item[2])
+                objectives.append(item[3])
+            my_label = file
+            plt.plot(time, objectives, 's', label=my_label)
+        title_str = path.split("/")[-1].split("_")
+        plt.title("Selection of a subset of k = " + str(title_str[1]) + " with " + str(title_str[2]) + " FW iterations")
+        plt.xlabel("Time (seconds)")
+        plt.ylabel("f^(y)")
+        plt.legend(fontsize='xx-small')
+        plt.show()
+        output_dir = 'results/plots' + path.replace("results/continuous_greedy", "/")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        plt.savefig(output_dir + '_time.png', bbox_inches="tight")
+
+    elif args.type == 'LOGTIMEvsUTILITY':
+        plt.figure()
+        for file in files:
+            result = load(path + '/' + file)  # result is a file with a list with lines in the form (key, track[key][0],
+            # track[key][1], multilinear_relaxation(newProblem.utility_function, track[key][1]), args.estimator,
+            # args.samples)
+            # track = result[0]
+            # utility_function = result[1]
+            solutions = []  # fractional vectors y
+            objectives = []  # F(y) where F is the multilinear relaxation or F^(y) where F^ is the best estimator
+            time = []  # time it took to compute the fractional vector y
+            FW_iterations = []
+            degree = []  # degree of the polynomial estimator
+            center = []  # point where the polynomial estimator is centered
+            samples = []  # number of samples used in the sampler estimator
+            for item in result:
+                FW_iterations.append(item[0])
+                time.append(item[1])
+                # time.append(np.log(item[1]))
+                solutions.append(item[2])
+                objectives.append(item[3])
+            my_label = file
+            # plt.plot(FW_iterations, objectives, 's', label=my_label)
+            plt.semilogx(time, objectives, 's', label=my_label)
+        title_str = path.split("/")[-1].split("_")
+        plt.title("Selection of a subset of k = " + str(title_str[1]) + " with " + str(title_str[2]) + " FW iterations")
+        plt.xlabel("Log Time (seconds)")
+        plt.ylabel("f^(y)")
+        plt.legend(fontsize='xx-small')
+        plt.show()
+        output_dir = 'results/plots' + path.replace("results/continuous_greedy", "/")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        plt.savefig(output_dir + '_logtime.png', bbox_inches="tight")
+
+    elif args.type == 'ITERATIONSvsUTILITY':
+        plt.figure()
+        for file in files:
+            result = load(path + '/' + file)  # result is a file with a list with lines in the form (key, track[key][0],
+            # track[key][1], multilinear_relaxation(newProblem.utility_function, track[key][1]), args.estimator,
+            # args.samples)
+            # track = result[0]
+            # utility_function = result[1]
+            solutions = []  # fractional vectors y
+            objectives = []  # F(y) where F is the multilinear relaxation or F^(y) where F^ is the best estimator
+            time = []  # time it took to compute the fractional vector y
+            FW_iterations = []
+            degree = []  # degree of the polynomial estimator
+            center = []  # point where the polynomial estimator is centered
+            samples = []  # number of samples used in the sampler estimator
+            for item in result:
+                FW_iterations.append(item[0])
+                solutions.append(item[2])
+                objectives.append(item[3])
+            my_label = file
+            plt.plot(FW_iterations, objectives, 's', label=my_label)
+        title_str = path.split("/")[-1].split("_")
+        plt.title("Selection of a subset of k = " + str(title_str[1]) + " with " + str(title_str[2]) + " FW iterations")
+        plt.xlabel("Iterations")
+        plt.ylabel("f^(y)")
+        plt.legend(fontsize='xx-small')
+        plt.show()
+        output_dir = 'results/plots' + path.replace("results/continuous_greedy", "/")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        plt.savefig(output_dir + '.png', bbox_inches="tight")
+
+    elif args.type == 'SEEDSvsUTILITY':
+        seeds = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+        utility1 = []
+        utility2 = []
+        for seed in seeds:
+            path1 = 'results/continuous_greedy/IM/epinions_100_10cascades/k_' + str(seed) + '_100_FW/polynomial_degree_1_around_05'
+            path2 = 'results/continuous_greedy/IM/epinions_100_10cascades/k_' + str(
+                seed) + '_100_FW/polynomial_degree_2_around_05'
+            result1 = load(path1)
+            result2 = load(path2)
+            utility1.append(result1[-1][3])
+            utility2.append(result2[-1][3])
+        plt.figure()
+        plt.plot(seeds, utility1, 's', label='Polynomial Estimator degree 1')
+        plt.plot(seeds, utility2, 's', label='Polynomial Estimator degree 2')
+        plt.title("Number of seeds vs utility")
+        plt.xlabel("Constraints")
+        plt.ylabel("f^(y)")
+        plt.legend(fontsize='xx-small')
+        plt.show()
+        plt.savefig('seeds.png', bbox_inches="tight")
+
+        # plt.figure()
+        # for file in files:
+        #     result = load(path + '/' + file)  # result is a file with a list with lines in the form (key, track[key][0],
+        #     # track[key][1], multilinear_relaxation(newProblem.utility_function, track[key][1]), args.estimator,
+        #     # args.samples)
+        #     # track = result[0]
+        #     # utility_function = result[1]
+        #     solutions = []  # fractional vectors y
+        #     objectives = []  # F(y) where F is the multilinear relaxation or F^(y) where F^ is the best estimator
+        #     time = []  # time it took to compute the fractional vector y
+        #     FW_iterations = []
+        #     degree = []  # degree of the polynomial estimator
+        #     center = []  # point where the polynomial estimator is centered
+        #     samples = []  # number of samples used in the sampler estimator
+        #     for item in result:
+        #         FW_iterations.append(item[0])
+        #         # time.append(item[1])
+        #         time.append(np.log(item[1]))
+        #         solutions.append(item[2])
+        #         objectives.append(item[3])
+        #     my_label = file
+        #     # plt.plot(FW_iterations, objectives, 's', label=my_label)
+        #     plt.plot(time, objectives, 's', label=my_label)
+        # title_str = path.split("/")[-1].split("_")
+        # plt.title("Selection of a subset of k = " + str(title_str[1]) + " with " + str(title_str[2]) + " FW iterations")
+        # # plt.xlabel("Iterations")
+        # plt.xlabel("Log Time")
+        # # plt.xlabel("Time")
+        # plt.ylabel("Multilinear Relaxation")
+        # plt.legend(fontsize='xx-small')
+        # plt.show()
+        # output_dir = 'results/plots' + path.replace("results/continuous_greedy", "/")
+        # if not os.path.exists(output_dir):
+        #     os.makedirs(output_dir)
+        # # plt.savefig(output_dir + '_time.png', bbox_inches="tight")
+        # # plt.savefig(output_dir + '.png', bbox_inches="tight")
+        # plt.savefig(output_dir + '_logtime.png', bbox_inches="tight")
 
     #time_ax = eval(open("results/IM_on_smaller_Epinions_dataset_with10seeds_polynomialestimator_300_FW_2th_degree_around_0.0_time", "r").read())
     #utility_ax = eval(open("results/IM_on_smaller_Epinions_dataset_with10seeds_polynomialestimator_300_FW_2th_degree_around_0.0_utilities", "r").read())
-    plt.figure()
+    # plt.figure()
     # greedy_track = load("results/greedy/IM_epinions100_recall")
     # sys.stderr.write("greedy track is: " + str(greedy_track))
     # utility = [item[1][1] for item in greedy_track.items()]
@@ -124,32 +295,32 @@ if __name__ == "__main__":
     # plt.savefig('results/plots/1Graph_y_05_DegreeVSUtilityOnPolynomials00and05.png')
     ##STOP UNCOMMENTING HERE #
 
-    # UNCOMMENT HERE FOR COMPARING MLR RESULTS OF ESTIMATORS #
-    iterations1 = []
-    mlr1 = []
-    cont_greedy_track1 = load("results/continuous_greedy/DR_epinions_20_polynomial_50_FW_degree_4_around_0.5")
-    for item in cont_greedy_track1:
-        iterations1.append(item[0])
-        mlr1.append(item[1])
-
-    iterations2 = []
-    mlr2 = []
-    cont_greedy_track2 = load("results/continuous_greedy/DR_epinions_20_sampler_50_FW_500_samples")
-    for item in cont_greedy_track2:
-        iterations2.append(item[0])
-        mlr2.append(item[1])
-
-    x_lims = [0, 50]
-    x1 = np.linspace(x_lims[0], x_lims[1], 1000)
-
-    plt.plot(iterations1, mlr1, "^", label="Polynomial Estimator")
-    plt.plot(iterations2, mlr2, "ro", label="Sampler Estimator")
-    # plt.plot(x1, np.log1p(x1/50.0), label='log(x + 1)')
-    plt.legend(fontsize='xx-small')
-    plt.xlabel('Iterations')
-    plt.ylabel('Multilinear Relaxation')
-    plt.savefig('results/plots/multivsiterationsDR0.png')
-    #STOP UNCOMMENTING HERE #
+    # # UNCOMMENT HERE FOR COMPARING MLR RESULTS OF ESTIMATORS #
+    # iterations1 = []
+    # mlr1 = []
+    # cont_greedy_track1 = load("results/continuous_greedy/DR_epinions_20_polynomial_50_FW_degree_4_around_0.5")
+    # for item in cont_greedy_track1:
+    #     iterations1.append(item[0])
+    #     mlr1.append(item[1])
+    #
+    # iterations2 = []
+    # mlr2 = []
+    # cont_greedy_track2 = load("results/continuous_greedy/DR_epinions_20_sampler_50_FW_500_samples")
+    # for item in cont_greedy_track2:
+    #     iterations2.append(item[0])
+    #     mlr2.append(item[1])
+    #
+    # x_lims = [0, 50]
+    # x1 = np.linspace(x_lims[0], x_lims[1], 1000)
+    #
+    # plt.plot(iterations1, mlr1, "^", label="Polynomial Estimator")
+    # plt.plot(iterations2, mlr2, "ro", label="Sampler Estimator")
+    # # plt.plot(x1, np.log1p(x1/50.0), label='log(x + 1)')
+    # plt.legend(fontsize='xx-small')
+    # plt.xlabel('Iterations')
+    # plt.ylabel('Multilinear Relaxation')
+    # plt.savefig('results/plots/multivsiterationsDR0.png')
+    # #STOP UNCOMMENTING HERE #
 
     # sampler_obj = eval(open('sampler_obj.txt', 'r').read())
     # iterations1 = list(range(1, len(sampler_obj) + 1))

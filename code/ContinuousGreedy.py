@@ -30,13 +30,11 @@ def generate_samples(y, dependencies={}):
 
 def multilinear_relaxation(utility_function, y):
     out = 0.0
-    print(y)
     for i in range(2 ** len(y)):
         binary_vector = map(int, list(bin(i)[2:]))
         if len(binary_vector) < len(y):
             binary_vector = [0] * (len(y) - len(binary_vector)) + binary_vector
         x = dict(zip(y.iterkeys(), binary_vector))
-        print(x)
         new_term = utility_function(x)
         for key in y:
             if x[key] == 0:
@@ -44,7 +42,6 @@ def multilinear_relaxation(utility_function, y):
             else:
                 new_term *= y[key]
         out += new_term
-    sys.stderr.write("multilinear relaxation is: " + str(out) + '\n')
     return out
 
 

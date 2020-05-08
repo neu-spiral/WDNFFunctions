@@ -292,16 +292,20 @@ class InfluenceMaximization(Problem):
         {type : int} pairs if over partition matroids.
         """
         super(InfluenceMaximization, self).__init__()
+        logging.info('Initializing the ground set...')
         self.groundSet = set(graphs[0].nodes())  # all graphs share the same set of nodes
+        logging.info('... done.')
         self.problemSize = graphs[0].number_of_nodes()  # |V|
         self.instancesSize = len(graphs)  # |G|
+        logging.info('\nProblem size is %d and instances size is %d.' % (self.problemSize, self.instancesSize))
         self.constraints = constraints  # number of seeds aka k
         self.target_partitions = target_partitions
+        logging.info('Initializing the WDNF dictionary and dependencies...')
         wdnf_dict = dict()
         dependencies = dict()
         for i in range(self.instancesSize):
             paths = nx.algorithms.dag.transitive_closure(graphs[i])
-            sys.stderr.write("paths of cascade " + str(i) + " are:" + str(graphs[i].edges()) + '\n')
+            # sys.stderr.write("paths of cascade " + str(i) + " are:" + str(graphs[i].edges()) + '\n')
             wdnf_list = [WDNF({tuple(sorted([node] + list(paths.predecessors(node)))): -1.0 / self.problemSize}, -1)
                          for node in self.groundSet]
             resulting_wdnf = sum(wdnf_list) + WDNF({(): 1.0}, -1)
@@ -309,9 +313,10 @@ class InfluenceMaximization(Problem):
             dependencies.update(resulting_wdnf.find_dependencies())
             wdnf_dict[i] = resulting_wdnf  # prod(1 - x_u) for all u in P_v
         self.wdnf_dict = wdnf_dict
-        for key in wdnf_dict:
-            sys.stderr.write("wdnf_dict[" + str(key) + "]: " + str(wdnf_dict[key].coefficients) + '\n')
+        # for key in wdnf_dict:
+        #     sys.stderr.write("wdnf_dict[" + str(key) + "]: " + str(wdnf_dict[key].coefficients) + '\n')
         self.dependencies = dependencies
+        logging.info('... done. An instance of a influence maximization problem has been created.')
 
     def utility_function(self, y):
         """
@@ -354,63 +359,75 @@ class FacilityLocation(Problem):
     """
     """
 
-    def __init__(self, bipartite_graph, constraints):
+    def __init__(self, bipartite_graph, constraints, target_partitions=None):
         """
-        bipartite_graph is a complete weighted bipartite graph, constraints is an integer which denotes the maximum
-        number of facilities
+        bipartite_graph is a weighted bipartite graph, constraints is an integer which denotes the maximum
+        number of facilities/movies to be chosen.
         """
         super(FacilityLocation, self).__init__()
-        self.X = {n for n, d in bipartite_graph.nodes(data=True) if d['bipartite'] == 0}  # facilities
-        self.Y = set(bipartite_graph) - self.X  # customers
+        X = {n for n, d in bipartite_graph.nodes(data=True) if d['bipartite'] == 0}  # facilities, movies
+        self.X = map(int, X)  # facilities, movies
+        self.Y = set(bipartite_graph) - X  # customers, users
         self.constraints = constraints
-        self.partitioned_set = dict.fromkeys(self.Y, self.X)
-        self.size = len(self.Y)  # number of customers
+        # self.partitioned_set = dict.fromkeys(self.Y, self.X)  # ???
+        self.target_partitions = target_partitions
+        self.size = len(self.Y)  # number of customers, users
         wdnf_dict = dict()
+        dependencies = dict()
         for y in self.Y:
-            weights = {nodeX: bipartite_graph.get_edge_data(nodeX, y)['weight'] for nodeX in self.X}
+            weights = dict()
+            # weights = {facility: bipartite_graph.get_edge_data(facility, y)['weight'] for facility in self.X}
+            for facility in self.X:
+                try:
+                    weights[facility] = bipartite_graph.get_edge_data(str(facility), y)['weight']
+                except TypeError:
+                    weights[facility] = 0.0
             weights[len(self.X) + 1] = 0.0
-            wdnf_so_far = WDNF(dict(), -1)
             descending_weights = sorted(weights.values(), reverse=True)
             indices = sorted(range(len(weights.values())), key=lambda k: weights.values()[k], reverse=True)
+            wdnf_so_far = WDNF(dict(), -1)
             for i in range(len(self.X)):
-                index = tuple(index + 1 for index in indices[:(i+1)])
+                index = tuple(int(weights.keys()[index]) for index in indices[:(i+1)])
                 wdnf_so_far += (descending_weights[i] - descending_weights[i + 1]) * \
                                (WDNF({(): 1.0}, -1) + (-1.0) * WDNF({index: 1.0}, -1))
+                if descending_weights[i + 1] == 0:
+                    break
             wdnf_dict[y] = wdnf_so_far
+            dependencies.update(wdnf_so_far.find_dependencies())
         self.wdnf_dict = wdnf_dict
+        self.dependencies = dependencies
 
     def utility_function(self, y):
-        pass
+        objective = [np.log1p(self.wdnf_dict[customer](y)) * (1.0 / self.size) for customer in self.wdnf_dict]
+        return sum(objective)
 
     def get_solver(self):
         """
         """
-        k_list = dict.fromkeys(self.Y, self.constraints)
-        return PartitionMatroidSolver(self.partitioned_set, k_list)
-
-    def func(self, x):
-        """
-        """
-        output = 0.0
-        for y in self.Y:
-            output += np.log1p(self.wdnf_dict[y](x))
-        return output / self.size
+        logging.info('Getting solver...')
+        if self.target_partitions is None:
+            solver = UniformMatroidSolver(self.X, self.constraints)
+        else:
+            solver = PartitionMatroidSolver(self.target_partitions, self.constraints)
+        logging.info('...done.')
+        return solver
 
     def get_polynomial_estimator(self, center, degree):
         """
         """
-        derivatives = find_derivatives(log1p, center, degree)
+        logging.info('Getting polynomial estimator...')
+        derivatives = find_derivatives(np.log1p, center, degree)
         my_taylor = Taylor(degree, derivatives, center)
-        wdnf_so_far = WDNF(dict(), -1)
-        for y in self.Y:
-            wdnf_so_far += my_taylor.compose(self.wdnf_dict[y])
-        my_wdnf = (1.0 / self.size) * wdnf_so_far
-        return PolynomialEstimator(my_wdnf)
+        final_wdnf = [(1.0 / self.size) * (my_taylor.compose(self.wdnf_dict[customer]))
+                      for customer in self.wdnf_dict]
+        final_wdnf = sum(final_wdnf)
+        logging.info('...done.')
+        return PolynomialEstimator(final_wdnf)
 
     def get_initial_point(self):
         """
         """
-        return dict.fromkeys(self.X, 0.0)
+        return dict.fromkeys(self.X, 0.0)  # MAP TO INTEGER!
 
 
 if __name__ == "__main__":
