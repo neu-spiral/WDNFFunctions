@@ -1,0 +1,9 @@
+#!/bin/bash
+
+for degree in 1
+do
+    for iterations in 100
+    do
+        sbatch shell/test_poly $degree $iterations
+    done
+done

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for degree in 2 3 4 5
+do
+    sbatch shell/test_ratings $degree
+done
