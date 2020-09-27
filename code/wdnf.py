@@ -230,7 +230,7 @@ class Taylor(Poly):
 
     def __init__(self, degree, derivatives, center):
         """Given the calculated derivatives at the center, initializes Taylor
-        expansion of a function in the standart polynomial form by expanding the
+        expansion of a function in the standard polynomial form by expanding the
         terms using binomial expansion.
         """
         # if center == 0:

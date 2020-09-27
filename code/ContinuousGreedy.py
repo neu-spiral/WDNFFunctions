@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod  # ABCMeta works with Python 2, use ABC for Python 3
 from heapq import nlargest
+from helpers import load, save
 from time import time
 import logging
 import numpy as np
@@ -22,7 +23,7 @@ def generate_samples(y, dependencies={}):
         indices = [element for element in dependencies.keys() if y[element] > p[element]]
         samples.update(dict.fromkeys(indices, 1.0))
     else:
-        indices = [key for key in y.keys() if y[key] > p[key]]
+        indices = [key for key in y.keys() if p[key] < y[key]]
         samples.update(dict.fromkeys(indices, 1.0))
     # sys.stderr.write("samples: " + str(samples) + "\n")
     return samples
@@ -153,6 +154,7 @@ class SamplerEstimator(GradientEstimator):
             for j in range(self.num_of_samples):
                 logging.info('Generating ' + str(j + 1) + '. sample... \n')
                 x = generate_samples(y).copy()
+                # sys.stderr.write("sample: " + str(x) + "\n")
                 estimation += self.utility_function(x)  # might be deleted later
                 # sys.stderr.write("sample is: " + str(x) + '\n')
                 for i in y.keys():
@@ -167,6 +169,7 @@ class SamplerEstimator(GradientEstimator):
                     #     sys.stderr.write("grad[" + str(i) + "] is: " + str(grad[i]) + '\n')
         grad = {key: grad[key] / self.num_of_samples for key in grad.keys()}
         estimation = estimation / self.num_of_samples  # might be deleted later
+        print(grad)
         return grad, estimation
 
 
@@ -247,7 +250,7 @@ class UniformMatroidSolver(LinearSolver):
         returns a set of k elements from the groundSet with the maximum partial
         derivatives.
         """
-        return set(nlargest(self.k, gradient, key=gradient.get))
+        return set(sorted(gradient, key=gradient.get, reverse=True)[:self.k])
 
 
 class PartitionMatroidSolver(LinearSolver):
@@ -300,19 +303,31 @@ class ContinuousGreedy:
         self.estimator = estimator
         self.initial_point = initial_point
 
-    def fw(self, iterations, keep_track=False):
+    def fw(self, iterations, keep_track=False, need_restart=False, backup_file=None):
         """
         iterations is an integer denoting the number of iterations in the
         Frank-Wolfe algorithm.
         """
-        x0 = self.initial_point.copy()
-        gamma = 1.0 / iterations
+        if need_restart:
+            backup = load(backup_file)  # backup is a list in the format [y, track, bases]
+            x0 = backup[0].copy()
+            track = backup[1].copy()
+            bases = backup[2]
+            i = max(track)
+            time_passed = track[i][0]
+        else:
+            x0 = self.initial_point.copy()
+            time_passed = 0.0
+            track = dict()
+            bases = []
+            i = 0
+
         y = x0.copy()
-        start = time()
-        track = dict()
-        bases = []
+        gamma = 1.0 / iterations
+
         logging.info('Starting Frank-Wolfe...')
-        for t in range(iterations):
+        for t in range(i, iterations):
+            start = time()
             logging.info('iteration #' + str(t) + "\n")
             gradient = self.estimator.estimate(y)[0]
             mk = self.linear_solver.solve(gradient)  # finds maximum
@@ -327,9 +342,11 @@ class ContinuousGreedy:
                     y[i] += gamma
                 # y = {i: y[i] + gamma for i in mk}
             if keep_track or t == iterations - 1:
-                time_passed = time() - start
+                time_passed += time() - start
                 new_y = y.copy()
                 track[t] = (time_passed, new_y)
             bases.append(mk)
         # sys.stderr.write("y: " + str(y))
+            save(backup_file, [y, track, bases])
+            print("y after iteration %d is: " % t + str(y))
         return y, track, bases

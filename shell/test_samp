@@ -1,17 +1,15 @@
 #!/bin/bash
 
-#SBATCH --output=slurm_logs/ratings_swd_cons%j.out
+#SBATCH --output=slurm_logs/altIM_samp_%j.out
 
-#SBATCH --error=slurm_logs/ratings_swd_cons%j.err
+#SBATCH --error=slurm_logs/altIM_samp_%j.err
 
-#SBATCH --job-name='ratings_swd'
+#SBATCH --job-name='altIM_samp'
 
 #SBATCH --partition=ioannidis
 
-#SBATCH --mem=124Gb
+#SBATCH --mem=10Gb
 
-#SBATCH --time=300:30:00
+#SBATCH --constraint=E5-2680v4@2.40GHz
 
-#SBATCH --constraint=E5-2680v2@2.80GHz
-
-srun python code/TestModule.py --problem problems/FL_ratings_100_k_1 --estimator samplerWithDependencies --iterations 1000 --samples $1
+srun python code/TestModule.py --problemType ALTIM --input datasets/RB1powerlaw_5000_5000_30255 --partitions datasets/RB1powerlaw_5000_5000_30255_partitions --estimator sampler --constraints 1 --samples $1 --iterations $2

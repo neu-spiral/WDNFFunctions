@@ -1,6 +1,6 @@
 from ContinuousGreedy import multilinear_relaxation
 from helpers import save, load
-from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, FacilityLocation, derive
+from ProblemInstances import DiversityReward, QueueSize, InfluenceMaximization, AltInfluenceMaximization, FacilityLocation, derive
 from time import time
 import argparse
 import logging
@@ -16,10 +16,10 @@ if __name__ == "__main__":
     parser.add_argument('--problem', type=str, help='If the problem instance is created before, provide it here to save'
                                                     ' time instead of recreating it.')
     parser.add_argument('--problemType', default='DR', type=str, help='Type of the problem instance',
-                        choices=['DR', 'QS', 'FL', 'IM'])
+                        choices=['DR', 'QS', 'FL', 'IM', 'ALTIM'])
     parser.add_argument('--input', default='datasets/epinions_20', type=str,
                         help='Data input for the InfluenceMaximization problem')
-    parser.add_argument('--partitions', default='datasets/epinions_20', type=str,
+    parser.add_argument('--partitions', default=None,
                         help='Partitions input for the InfluenceMaximization problem')
     parser.add_argument('--testMode', default=False, type=bool, help='Tests the quality of the estimations from '
                         'different aspects')
@@ -41,10 +41,6 @@ if __name__ == "__main__":
                         help='The point around which Taylor approximation is calculated')
     parser.add_argument('--samples', default=500, type=int,
                         help='Number of samples used to calculate the sampler estimator')
-#    parser.add_argument('--timeOutput', default = "sampler_time.txt",
-    #    help = 'File in which time of each iteration is stored')
-#    parser.add_argument('--objectiveOutput', default = "sampler_obj.txt",
-    #    help = 'File in which objective at each iteration is stored')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -70,7 +66,9 @@ if __name__ == "__main__":
             logging.info('Loading movie ratings...')
             bipartite_graph = load(args.input)
             target_partitions = load(args.partitions)
-            k_list = dict.fromkeys(target_partitions.iterkeys(), args.constraints)
+            k_list = dict.fromkeys(target_partitions.iterkeys(), 0)
+            k_list['Drama'] = args.constraints
+            k_list['Comedy'] = args.constraints
             logging.info('...done. Defining a FacilityLocation Problem...')
             newProblem = FacilityLocation(bipartite_graph, k_list, target_partitions)
             logging.info('...done. %d seeds will be selected from each partition.' % args.constraints)
@@ -78,11 +76,29 @@ if __name__ == "__main__":
         elif args.problemType == 'IM':
             logging.info('Loading cascades...')
             graphs = load(args.input)
-            target_partitions = load(args.partitions)
-            k_list = dict.fromkeys(target_partitions.iterkeys(), args.constraints)
+            if args.partitions is not None:
+                target_partitions = load(args.partitions)
+                k_list = dict.fromkeys(target_partitions.iterkeys(), args.constraints)
+            else:
+                target_partitions = None
+                k_list = args.constraints
             logging.info('...done. Just loaded %d cascades.' % (len(graphs)))
             logging.info('Defining an InfluenceMaximization problem...')
             newProblem = InfluenceMaximization(graphs, k_list, target_partitions)
+            logging.info('...done. %d seeds will be selected from each partition.' % args.constraints)
+
+        elif args.problemType == 'ALTIM':
+            logging.info('Loading cascades...')
+            graphs = load(args.input)
+            if args.partitions is not None:
+                target_partitions = load(args.partitions)
+                k_list = dict.fromkeys(target_partitions.iterkeys(), args.constraints)
+            else:
+                target_partitions = None
+                k_list = args.constraints
+            logging.info('...done. Just loaded %d cascades.' % (len(graphs)))
+            logging.info('Defining an AltInfluenceMaximization problem...')
+            newProblem = AltInfluenceMaximization(graphs, k_list, target_partitions)
             logging.info('...done. %d seeds will be selected from each partition.' % args.constraints)
 
         problem_dir = "problems/"
@@ -100,69 +116,72 @@ if __name__ == "__main__":
     output = directory_output + args.estimator
 
     if args.testMode is True:
-        print(args.testMode is True)
-        # y = dict.fromkeys(newProblem.groundSet, 0.5)
-        if os.path.exists("random_y"):
-            y = load("random_y")
-        else:
-            y = dict(zip(newProblem.groundSet, np.random.rand(newProblem.problemSize).tolist()))
-            print(y)
-            save("random_y", y)
-        print(args.testMode is True)
-        out = multilinear_relaxation(newProblem.utility_function, y)
-        sys.stderr.write("multilinear relaxation is: " + str() + '\n')
+        sys.stderr.write("\nConvergence checker is activated.")
+        fixed_point = 0.5
+        directory_output = "results/convergence_test/" + args.problem + "/y" + str(fixed_point).strip('.') + "/"
+        if not os.path.exists(directory_output):
+            os.makedirs(directory_output)
+        y = dict.fromkeys(newProblem.groundSet, fixed_point)
+        # if os.path.exists("random_y"):
+        #     y = load("random_y")
+        # else:
+        #     y = dict(zip(newProblem.groundSet, np.random.rand(newProblem.problemSize).tolist()))
+        #     print(y)
+        #     save("random_y", y)
+        # out = multilinear_relaxation(newProblem.utility_function, y)
+        # sys.stderr.write("multilinear relaxation is: " + str() + '\n')
         if args.estimator == 'polynomial':
-            output = directory_output + args.problemType + "_" + args.input.split("/")[-1] + "_" + args.estimator \
-                                      + "_" + str(args.center) + "_y_random"
+            output = directory_output + args.estimator + "_" + str(args.degree)
             start = time()
-            poly_grad, poly_estimation = newProblem.get_polynomial_estimator(args.center, args.degree)\
-                .estimate(y)
+            poly_grad, poly_estimation = newProblem.get_polynomial_estimator(args.center, args.degree).estimate(y)
             elapsed_time = time() - start
             sys.stderr.write("estimated grad is: " + str(poly_grad) + '\n')
             sys.stderr.write("estimated value of the function is: " + str(poly_estimation) + '\n')
-            if os.path.exists(output):
-                poly_results = load(output)
-                poly_results.append((elapsed_time, args.degree, poly_estimation, out))
-            else:
-                poly_results = [(elapsed_time, args.degree, poly_estimation, out)]
+            # if os.path.exists(output):
+            #     poly_results = load(output)
+            #     poly_results.append((elapsed_time, args.degree, poly_estimation, out))
+            # else:
+            #     poly_results = [(elapsed_time, args.degree, poly_estimation, out)]
+            poly_results = [elapsed_time, args.degree, poly_estimation]
             save(output, poly_results)
 
-        if args.estimator == 'sampler':
-            output = directory_output + args.problemType + "_" + args.input.split("/")[-1] + "_" + args.estimator \
-                                      + "_y_random"
+        else:  # args.estimator == 'sampler':
+            output = directory_output + args.estimator + "_" + str(args.samples)
             start = time()
-            sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples)\
-                                                         .estimate(y)
+            sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples).estimate(y)
             elapsed_time = time() - start
             sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
-            if os.path.exists(output):
-                sampler_results = load(output)
-                sampler_results.append((elapsed_time, args.samples, sampler_estimation, out))
-            else:
-                sampler_results = [(elapsed_time, args.samples, sampler_estimation, out)]
+            # if os.path.exists(output):
+            #     sampler_results = load(output)
+            #     sampler_results.append((elapsed_time, args.samples, sampler_estimation, out))
+            # else:
+            #     sampler_results = [(elapsed_time, args.samples, sampler_estimation, out)]
+            sampler_results = [elapsed_time, args.samples, sampler_estimation]
             save(output, sampler_results)
 
-        if args.estimator == 'samplerWithDependencies':
-            sampler_output = directory_output + args.problemType + '_1_graph_y_rand2' + '_samp_with_dep_estimation'
-            start = time()
-            sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples, newProblem.dependencies)\
-                                                         .estimate(y)
-            elapsed_time = time() - start
-            sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
-            if os.path.exists(sampler_output):
-                sampler_results = load(sampler_output)
-                sampler_results.append((elapsed_time, args.samples, sampler_estimation, out))
-            else:
-                sampler_results = [(elapsed_time, args.samples, sampler_estimation, out)]
-            save(sampler_output, sampler_results)
+        # if args.estimator == 'samplerWithDependencies':
+        #     sampler_output = directory_output + args.estimator + '_1_graph_y_rand2' + '_samp_with_dep_estimation'
+        #     start = time()
+        #     sampler_grad, sampler_estimation = newProblem.get_sampler_estimator(args.samples, newProblem.dependencies)\
+        #                                                  .estimate(y)
+        #     elapsed_time = time() - start
+        #     sys.stderr.write("estimated value of the function is: " + str(sampler_estimation) + '\n')
+        #     if os.path.exists(sampler_output):
+        #         sampler_results = load(sampler_output)
+        #         sampler_results.append((elapsed_time, args.samples, sampler_estimation, out))
+        #     else:
+        #         sampler_results = [(elapsed_time, args.samples, sampler_estimation, out)]
+        #     save(sampler_output, sampler_results)
 
     else:
         if args.estimator == 'polynomial':
             logging.info('Initiating the Continuous Greedy algorithm using Polynomial Estimator...')
             sys.stderr.write('output directory is:' + output)
-            y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations))
-            # sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
             output += "_degree_" + str(args.degree) + "_around_" + str(args.center).replace(".", "")
+            output_backup = output + '_backup'
+            y, track, bases = newProblem.polynomial_continuous_greedy(args.center, args.degree, int(args.iterations),
+                                                                      backup_file=output_backup)
+            # sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
             print(output)
             results = []
             for key in track:
@@ -171,13 +190,15 @@ if __name__ == "__main__":
                 #                 args.degree, args.center))
                 results.append((key, track[key][0], track[key][1],
                                 newProblem.utility_function(track[key][1]), args.estimator,
-                                args.degree, args.center))
+                                args.degree, args.center, bases))
             # results = [track, newProblem.utility_function, args.estimator, args.degree, args.center]
 
         if args.estimator == 'sampler':
             logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator...')
-            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations)
             output += "_" + str(args.samples) + "_samples"
+            output_backup = output + '_backup'
+            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations,
+                                                                   backup_file=output_backup)
             print(output)
             results = []
             for key in track:
@@ -186,17 +207,20 @@ if __name__ == "__main__":
                 #                 args.samples))
                 results.append((key, track[key][0], track[key][1],
                                 newProblem.utility_function(track[key][1]), args.estimator,
-                                args.samples))
+                                args.samples, bases))
             # sys.stderr.write("number of samples: " + str(args.samples) + '\n')
             # sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
             # sys.stderr.write("y is: " + str(y) + '\n')
 
         if args.estimator == 'samplerWithDependencies':
             logging.info('Initiating the Continuous Greedy algorithm using Sampler Estimator with Dependencies...')
-            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations,
-                                                                   newProblem.dependencies)
-            # sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
             output += "_" + str(args.samples) + "_samples"
+            output_backup = output + '_backup'
+            y, track, bases = newProblem.sampler_continuous_greedy(args.samples, args.iterations,
+                                                                   dependencies=newProblem.dependencies,
+                                                                   backup_file=output_backup)
+            # sys.stderr.write("objective is: " + str(newProblem.utility_function(y)) + '\n')
+
             print(output)
             results = []
             for key in track:
@@ -205,7 +229,7 @@ if __name__ == "__main__":
                 #                 args.samples))
                 results.append((key, track[key][0], track[key][1],
                                 newProblem.utility_function(track[key][1]), args.estimator,
-                                args.samples))
+                                args.samples, bases))
 
         # uncomment here for pareto
         # if os.path.exists(output):

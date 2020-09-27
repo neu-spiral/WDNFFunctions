@@ -1,6 +1,9 @@
 #!/bin/bash
 
-for samples in 250 500 750
+for samples in 1
 do
-    sbatch shell/test_samp $samples
+    for iterations in 100
+    do
+        sbatch shell/test_samp $samples $iterations
+    done
 done

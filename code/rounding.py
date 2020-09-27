@@ -88,7 +88,7 @@ if __name__ == "__main__":
     problem_instance = "problem_" + args.graph_type + "_1000demands_100catalog_size_2mincap_2maxcap_100size_powerlaw_rate1.0_" + str(args.query_nodes) + "qnodes_" + str(args.order_moment) + "order_" + args.SOLUTION
     if args.estimator == "sample":
         input = problem_instance + "-500-samples-1000-iters"
-    elif args.estimotor == "taylor":
+    elif args.estimator == "taylor":
         input = problem_instance + "-taylor-k-" + str(args.k)+ "-1000-iters"
     else:
         input = problem_instance
