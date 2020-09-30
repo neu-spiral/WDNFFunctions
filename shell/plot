@@ -1,17 +1,17 @@
 #!/bin/bash
 
-#SBATCH --output=slurm_logs/plottingIM%j.out
+#SBATCH --output=slurm_logs/plot_all%j.out
 
-#SBATCH --error=slurm_logs/plottingIM%j.err
+#SBATCH --error=slurm_logs/plot_all%j.err
 
-#SBATCH --job-name=plot
+#SBATCH --job-name=plot_all
 
 #SBATCH --partition=ioannidis
 
-#SBATCH --mem=256Gb
+#SBATCH -w c3096
 
-#SBATCH --time=3:00:00
+#SBATCH --time=1-00:00:00
 
-#SBATCH --constraint=E5-2680v4@2.40GHz
+#SBATCH --mem=10Gb
 
-srun python code/GeneratePlots.py
+srun python code/GeneratePlots.py --type $1
